@@ -81,8 +81,8 @@ Write-Host "Done." -ForegroundColor Green
 Write-Host ""
 Write-Host "[5/5] Restarting services..." -ForegroundColor Yellow
 Set-Location $projectPath
-$pm2List = pm2 jlist 2>$null | ConvertFrom-Json -ErrorAction SilentlyContinue
-if ($pm2List -and $pm2List.Count -gt 0) {
+$pm2Output = pm2 list 2>$null | Out-String
+if ($pm2Output -match "online|stopped|errored") {
     pm2 restart all
 } elseif (Test-Path "$projectPath\ecosystem.config.js") {
     pm2 start ecosystem.config.js
