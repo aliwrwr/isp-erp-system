@@ -32,9 +32,9 @@ module.exports = {
     // ─── Frontend (Vue 3 + Vite) ─────────────────────────────────────
     {
       name: 'isp-frontend',
-      script: 'npm.cmd',
-      args: 'run preview',
-      cwd: './frontend',
+      script: './frontend/node_modules/vite/bin/vite.js',
+      args: 'preview',
+      cwd: __dirname,
       watch: false,
       autorestart: true,
       restart_delay: 3000,
@@ -42,8 +42,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
       },
-      error_file: '../logs/frontend-error.log',
-      out_file: '../logs/frontend-out.log',
+      error_file: './logs/frontend-error.log',
+      out_file: './logs/frontend-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
     },
   ],
