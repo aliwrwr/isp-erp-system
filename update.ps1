@@ -23,6 +23,19 @@ if (-not (Test-Path $projectPath)) {
 
 Set-Location $projectPath
 
+# Step 0: نسخ احتياطي لقاعدة البيانات
+$dbFile = "$projectPath\isp-erp.sqlite"
+if (Test-Path $dbFile) {
+    $backupDir = "$projectPath\backups"
+    if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
+    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm"
+    $backupFile = "$backupDir\isp-erp_$timestamp.sqlite"
+    Copy-Item $dbFile $backupFile
+    Write-Host "[0/5] تم النسخ الاحتياطي: backups\isp-erp_$timestamp.sqlite" -ForegroundColor Cyan
+    # الاحتفاظ بآخر 10 نسخ فقط
+    Get-ChildItem "$backupDir\*.sqlite" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 10 | Remove-Item -Force
+}
+
 # Step 1: سحب آخر التحديثات من GitHub (فرض التحديث وتجاهل التعديلات المحلية)
 Write-Host "[1/5] سحب التحديثات من GitHub..." -ForegroundColor Yellow
 git fetch origin
