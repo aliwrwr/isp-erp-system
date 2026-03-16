@@ -75,7 +75,17 @@ Write-Host "تم." -ForegroundColor Green
 # Step 5: إعادة تشغيل الخدمات
 Write-Host "`n[5/5] إعادة تشغيل الخدمات..." -ForegroundColor Yellow
 Set-Location $projectPath
-pm2 restart all
+$pm2List = pm2 jlist 2>$null | ConvertFrom-Json -ErrorAction SilentlyContinue
+if ($pm2List -and $pm2List.Count -gt 0) {
+    pm2 restart all
+} elseif (Test-Path "$projectPath\ecosystem.config.js") {
+    pm2 start ecosystem.config.js
+} else {
+    pm2 start dist/main.js --name isp-backend
+    Set-Location $frontendPath
+    pm2 start "npx serve dist -s -l 5173" --name isp-frontend
+    Set-Location $projectPath
+}
 pm2 save
 Write-Host "تم." -ForegroundColor Green
 
