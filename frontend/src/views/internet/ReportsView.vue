@@ -33,7 +33,7 @@
     <template v-else>
 
       <!-- ─── Summary Cards ─── -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
         <div v-for="card in summaryCards" :key="card.label"
           class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col gap-2 hover:shadow-md transition">
           <div class="flex items-center justify-between">
@@ -320,18 +320,26 @@ const filteredSubs = computed(() => {
 // ─── Summary Metrics ──────────────────────────────────────
 const totalRevenue = computed(() => filteredSubs.value.reduce((s, x) => s + Number(x.price || 0), 0));
 const totalCollected = computed(() => filteredSubs.value.reduce((s, x) => s + Number(x.paidAmount || 0), 0));
-const totalDebt = computed(() => filteredSubs.value.reduce((s, x) => s + Number(x.debtAmount || 0), 0));
+const totalDebt = computed(() =>
+  filteredSubs.value.reduce((s, x) => {
+    return s + Math.max(0, Number(x.price || 0) + Number(x.debtAmount || 0) - Number(x.paidAmount || 0));
+  }, 0)
+);
 const overallRate = computed(() => {
   if (!totalRevenue.value) return 0;
   return Math.round((totalCollected.value / totalRevenue.value) * 100);
 });
 
 const summaryCards = computed(() => [
-  { label: 'إجمالي الإيرادات', value: totalRevenue.value.toLocaleString() + ' د.ع', icon: 'fas fa-coins', color: '#27AE60' },
+  // Row 1: حالة الاشتراكات
   { label: 'إجمالي الاشتراكات', value: filteredSubs.value.length, icon: 'fas fa-list', color: '#4F81C7' },
   { label: 'الاشتراكات النشطة', value: filteredSubs.value.filter(s => s.status === 'active').length, icon: 'fas fa-check-circle', color: '#27AE60', sub: 'نشط', subColor: 'text-green-500' },
   { label: 'الاشتراكات المنتهية', value: filteredSubs.value.filter(s => s.status === 'expired').length, icon: 'fas fa-times-circle', color: '#E74C3C', sub: 'منتهي', subColor: 'text-red-500' },
-  { label: 'إجمالي الديون', value: totalDebt.value.toLocaleString() + ' د.ع', icon: 'fas fa-exclamation-triangle', color: '#E74C3C' },
+  { label: 'الاشتراكات المعلقة', value: filteredSubs.value.filter(s => s.status === 'pending').length, icon: 'fas fa-pause-circle', color: '#9B59B6', sub: 'معلق', subColor: 'text-purple-500' },
+  // Row 2: الملخص المالي
+  { label: 'إجمالي الإيرادات', value: totalRevenue.value.toLocaleString() + ' د.ع', icon: 'fas fa-coins', color: '#27AE60' },
+  { label: 'إجمالي المحصّل', value: totalCollected.value.toLocaleString() + ' د.ع', icon: 'fas fa-hand-holding-usd', color: '#1ABC9C' },
+  { label: 'إجمالي الديون', value: totalDebt.value.toLocaleString() + ' د.ع', icon: 'fas fa-exclamation-triangle', color: '#E74C3C', sub: totalDebt.value > 0 ? (filteredSubs.value.filter(s => Math.max(0, Number(s.price||0) + Number(s.debtAmount||0) - Number(s.paidAmount||0)) > 0).length + ' مشترك') : '', subColor: 'text-red-400' },
   { label: 'نسبة التحصيل', value: overallRate.value + '%', icon: 'fas fa-percentage', color: '#F39C12', sub: 'من الإيرادات' },
 ]);
 
@@ -429,7 +437,7 @@ const packageStats = computed(() => {
     if (s.status === 'expired') map[name].expired++;
     map[name].revenue += Number(s.price || 0);
     map[name].collected += Number(s.paidAmount || 0);
-    map[name].debt += Number(s.debtAmount || 0);
+    map[name].debt += Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0));
   });
   return Object.values(map).map((p: any) => ({
     ...p,
@@ -440,12 +448,12 @@ const packageStats = computed(() => {
 // ─── Top Debtors ──────────────────────────────────────────
 const topDebtors = computed(() =>
   filteredSubs.value
-    .filter(s => Number(s.debtAmount) > 0)
     .map(s => ({
       name: s.subscriber?.name || '—',
       package: s.package?.name || '—',
-      debt: Number(s.debtAmount),
+      debt: Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0)),
     }))
+    .filter(s => s.debt > 0)
     .sort((a, b) => b.debt - a.debt)
     .slice(0, 8)
 );
