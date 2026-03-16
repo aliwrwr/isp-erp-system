@@ -32,9 +32,9 @@ module.exports = {
     // ─── Frontend (Vue 3 + Vite) ─────────────────────────────────────
     {
       name: 'isp-frontend',
-      script: './frontend/node_modules/vite/bin/vite.js',
-      args: 'preview',
-      cwd: __dirname,
+      script: './node_modules/vite/bin/vite.js',
+      args: 'preview --host',
+      cwd: __dirname + '/frontend',
       watch: false,
       autorestart: true,
       restart_delay: 3000,
