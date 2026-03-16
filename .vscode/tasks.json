@@ -34,7 +34,7 @@
 		{
 			"label": "Build Backend",
 			"type": "shell",
-			"command": "cd C:\\Users\\OMC\\isp-erp-system && npm run build",
+			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system; npm run build",
 			"isBackground": false,
 			"problemMatcher": ["$tsc"],
 			"group": "build"
@@ -42,7 +42,7 @@
 		{
 			"label": "▶ Start Server (PM2)",
 			"type": "shell",
-			"command": "cd C:\\Users\\OMC\\isp-erp-system && pm2 start ecosystem.config.js",
+			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system; pm2 start ecosystem.config.js",
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "none"
@@ -50,7 +50,7 @@
 		{
 			"label": "🔄 Restart Server (PM2)",
 			"type": "shell",
-			"command": "cd C:\\Users\\OMC\\isp-erp-system && pm2 restart all",
+			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system; pm2 restart all",
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "none"
@@ -74,7 +74,7 @@
 		{
 			"label": "🚀 Build & Start (Full Deploy)",
 			"type": "shell",
-			"command": "cd C:\\Users\\OMC\\isp-erp-system && npm run build && (pm2 restart all 2>$null || pm2 start ecosystem.config.js) && pm2 status",
+			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system; npm run build; $pm2Out = pm2 list 2>$null | Out-String; if ($pm2Out -match 'online|stopped|errored') { pm2 restart all } else { pm2 start ecosystem.config.js }; pm2 status",
 			"isBackground": false,
 			"problemMatcher": ["$tsc"],
 			"group": "build"
@@ -82,7 +82,7 @@
 		{
 			"label": "🖥 Backend Dev (Watch)",
 			"type": "shell",
-			"command": "cd C:\\Users\\OMC\\isp-erp-system && npm run start:dev",
+			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system; npm run start:dev",
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "none"
@@ -90,7 +90,7 @@
 		{
 			"label": "🌐 Frontend Dev",
 			"type": "shell",
-			"command": "cd C:\\Users\\OMC\\isp-erp-system\\frontend && npm run dev",
+			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system\\frontend; npm run dev",
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "none"
