@@ -94,6 +94,19 @@
 			"isBackground": true,
 			"problemMatcher": [],
 			"group": "none"
+		},
+		{
+			"label": "🚀 نشر التحديث إلى PC2",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -File '${workspaceFolder}/deploy.ps1'",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build",
+			"presentation": {
+				"reveal": "always",
+				"panel": "new",
+				"focus": true
+			}
 		}
 	]
 }

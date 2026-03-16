@@ -26,6 +26,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { RestaurantModule } from './restaurant/restaurant.module';
 import { ManagersModule } from './managers/managers.module';
 import { BackupModule } from './backup/backup.module';
+import { DeployModule } from './deploy/deploy.module';
 import config from './config/config';
 
 @Module({
@@ -64,6 +65,7 @@ import config from './config/config';
     ManagersModule,
     WhatsappModule,
     BackupModule,
+    DeployModule,
   ],
   controllers: [AppController],
   providers: [AppService],
