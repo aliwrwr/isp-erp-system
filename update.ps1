@@ -1,79 +1,85 @@
 # ===========================================
 # ISP ERP System - Update Script (PC2)
-# شغّل هذا الملف على PC2 بعد كل تحديث
+# Run this file on PC2 after every update
 # ===========================================
 
-# ====== إعدادات PC2 ======
-$PC2_IP      = "192.200.251.4"
-$projectPath = "D:\isp-erp-system"          # غيّر المسار إذا كان مختلفاً
+$PC2_IP       = "192.200.251.4"
+$projectPath  = "D:\isp-erp-system"
 $frontendPath = "$projectPath\frontend"
-# =========================
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "   ISP ERP System - Update PC2" -ForegroundColor Cyan
-Write-Host "   $PC2_IP" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "   ISP ERP System - Update PC2"          -ForegroundColor Cyan
+Write-Host "   $PC2_IP"                              -ForegroundColor Cyan
+Write-Host "========================================"  -ForegroundColor Cyan
+Write-Host ""
 
-# التحقق من وجود المجلد
 if (-not (Test-Path $projectPath)) {
-    Write-Host "ERROR: المجلد غير موجود: $projectPath" -ForegroundColor Red
-    Write-Host "عدّل متغير projectPath في هذا الملف" -ForegroundColor Yellow
+    Write-Host "ERROR: Folder not found: $projectPath" -ForegroundColor Red
     exit 1
 }
 
 Set-Location $projectPath
 
-# Step 0: نسخ احتياطي لقاعدة البيانات
+# Step 0: Database backup
 $dbFile = "$projectPath\isp-erp.sqlite"
 if (Test-Path $dbFile) {
     $backupDir = "$projectPath\backups"
-    if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
-    $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm"
+    if (-not (Test-Path $backupDir)) {
+        New-Item -ItemType Directory -Path $backupDir | Out-Null
+    }
+    $timestamp  = Get-Date -Format "yyyy-MM-dd_HH-mm"
     $backupFile = "$backupDir\isp-erp_$timestamp.sqlite"
     Copy-Item $dbFile $backupFile
-    Write-Host "[0/5] تم النسخ الاحتياطي: backups\isp-erp_$timestamp.sqlite" -ForegroundColor Cyan
-    # الاحتفاظ بآخر 10 نسخ فقط
-    Get-ChildItem "$backupDir\*.sqlite" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 10 | Remove-Item -Force
+    Write-Host "[0/5] Database backup: backups\isp-erp_$timestamp.sqlite" -ForegroundColor Cyan
+    Get-ChildItem "$backupDir\*.sqlite" |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -Skip 10 |
+        Remove-Item -Force
 }
 
-# Step 1: سحب آخر التحديثات من GitHub (فرض التحديث وتجاهل التعديلات المحلية)
-Write-Host "[1/5] سحب التحديثات من GitHub..." -ForegroundColor Yellow
+# Step 1: Pull latest code from GitHub
+Write-Host "[1/5] Pulling latest code from GitHub..." -ForegroundColor Yellow
 git fetch origin
 git reset --hard origin/main
 git clean -fd
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: فشل git pull - تاكد من الاتصال بالانترنت" -ForegroundColor Red
+    Write-Host "ERROR: git pull failed. Check internet connection." -ForegroundColor Red
     exit 1
 }
-Write-Host "تم." -ForegroundColor Green
+Write-Host "Done." -ForegroundColor Green
 
-# Step 2: تثبيت حزم Backend
-Write-Host "`n[2/5] تثبيت حزم Backend..." -ForegroundColor Yellow
+# Step 2: Install backend packages
+Write-Host ""
+Write-Host "[2/5] Installing backend packages..." -ForegroundColor Yellow
 npm install
-Write-Host "تم." -ForegroundColor Green
+Write-Host "Done." -ForegroundColor Green
 
-# Step 3: بناء Backend
-Write-Host "`n[3/5] بناء Backend..." -ForegroundColor Yellow
+# Step 3: Build backend
+Write-Host ""
+Write-Host "[3/5] Building backend..." -ForegroundColor Yellow
 npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: فشل بناء Backend!" -ForegroundColor Red
+    Write-Host "ERROR: Backend build failed!" -ForegroundColor Red
     exit 1
 }
-Write-Host "تم." -ForegroundColor Green
+Write-Host "Done." -ForegroundColor Green
 
-# Step 4: بناء Frontend
-Write-Host "`n[4/5] بناء Frontend..." -ForegroundColor Yellow
+# Step 4: Build frontend
+Write-Host ""
+Write-Host "[4/5] Building frontend..." -ForegroundColor Yellow
 Set-Location $frontendPath
 npm install
 npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: فشل بناء Frontend!" -ForegroundColor Red
+    Write-Host "ERROR: Frontend build failed!" -ForegroundColor Red
     exit 1
 }
-Write-Host "تم." -ForegroundColor Green
+Write-Host "Done." -ForegroundColor Green
 
-# Step 5: إعادة تشغيل الخدمات
-Write-Host "`n[5/5] إعادة تشغيل الخدمات..." -ForegroundColor Yellow
+# Step 5: Restart services
+Write-Host ""
+Write-Host "[5/5] Restarting services..." -ForegroundColor Yellow
 Set-Location $projectPath
 $pm2List = pm2 jlist 2>$null | ConvertFrom-Json -ErrorAction SilentlyContinue
 if ($pm2List -and $pm2List.Count -gt 0) {
@@ -87,9 +93,11 @@ if ($pm2List -and $pm2List.Count -gt 0) {
     Set-Location $projectPath
 }
 pm2 save
-Write-Host "تم." -ForegroundColor Green
+Write-Host "Done." -ForegroundColor Green
 
-Write-Host "`n========================================" -ForegroundColor Green
-Write-Host "   التحديث اكتمل بنجاح!" -ForegroundColor Green
-Write-Host "   http://${PC2_IP}:5173" -ForegroundColor Green
-Write-Host "========================================`n" -ForegroundColor Green
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Green
+Write-Host "   Update completed successfully!"        -ForegroundColor Green
+Write-Host "   http://${PC2_IP}:5173"                -ForegroundColor Green
+Write-Host "========================================"  -ForegroundColor Green
+Write-Host ""
