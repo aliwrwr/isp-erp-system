@@ -2085,7 +2085,7 @@ const messageTemplates = [
 async function checkWhatsappStatus() {
   try {
     const res = await api.get('/whatsapp/status');
-    whatsappConnected.value = res.data?.status === 'connected';
+    whatsappConnected.value = res.data?.connected === true;
   } catch {
     whatsappConnected.value = false;
   }
