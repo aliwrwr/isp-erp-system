@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install Frontend Dependencies",
+			"type": "shell",
+			"command": "cd frontend && npm install --no-optional --force",
+			"isBackground": false
+		},
+		{
+			"label": "Install Frontend Deps",
+			"type": "shell",
+			"command": "cd frontend; npm install --no-optional --force",
+			"isBackground": false
+		},
+		{
+			"label": "Frontend Install",
+			"type": "shell",
+			"command": "Set-Location frontend; npm install --no-optional --force",
+			"isBackground": false
+		},
+		{
+			"label": "Fresh Frontend Install",
+			"type": "shell",
+			"command": "Set-Location frontend; Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue; Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue; npm install --force",
+			"isBackground": false
+		},
+		{
+			"label": "Clean Install Frontend",
+			"type": "shell",
+			"command": "Set-Location c:\\Users\\OMC\\isp-erp-system\\frontend; if (Test-Path node_modules) { Remove-Item -Recurse -Force node_modules }; if (Test-Path package-lock.json) { Remove-Item -Force package-lock.json }; npm install --force",
+			"isBackground": false
+		}
+	]
+}

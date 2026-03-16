@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+
+@theme {
+  --color-primary: #3498DB;
+  --color-primary-dark: #2980B9;
+  --color-secondary: #2C3E50;
+  --color-success: #2ECC71;
+  --color-success-dark: #27AE60;
+  --color-warning: #F39C12;
+  --color-warning-dark: #E67E22;
+  --color-danger: #E74C3C;
+  --color-danger-dark: #C0392B;
+  --color-bg: #F5F7FA;
+  --color-internet: #2980B9;
+  --color-sales: #27AE60;
+  --color-hr: #8E44AD;
+  --color-support: #E67E22;
+  --color-messaging: #16A085;
+  --color-restaurant: #D35400;
+  --color-sidebar: #2C3E50;
+  --color-sidebar-hover: #34495E;
+  --font-family-cairo: 'Cairo', sans-serif;
+}
+
+* { font-family: 'Cairo', sans-serif; }
+body { background-color: #F5F7FA; margin: 0; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.slide-enter-active, .slide-leave-active { transition: transform 0.3s ease; }
+.slide-enter-from { transform: translateX(-100%); }
+.slide-leave-to { transform: translateX(-100%); }
