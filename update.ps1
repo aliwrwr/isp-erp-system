@@ -16,7 +16,7 @@ Set-Location $projectPath
 
 # Step 1: Pull latest code
 Write-Host "[1/4] Pulling latest code from GitHub..." -ForegroundColor Yellow
-git pull origin master
+git pull origin main
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: git pull failed!" -ForegroundColor Red
     exit 1
