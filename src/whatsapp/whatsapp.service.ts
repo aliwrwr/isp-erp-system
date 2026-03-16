@@ -284,11 +284,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
   // ─── Settings ────────────────────────────────────────────────────────────────
 
-  async getLogs(limit = 100): Promise<WhatsappLog[]> {
-    return this.logRepository.find({
+  async getLogs(page = 1, limit = 10): Promise<{ data: WhatsappLog[]; total: number }> {
+    const [data, total] = await this.logRepository.findAndCount({
       order: { createdAt: 'DESC' },
       take: limit,
+      skip: (page - 1) * limit,
     });
+    return { data, total };
   }
 
   async getSettings(): Promise<WhatsappSettings> {

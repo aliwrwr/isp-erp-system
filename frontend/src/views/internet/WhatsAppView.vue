@@ -422,6 +422,45 @@
           </tbody>
         </table>
       </div>
+      <!-- Pagination -->
+      <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
+        <!-- Page navigation -->
+        <div class="flex items-center gap-1" dir="ltr">
+          <button @click="goToLogPage(1)" :disabled="logPage === 1"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border text-xs transition-colors"
+            :class="logPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            «
+          </button>
+          <button @click="goToLogPage(logPage - 1)" :disabled="logPage === 1"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border text-xs transition-colors"
+            :class="logPage === 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            ‹
+          </button>
+          <button v-for="p in logVisiblePages" :key="p" @click="goToLogPage(p)"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border text-xs font-medium transition-colors"
+            :class="p === logPage ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            {{ p }}
+          </button>
+          <button @click="goToLogPage(logPage + 1)" :disabled="logPage === logTotalPages"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border text-xs transition-colors"
+            :class="logPage === logTotalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            ›
+          </button>
+          <button @click="goToLogPage(logTotalPages)" :disabled="logPage === logTotalPages"
+            class="w-8 h-8 flex items-center justify-center rounded-lg border text-xs transition-colors"
+            :class="logPage === logTotalPages ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            »
+          </button>
+        </div>
+        <!-- Page size -->
+        <div class="flex items-center gap-1" dir="ltr">
+          <button v-for="size in logPageSizes" :key="size" @click="changeLogPageSize(size)"
+            class="min-w-[36px] h-8 px-2 flex items-center justify-center rounded-lg border text-xs font-medium transition-colors"
+            :class="size === logPageSize ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            {{ size }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Test Message Modal -->
@@ -479,7 +518,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import api from '../../api';
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -495,6 +534,20 @@ const sendingTo = ref<number | null>(null);
 const expiryDays = ref(7);
 const logs = ref<any[]>([]);
 const loadingLogs = ref(false);
+const logPage = ref(1);
+const logPageSize = ref(10);
+const logTotal = ref(0);
+const logTotalPages = computed(() => Math.max(1, Math.ceil(logTotal.value / logPageSize.value)));
+const logPageSizes = [5, 10, 50, 100, 500];
+const logVisiblePages = computed(() => {
+  const total = logTotalPages.value;
+  const cur = logPage.value;
+  const pages: number[] = [];
+  const start = Math.max(1, cur - 2);
+  const end = Math.min(total, cur + 2);
+  for (let i = start; i <= end; i++) pages.push(i);
+  return pages;
+});
 
 const status = reactive({
   connected: false,
@@ -564,13 +617,26 @@ async function loadExpiring() {
 async function loadLogs() {
   loadingLogs.value = true;
   try {
-    const { data } = await api.get('/whatsapp/logs?limit=100');
-    logs.value = data;
+    const { data } = await api.get(`/whatsapp/logs?page=${logPage.value}&limit=${logPageSize.value}`);
+    logs.value = data.data;
+    logTotal.value = data.total;
   } catch (_) {
     // ignore
   } finally {
     loadingLogs.value = false;
   }
+}
+
+function goToLogPage(page: number) {
+  if (page < 1 || page > logTotalPages.value) return;
+  logPage.value = page;
+  loadLogs();
+}
+
+function changeLogPageSize(size: number) {
+  logPageSize.value = size;
+  logPage.value = 1;
+  loadLogs();
 }
 
 async function refresh() {

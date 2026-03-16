@@ -90,7 +90,10 @@ export class WhatsappController {
 
   /** Get WhatsApp message log */
   @Get('logs')
-  getLogs(@Query('limit') limit?: string) {
-    return this.whatsappService.getLogs(limit ? parseInt(limit, 10) : 100);
+  getLogs(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.whatsappService.getLogs(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
   }
 }
