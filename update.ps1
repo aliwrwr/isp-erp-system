@@ -23,9 +23,11 @@ if (-not (Test-Path $projectPath)) {
 
 Set-Location $projectPath
 
-# Step 1: سحب آخر التحديثات من GitHub
+# Step 1: سحب آخر التحديثات من GitHub (فرض التحديث وتجاهل التعديلات المحلية)
 Write-Host "[1/5] سحب التحديثات من GitHub..." -ForegroundColor Yellow
-git pull origin main
+git fetch origin
+git reset --hard origin/main
+git clean -fd
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: فشل git pull — تأكد من الاتصال بالإنترنت" -ForegroundColor Red
     exit 1
