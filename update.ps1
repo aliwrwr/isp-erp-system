@@ -42,7 +42,7 @@ git fetch origin
 git reset --hard origin/main
 git clean -fd
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: فشل git pull — تأكد من الاتصال بالإنترنت" -ForegroundColor Red
+    Write-Host "ERROR: فشل git pull - تاكد من الاتصال بالانترنت" -ForegroundColor Red
     exit 1
 }
 Write-Host "تم." -ForegroundColor Green
