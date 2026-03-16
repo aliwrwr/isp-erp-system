@@ -950,37 +950,59 @@
 
     <!-- ===== Send Message Modal ===== -->
     <transition name="modal">
-      <div v-if="showSendMessageModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="showSendMessageModal = false">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+      <div v-if="showSendMessageModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="!messageSending && (showSendMessageModal = false)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+          <!-- Header -->
           <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
                 <i class="fab fa-whatsapp text-green-500 text-lg"></i>
               </div>
               <div>
-                <h3 class="font-bold text-secondary">إرسال رسالة</h3>
+                <h3 class="font-bold text-secondary">إرسال رسالة واتساب</h3>
                 <p class="text-xs text-gray-400">{{ contextMenuSub?.name }} — {{ contextMenuSub?.phone }}</p>
               </div>
             </div>
-            <button @click="showSendMessageModal = false" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+            <button @click="showSendMessageModal = false" :disabled="messageSending" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition disabled:opacity-40">
               <i class="fas fa-times text-sm"></i>
             </button>
           </div>
-          <div class="p-6">
-            <label class="block text-xs font-semibold text-gray-600 mb-2">نص الرسالة</label>
-            <textarea v-model="messageForm.text" rows="4" placeholder="اكتب رسالتك هنا..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
-            <!-- Quick templates -->
-            <div class="flex flex-wrap gap-2 mt-3">
-              <button v-for="tpl in messageTemplates" :key="tpl.label" @click="messageForm.text = tpl.text" class="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition">
-                {{ tpl.label }}
-              </button>
+
+          <div class="p-6 space-y-4">
+            <!-- Quick Templates -->
+            <div>
+              <p class="text-xs font-semibold text-gray-500 mb-2">قوالب سريعة</p>
+              <div class="flex flex-wrap gap-2">
+                <button v-for="tpl in messageTemplates" :key="tpl.label"
+                  @click="applyTemplate(tpl)"
+                  class="text-[11px] px-3 py-1.5 bg-gray-100 hover:bg-green-50 hover:text-green-700 hover:border-green-200 border border-transparent text-gray-600 rounded-lg transition">
+                  <i :class="tpl.icon" class="mr-1"></i>{{ tpl.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Message Text -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-2">نص الرسالة</label>
+              <textarea v-model="messageForm.text" rows="5"
+                placeholder="اكتب رسالتك هنا... يمكنك استخدام {الاسم} و{الرقم} و{تاريخ_الانتهاء}"
+                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+              <p class="text-[11px] text-gray-400 mt-1">المتغيرات: <span class="font-mono bg-gray-100 px-1 rounded">{الاسم}</span> <span class="font-mono bg-gray-100 px-1 rounded">{الرقم}</span> <span class="font-mono bg-gray-100 px-1 rounded">{تاريخ_الانتهاء}</span></p>
+            </div>
+
+            <!-- WhatsApp status warning -->
+            <div v-if="!whatsappConnected" class="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-xl px-4 py-3">
+              <i class="fas fa-exclamation-triangle"></i>
+              واتساب غير متصل — سيتم فتح wa.me كبديل
             </div>
           </div>
+
           <div class="px-6 pb-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
-            <button @click="showSendMessageModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold rounded-xl transition">إلغاء</button>
-            <button @click="sendMessage" class="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2">
-              <i class="fab fa-whatsapp text-sm"></i>
-              إرسال عبر واتساب
+            <button @click="showSendMessageModal = false" :disabled="messageSending" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold rounded-xl transition disabled:opacity-40">إلغاء</button>
+            <button @click="sendMessage" :disabled="messageSending || !messageForm.text.trim()" class="px-6 py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2">
+              <i v-if="messageSending" class="fas fa-spinner fa-spin text-sm"></i>
+              <i v-else class="fab fa-whatsapp text-sm"></i>
+              {{ messageSending ? 'جاري الإرسال...' : 'إرسال' }}
             </button>
           </div>
         </div>
@@ -2047,30 +2069,77 @@ function setPaper(s){
 
 // ===================== SEND MESSAGE MODAL =====================
 const showSendMessageModal = ref(false);
+const messageSending = ref(false);
+const whatsappConnected = ref(false);
 const messageForm = ref({ text: '' });
+
 const messageTemplates = [
-  { label: 'تجديد الاشتراك', text: 'عزيزي المشترك، نود إعلامكم بأن اشتراككم على وشك الانتهاء. يرجى التواصل معنا لتجديد الاشتراك.' },
-  { label: 'انتهاء الاشتراك', text: 'عزيزي المشترك، لقد انتهى اشتراككم. يرجى التجديد لاستمرار الخدمة.' },
-  { label: 'الترحيب', text: 'مرحباً بكم في خدمة الإنترنت! تم تفعيل اشتراككم بنجاح.' },
+  { label: 'تجديد الاشتراك', icon: 'fas fa-sync-alt', text: 'عزيزي {الاسم}، نود إعلامكم بأن اشتراككم على وشك الانتهاء في {تاريخ_الانتهاء}. يرجى التواصل معنا لتجديد الاشتراك.' },
+  { label: 'انتهاء الاشتراك', icon: 'fas fa-clock', text: 'عزيزي {الاسم}، لقد انتهى اشتراككم. يرجى التجديد لاستمرار الخدمة. للتواصل اتصل بنا.' },
+  { label: 'تسديد الدين', icon: 'fas fa-money-bill', text: 'عزيزي {الاسم}، نود تذكيركم بسداد المبلغ المستحق عليكم. يرجى التواصل معنا في أقرب وقت.' },
+  { label: 'انقطاع الخدمة', icon: 'fas fa-wifi', text: 'عزيزي {الاسم}، تم إيقاف خدمة الإنترنت مؤقتاً بسبب انتهاء الاشتراك. للتجديد يرجى التواصل معنا.' },
+  { label: 'ترحيب', icon: 'fas fa-hand-wave', text: 'مرحباً {الاسم}! نرحب بكم في خدمة الإنترنت. تم تفعيل اشتراككم بنجاح. رقم حسابكم: {الرقم}' },
+  { label: 'عرض خاص', icon: 'fas fa-tag', text: 'عزيزي {الاسم}، لدينا عرض خاص حصري لكم! تواصل معنا لمعرفة التفاصيل.' },
 ];
+
+async function checkWhatsappStatus() {
+  try {
+    const res = await api.get('/whatsapp/status');
+    whatsappConnected.value = res.data?.status === 'connected';
+  } catch {
+    whatsappConnected.value = false;
+  }
+}
+
+function applyTemplate(tpl: { label: string; icon: string; text: string }) {
+  const sub = contextMenuSub.value;
+  const expiry = sub?.subscriptions?.[0]?.endDate
+    ? new Date(sub.subscriptions[0].endDate).toLocaleDateString('ar-IQ')
+    : 'غير محدد';
+  messageForm.value.text = tpl.text
+    .replace(/{الاسم}/g, sub?.name || '')
+    .replace(/{الرقم}/g, sub?.phone || '')
+    .replace(/{تاريخ_الانتهاء}/g, expiry);
+}
 
 function openSendMessage() {
   closeContextMenu();
   messageForm.value = { text: '' };
+  checkWhatsappStatus();
   showSendMessageModal.value = true;
 }
 
-function sendMessage() {
+async function sendMessage() {
   if (!messageForm.value.text.trim()) return showToast('يرجى كتابة الرسالة', 'error');
   const sub = contextMenuSub.value;
   const phone = sub?.phone?.replace(/\D/g, '');
-  if (phone) {
+  if (!phone) return showToast('لا يوجد رقم هاتف لهذا المشترك', 'error');
+
+  // If WhatsApp is connected, send via backend
+  if (whatsappConnected.value) {
+    messageSending.value = true;
+    try {
+      const res = await api.post('/whatsapp/send-direct', {
+        phone,
+        message: messageForm.value.text,
+      });
+      if (res.data?.success) {
+        showToast('تم إرسال الرسالة عبر واتساب بنجاح', 'success');
+        showSendMessageModal.value = false;
+      } else {
+        showToast(res.data?.message || 'فشل الإرسال', 'error');
+      }
+    } catch {
+      showToast('حدث خطأ أثناء الإرسال', 'error');
+    } finally {
+      messageSending.value = false;
+    }
+  } else {
+    // Fallback: open wa.me
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(messageForm.value.text)}`, '_blank');
     showToast('تم فتح واتساب');
-  } else {
-    showToast('لا يوجد رقم هاتف لهذا المشترك', 'error');
+    showSendMessageModal.value = false;
   }
-  showSendMessageModal.value = false;
 }
 </script>
 

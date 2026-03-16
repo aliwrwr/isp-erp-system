@@ -1,0 +1,46 @@
+ملخص النظام الآن:
+على الحاسوب الأول — عند أي تغيير:
+
+  cd C:\Users\OMC\isp-erp-system
+git add .
+git commit -m "وصف التغيير"
+git push
+
+
+
+على الحاسوب الثاني — لتطبيق التحديث:
+
+cd C:\Users\A\isp-erp-system
+.\update.ps1
+
+
+
+
+
+إعداد الحاسوب الثاني (مرة واحدة فقط)
+بما أن الحاسوب الثاني لديه نسخة قديمة من المشروع، افتح PowerShell عليه كمسؤول وشغّل:
+
+
+
+
+cd C:\Users\A
+
+# احذف الإصدار القديم
+Remove-Item -Recurse -Force isp-erp-system
+
+# انسخ من GitHub
+git clone https://github.com/aliwrwr/isp-erp-system.git
+cd isp-erp-system
+
+# أنشئ ملف البيئة
+Set-Content -Path "frontend\.env.production" -Value "VITE_API_URL=http://192.168.200.29:3000"
+
+# ثبّت وابنِ البروجكت
+npm install
+npm run build
+cd frontend ; npm install ; npm run build ; cd ..
+
+# أعد تشغيل الخدمات
+pm2 restart isp-backend
+pm2 restart isp-frontend
+pm2 save

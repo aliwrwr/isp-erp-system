@@ -78,6 +78,16 @@ export class WhatsappController {
     return this.scheduler.sendNowForDate();
   }
 
+  /** Send a direct custom message to a specific subscriber */
+  @Post('send-direct')
+  async sendDirect(@Body() dto: SendTestMessageDto) {
+    const sent = await this.whatsappService.sendMessage(dto.phone, dto.message);
+    return {
+      success: sent,
+      message: sent ? 'تم إرسال الرسالة بنجاح' : 'فشل الإرسال — تأكد من اتصال واتساب',
+    };
+  }
+
   /** Get WhatsApp message log */
   @Get('logs')
   getLogs(@Query('limit') limit?: string) {
