@@ -1,6 +1,28 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Subscriber } from '../../subscribers/entities/subscriber.entity';
 import { Employee } from '../../employees/entities/employee.entity';
+
+export enum TicketPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical',
+}
+
+export enum TicketStatus {
+  OPEN = 'open',
+  IN_PROGRESS = 'in-progress',
+  RESOLVED = 'resolved',
+  CLOSED = 'closed',
+}
+
+export enum TicketType {
+  INTERNET = 'internet',
+  HARDWARE = 'hardware',
+  BILLING = 'billing',
+  ACCOUNT = 'account',
+  OTHER = 'other',
+}
 
 @Entity('tickets')
 export class Ticket {
@@ -13,16 +35,27 @@ export class Ticket {
   @Column('text')
   description: string;
 
-  @Column({ default: 'medium' })
-  priority: string; // low, medium, high, critical
+  @Column({ type: 'varchar', default: TicketPriority.MEDIUM })
+  priority: TicketPriority;
 
-  @Column({ default: 'open' })
-  status: string; // open, in-progress, resolved, closed
+  @Column({ type: 'varchar', default: TicketStatus.OPEN })
+  status: TicketStatus;
 
-  @ManyToOne(() => Subscriber, { nullable: true })
+  @Column({ type: 'varchar', default: TicketType.OTHER })
+  type: TicketType;
+
+  @Column({ nullable: true })
+  subscriberId: number;
+
+  @ManyToOne(() => Subscriber, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'subscriberId' })
   subscriber: Subscriber;
 
-  @ManyToOne(() => Employee, { nullable: true })
+  @Column({ nullable: true })
+  assignedToId: number;
+
+  @ManyToOne(() => Employee, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'assignedToId' })
   assignedTo: Employee;
 
   @CreateDateColumn()
@@ -30,6 +63,9 @@ export class Ticket {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ nullable: true, type: 'datetime' })
+  resolvedAt: Date;
 
   @Column('text', { nullable: true })
   notes: string;

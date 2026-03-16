@@ -1,6 +1,5 @@
-import { IsString, IsOptional, IsObject } from 'class-validator';
-import { Subscriber } from '../../subscribers/entities/subscriber.entity';
-import { Employee } from '../../employees/entities/employee.entity';
+import { IsString, IsOptional, IsNumber, IsIn } from 'class-validator';
+import { TicketPriority, TicketStatus, TicketType } from '../entities/ticket.entity';
 
 export class UpdateTicketDto {
   @IsString()
@@ -11,21 +10,25 @@ export class UpdateTicketDto {
   @IsOptional()
   description?: string;
 
-  @IsString()
+  @IsIn(Object.values(TicketPriority))
   @IsOptional()
-  priority?: string;
+  priority?: TicketPriority;
 
-  @IsString()
+  @IsIn(Object.values(TicketStatus))
   @IsOptional()
-  status?: string;
+  status?: TicketStatus;
 
-  @IsObject()
+  @IsIn(Object.values(TicketType))
   @IsOptional()
-  subscriber?: Subscriber;
+  type?: TicketType;
 
-  @IsObject()
+  @IsNumber()
   @IsOptional()
-  assignedTo?: Employee;
+  subscriberId?: number;
+
+  @IsNumber()
+  @IsOptional()
+  assignedToId?: number;
 
   @IsString()
   @IsOptional()

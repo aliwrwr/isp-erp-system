@@ -34,13 +34,17 @@ export class InvoicesService {
       return item;
     }));
 
+    const { items: _, ...rest } = createInvoiceDto as any;
     const invoice = this.invoicesRepository.create({
-      ...createInvoiceDto,
+      ...rest,
       invoiceNumber: `INV-${Date.now()}`,
       items,
+      paymentStatus: createInvoiceDto.paymentStatus || 'paid',
+      paidAmount: createInvoiceDto.paidAmount ?? createInvoiceDto.total,
     });
 
-    return this.invoicesRepository.save(invoice);
+    const saved = await this.invoicesRepository.save(invoice);
+    return Array.isArray(saved) ? saved[0] : saved;
   }
 
   findAll(): Promise<Invoice[]> {

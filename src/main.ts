@@ -16,7 +16,7 @@ async function bootstrap() {
       if (
         !origin ||
         /^http:\/\/localhost(:\d+)?$/.test(origin) ||
-        /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)[\d.]+(:\d+)?$/.test(origin)
+        /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)([\d.]+(:\d+)?)$/.test(origin)
       ) {
         callback(null, true);
       } else {

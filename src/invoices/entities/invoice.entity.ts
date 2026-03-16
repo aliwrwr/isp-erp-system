@@ -10,23 +10,41 @@ export class Invoice {
   @Column({ unique: true })
   invoiceNumber: string;
 
-  @ManyToOne(() => User, user => user.invoices)
+  @ManyToOne(() => User, user => user.invoices, { nullable: true })
   customer: User;
+
+  @Column({ nullable: true })
+  customerName: string;
+
+  @Column({ nullable: true })
+  customerPhone: string;
+
+  @Column({ nullable: true })
+  customerAddress: string;
 
   @OneToMany(() => InvoiceItem, item => item.invoice, { cascade: true })
   items: InvoiceItem[];
 
-  @Column('decimal', { precision: 8, scale: 2 })
+  @Column('decimal', { precision: 10, scale: 2 })
   total: number;
 
-  @Column('decimal', { precision: 8, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
   discount: number;
 
-  @Column('decimal', { precision: 8, scale: 2, default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
   tax: number;
 
-  @Column()
+  @Column({ default: 'cash' })
   paymentMethod: string;
+
+  @Column({ default: 'paid' })
+  paymentStatus: string;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  paidAmount: number;
+
+  @Column({ nullable: true })
+  notes: string;
 
   @CreateDateColumn()
   date: Date;

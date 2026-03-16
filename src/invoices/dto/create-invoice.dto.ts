@@ -1,6 +1,5 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, ValidateNested, IsObject } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { User } from '../../users/entities/user.entity';
 
 class InvoiceItemDto {
   @IsNumber()
@@ -17,9 +16,17 @@ class InvoiceItemDto {
 }
 
 export class CreateInvoiceDto {
-  @IsObject()
+  @IsString()
   @IsOptional()
-  customer?: User;
+  customerName?: string;
+
+  @IsString()
+  @IsOptional()
+  customerPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  customerAddress?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -41,4 +48,16 @@ export class CreateInvoiceDto {
   @IsString()
   @IsNotEmpty()
   paymentMethod: string;
+
+  @IsString()
+  @IsOptional()
+  paymentStatus?: string;
+
+  @IsNumber()
+  @IsOptional()
+  paidAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }

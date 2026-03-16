@@ -8,6 +8,7 @@
         <p class="text-sm text-gray-400 mt-0.5">إعدادات نظام الاشتراكات</p>
       </div>
       <button
+        v-if="activeTab === 'general'"
         @click="saveAll"
         :disabled="saving"
         class="flex items-center gap-2 bg-gradient-to-l from-indigo-600 to-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow hover:shadow-md transition disabled:opacity-60"
@@ -25,7 +26,26 @@
       </div>
     </transition>
 
-    <!-- Logo Upload - Full Width -->
+    <!-- Tabs -->
+    <div class="flex gap-1 bg-gray-100 p-1 rounded-2xl w-fit">
+      <button
+        v-for="tab in tabs"
+        :key="tab.key"
+        @click="activeTab = tab.key"
+        :class="[
+          'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition',
+          activeTab === tab.key
+            ? 'bg-white text-indigo-700 shadow-sm'
+            : 'text-gray-500 hover:text-gray-700'
+        ]"
+      >
+        <i :class="tab.icon"></i>
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- ===== GENERAL SETTINGS TAB ===== -->
+    <template v-if="activeTab === 'general'">
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div class="px-5 py-4 bg-gradient-to-l from-indigo-600 to-blue-500 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -233,15 +253,270 @@
       </div>
 
     </div>
+    </template>
+
+    <!-- ===== BACKUP TAB ===== -->
+    <template v-if="activeTab === 'backup'">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Manual Backup -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-5 py-4 bg-gradient-to-l from-emerald-600 to-teal-500 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              <i class="fas fa-download text-white text-sm"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm">النسخ الاحتياطي اليدوي</h3>
+          </div>
+          <div class="p-5 flex flex-col gap-4">
+            <div v-if="backupStatus" class="grid grid-cols-2 gap-3">
+              <div class="p-3 bg-gray-50 rounded-xl text-center">
+                <p class="text-xs text-gray-400 mb-1">حجم قاعدة البيانات</p>
+                <p class="text-base font-bold text-gray-700">{{ backupStatus.dbSizeKb }} KB</p>
+              </div>
+              <div class="p-3 bg-gray-50 rounded-xl text-center">
+                <p class="text-xs text-gray-400 mb-1">آخر تعديل</p>
+                <p class="text-xs font-semibold text-gray-700">{{ formatDate(backupStatus.dbModified) }}</p>
+              </div>
+            </div>
+            <p class="text-sm text-gray-500">تحميل نسخة احتياطية كاملة من قاعدة البيانات بصيغة <span class="font-mono text-indigo-600">.sqlite</span></p>
+            <button
+              @click="downloadWithAuth"
+              class="inline-flex items-center justify-center gap-2 bg-gradient-to-l from-emerald-600 to-teal-500 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow hover:shadow-md transition"
+            >
+              <i class="fas fa-download"></i>
+              تحميل نسخة احتياطية
+            </button>
+            <p class="text-xs text-gray-400">
+              <i class="fas fa-info-circle ml-1"></i>
+              احتفظ بالنسخة الاحتياطية في مكان آمن. يمكنك استخدامها لاستعادة البيانات عند الحاجة.
+            </p>
+          </div>
+        </div>
+
+        <!-- Restore Backup -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="px-5 py-4 bg-gradient-to-l from-orange-500 to-amber-500 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              <i class="fas fa-upload text-white text-sm"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm">استعادة نسخة احتياطية</h3>
+          </div>
+          <div class="p-5 flex flex-col gap-4">
+            <div class="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+              <i class="fas fa-exclamation-triangle mt-0.5 flex-shrink-0"></i>
+              <span>تحذير: ستؤدي الاستعادة إلى <strong>استبدال جميع البيانات الحالية</strong> بالبيانات الموجودة في الملف المختار. هذه العملية لا يمكن التراجع عنها.</span>
+            </div>
+            <div
+              class="border-2 border-dashed rounded-xl p-6 text-center transition cursor-pointer"
+              :class="restoreFile ? 'border-orange-400 bg-orange-50' : 'border-gray-200 bg-gray-50 hover:border-orange-300'"
+              @click="restoreInput?.click()"
+              @dragover.prevent
+              @drop.prevent="onRestoreDrop"
+            >
+              <i class="fas fa-database text-3xl mb-2" :class="restoreFile ? 'text-orange-500' : 'text-gray-300'"></i>
+              <p v-if="!restoreFile" class="text-sm text-gray-400">اضغط أو اسحب ملف <span class="font-mono font-semibold">.sqlite</span> هنا</p>
+              <p v-else class="text-sm font-semibold text-orange-700">{{ restoreFile.name }}</p>
+              <p v-if="restoreFile" class="text-xs text-gray-400 mt-1">{{ (restoreFile.size / 1024).toFixed(0) }} KB</p>
+              <input ref="restoreInput" type="file" accept=".sqlite" class="hidden" @change="onRestoreFileChange" />
+            </div>
+            <button
+              :disabled="!restoreFile || restoring"
+              @click="confirmRestore"
+              class="inline-flex items-center justify-center gap-2 bg-gradient-to-l from-orange-500 to-amber-500 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <i class="fas fa-upload"></i>
+              {{ restoring ? 'جاري الاستعادة...' : 'استعادة البيانات' }}
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Google Drive Auto Backup -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-5 py-4 bg-gradient-to-l from-blue-600 to-indigo-600 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+              <i class="fab fa-google-drive text-white text-sm"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm">النسخ التلقائي على Google Drive</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <span v-if="backupStatus?.enabled" class="text-xs bg-green-400/30 text-green-100 border border-green-300/40 px-2.5 py-1 rounded-full font-semibold">
+              <i class="fas fa-circle text-xs ml-1"></i>مُفعَّل — كل 6 ساعات
+            </span>
+            <span v-else-if="backupStatus?.configured" class="text-xs bg-yellow-400/30 text-yellow-100 border border-yellow-300/40 px-2.5 py-1 rounded-full font-semibold">
+              <i class="fas fa-pause-circle text-xs ml-1"></i>متصل — غير مُفعَّل
+            </span>
+            <span v-else class="text-xs bg-white/20 text-white border border-white/30 px-2.5 py-1 rounded-full">
+              <i class="fas fa-times-circle text-xs ml-1"></i>غير متصل
+            </span>
+          </div>
+        </div>
+        <div class="p-6 flex flex-col gap-6">
+
+          <div v-if="backupStatus?.configured" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="p-3 bg-gray-50 rounded-xl">
+              <p class="text-xs text-gray-400 mb-1">الحالة</p>
+              <p class="text-sm font-semibold" :class="backupStatus.enabled ? 'text-green-600' : 'text-gray-500'">
+                {{ backupStatus.enabled ? 'تلقائي نشط' : 'تلقائي موقوف' }}
+              </p>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-xl">
+              <p class="text-xs text-gray-400 mb-1">آخر نسخة</p>
+              <p class="text-xs font-semibold text-gray-700">{{ formatDate(backupStatus.lastBackup) || '—' }}</p>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-xl" v-if="backupStatus.lastError">
+              <p class="text-xs text-gray-400 mb-1">آخر خطأ</p>
+              <p class="text-xs text-red-600 truncate" :title="backupStatus.lastError">{{ backupStatus.lastError }}</p>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 flex flex-col gap-2">
+            <p class="font-semibold flex items-center gap-2"><i class="fas fa-info-circle"></i>كيفية الإعداد:</p>
+            <ol class="list-decimal list-inside flex flex-col gap-1 text-xs leading-relaxed">
+              <li>افتح <strong>Google Cloud Console</strong> وأنشئ مشروعاً جديداً</li>
+              <li>فعّل <strong>Google Drive API</strong> من قائمة APIs &amp; Services</li>
+              <li>أنشئ <strong>Service Account</strong> وانزل ملف JSON الخاص به</li>
+              <li>في Google Drive، أنشئ مجلداً وشاركه مع البريد الإلكتروني لـ Service Account</li>
+              <li>انسخ معرّف المجلد من رابط Drive وأدخله أدناه</li>
+            </ol>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1.5">
+                  ملف Service Account (JSON) <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  v-model="driveForm.serviceAccountJson"
+                  rows="8"
+                  placeholder='{ "type": "service_account", "project_id": "...", "private_key": "...", "client_email": "..." }'
+                  dir="ltr"
+                  class="w-full px-3 py-2.5 text-xs font-mono border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition resize-none bg-gray-50"
+                ></textarea>
+                <label class="mt-2 cursor-pointer inline-flex items-center gap-2 text-xs text-indigo-600 hover:text-indigo-800 font-semibold">
+                  <i class="fas fa-file-import"></i>
+                  أو اختر ملف JSON مباشرة
+                  <input type="file" accept=".json" @change="onServiceAccountFile" class="hidden" />
+                </label>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1.5">معرّف مجلد Drive (اختياري)</label>
+                <input
+                  v-model="driveForm.folderId"
+                  type="text"
+                  placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs"
+                  dir="ltr"
+                  class="w-full px-3 py-2.5 text-sm font-mono border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition"
+                />
+                <p class="text-xs text-gray-400 mt-1">آخر جزء من رابط المجلد على Drive. إذا تُرك فارغاً يُحفظ في My Drive.</p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                  <p class="text-sm font-semibold text-gray-700">نسخ تلقائي كل 6 ساعات</p>
+                  <p class="text-xs text-gray-400 mt-0.5">يرفع نسخة احتياطية تلقائياً إلى Drive</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" v-model="driveForm.enabled" class="sr-only peer" />
+                  <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+
+              <button
+                @click="saveDriveConfig"
+                :disabled="savingDrive || !driveForm.serviceAccountJson.trim()"
+                class="flex items-center justify-center gap-2 bg-gradient-to-l from-blue-600 to-indigo-600 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow hover:shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <i class="fas fa-save"></i>
+                {{ savingDrive ? 'جاري الحفظ...' : 'حفظ إعدادات Drive' }}
+              </button>
+
+              <button
+                v-if="backupStatus?.configured"
+                @click="backupNow"
+                :disabled="backingUpNow"
+                class="flex items-center justify-center gap-2 bg-gradient-to-l from-green-600 to-emerald-500 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow hover:shadow-md transition disabled:opacity-50"
+              >
+                <i :class="backingUpNow ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-upload-alt'"></i>
+                {{ backingUpNow ? 'جاري الرفع...' : 'نسخ الآن على Drive' }}
+              </button>
+
+              <button
+                v-if="backupStatus?.configured"
+                @click="disableDrive"
+                class="flex items-center justify-center gap-2 bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-200 px-5 py-2.5 rounded-xl text-sm font-semibold transition"
+              >
+                <i class="fas fa-unlink"></i>
+                إلغاء ربط Drive
+              </button>
+            </div>
+          </div>
+
+          <transition name="fade">
+            <div v-if="driveMessage" :class="[
+              'flex items-center gap-2 px-4 py-3 rounded-xl text-sm',
+              driveMessage.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
+            ]">
+              <i :class="driveMessage.type === 'success' ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+              {{ driveMessage.text }}
+            </div>
+          </transition>
+
+        </div>
+      </div>
+    </template>
+
+    <!-- Confirm Restore Dialog -->
+    <transition name="fade">
+      <div v-if="showRestoreConfirm" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 flex flex-col gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-800">تأكيد الاستعادة</h3>
+              <p class="text-sm text-gray-500">هذا الإجراء لا يمكن التراجع عنه</p>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">
+            سيتم استبدال <strong>جميع البيانات الحالية</strong> بمحتوى الملف:
+            <br /><span class="font-mono text-indigo-700 text-xs">{{ restoreFile?.name }}</span>
+            <br /><br />هل أنت متأكد من المتابعة؟
+          </p>
+          <div class="flex gap-3 justify-end">
+            <button @click="showRestoreConfirm = false" class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
+              إلغاء
+            </button>
+            <button @click="doRestore" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition">
+              نعم، استعادة البيانات
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import api from '../../api/index';
 
 const saving = ref(false);
 const savedNotice = ref(false);
 const logoPreview = ref<string | null>(null);
+const activeTab = ref<'general' | 'backup'>('general');
+
+const tabs = [
+  { key: 'general', label: 'الإعدادات العامة', icon: 'fas fa-cog' },
+  { key: 'backup', label: 'النسخ الاحتياطي', icon: 'fas fa-database' },
+];
 
 const LOGO_KEY = 'isp_internet_logo';
 const STORAGE_KEY = 'isp_internet_settings';
@@ -263,12 +538,163 @@ const settings = ref({
   showExpired: true,
 });
 
+// ── Backup tab state ──────────────────────────────────────────
+const backupStatus = ref<any>(null);
+const restoreFile = ref<File | null>(null);
+const restoreInput = ref<HTMLInputElement | null>(null);
+const restoring = ref(false);
+const showRestoreConfirm = ref(false);
+const backingUpNow = ref(false);
+const savingDrive = ref(false);
+const driveMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null);
+
+const driveForm = ref({
+  serviceAccountJson: '',
+  folderId: '',
+  enabled: false,
+});
+
+const today = new Date().toISOString().slice(0, 10);
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('ar-IQ', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+async function loadBackupStatus() {
+  try {
+    const { data } = await api.get('/backup/gdrive-status');
+    backupStatus.value = data;
+    if (data.configured) {
+      driveForm.value.enabled = data.enabled;
+      driveForm.value.folderId = data.folderId || '';
+    }
+  } catch {}
+}
+
+function downloadWithAuth() {
+  api.get('/backup/download', { responseType: 'blob' }).then(({ data }) => {
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `isp-erp-backup-${today}.sqlite`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }).catch(() => alert('فشل في تحميل النسخة الاحتياطية'));
+}
+
+function onRestoreFileChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (file) restoreFile.value = file;
+}
+
+function onRestoreDrop(e: DragEvent) {
+  const file = e.dataTransfer?.files?.[0];
+  if (file && file.name.toLowerCase().endsWith('.sqlite')) restoreFile.value = file;
+}
+
+function confirmRestore() {
+  showRestoreConfirm.value = true;
+}
+
+async function doRestore() {
+  showRestoreConfirm.value = false;
+  if (!restoreFile.value) return;
+  restoring.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', restoreFile.value);
+    await api.post('/backup/restore', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    alert('تم استعادة النسخة الاحتياطية بنجاح. سيتم إعادة تحميل الصفحة.');
+    window.location.reload();
+  } catch (e: any) {
+    alert('فشل في الاستعادة: ' + (e.response?.data?.message || e.message));
+  } finally {
+    restoring.value = false;
+    restoreFile.value = null;
+  }
+}
+
+function onServiceAccountFile(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    driveForm.value.serviceAccountJson = reader.result as string;
+  };
+  reader.readAsText(file);
+}
+
+async function saveDriveConfig() {
+  savingDrive.value = true;
+  driveMessage.value = null;
+  try {
+    await api.post('/backup/gdrive-config', {
+      serviceAccountJson: driveForm.value.serviceAccountJson.trim(),
+      folderId: driveForm.value.folderId.trim(),
+      enabled: driveForm.value.enabled,
+    });
+    await loadBackupStatus();
+    driveMessage.value = { type: 'success', text: 'تم حفظ إعدادات Google Drive بنجاح' };
+  } catch (e: any) {
+    driveMessage.value = { type: 'error', text: e.response?.data?.message || 'فشل في حفظ الإعدادات' };
+  } finally {
+    savingDrive.value = false;
+    setTimeout(() => { driveMessage.value = null; }, 5000);
+  }
+}
+
+async function backupNow() {
+  backingUpNow.value = true;
+  driveMessage.value = null;
+  try {
+    const { data } = await api.post('/backup/gdrive-now');
+    if (data.success) {
+      await loadBackupStatus();
+      driveMessage.value = { type: 'success', text: 'تم رفع النسخة الاحتياطية على Google Drive بنجاح ✓' };
+    } else {
+      driveMessage.value = { type: 'error', text: 'فشل الرفع: ' + data.error };
+    }
+  } catch (e: any) {
+    driveMessage.value = { type: 'error', text: e.response?.data?.message || 'فشل في الاتصال بـ Google Drive' };
+  } finally {
+    backingUpNow.value = false;
+    setTimeout(() => { driveMessage.value = null; }, 6000);
+  }
+}
+
+async function disableDrive() {
+  if (!confirm('هل تريد إلغاء ربط Google Drive وحذف إعدادات الحساب؟')) return;
+  try {
+    await api.post('/backup/gdrive-disable');
+    driveForm.value.serviceAccountJson = '';
+    driveForm.value.folderId = '';
+    driveForm.value.enabled = false;
+    await loadBackupStatus();
+    driveMessage.value = { type: 'success', text: 'تم إلغاء ربط Google Drive' };
+    setTimeout(() => { driveMessage.value = null; }, 4000);
+  } catch {}
+}
+
+// ── General settings ──────────────────────────────────────────
 onMounted(() => {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try { Object.assign(settings.value, JSON.parse(saved)); } catch {}
   }
   logoPreview.value = localStorage.getItem(LOGO_KEY) || null;
+  loadBackupStatus();
 });
 
 function onLogoChange(e: Event) {

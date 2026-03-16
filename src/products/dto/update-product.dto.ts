@@ -1,5 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsObject } from 'class-validator';
-import { Category } from '../../categories/entities/category.entity';
+import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class UpdateProductDto {
   @IsString()
@@ -22,9 +21,9 @@ export class UpdateProductDto {
   @IsOptional()
   barcode?: string;
 
-  @IsObject()
+  @IsNumber()
   @IsOptional()
-  category?: Category;
+  categoryId?: number;
 
   @IsString()
   @IsOptional()
