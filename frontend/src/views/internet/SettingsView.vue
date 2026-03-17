@@ -501,6 +501,74 @@
       </div>
     </transition>
 
+    <!-- ===== UPDATE TAB ===== -->
+    <template v-if="activeTab === 'update'">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Trigger card -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <i class="fas fa-sync-alt text-indigo-500"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-800">تحديث النظام</h3>
+              <p class="text-xs text-gray-400">جلب آخر الإصدارات من GitHub وإعادة تشغيل الخدمات</p>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-xl p-4 text-xs text-gray-500 space-y-1 font-mono">
+            <p><span class="text-gray-400">الحالة:</span>
+              <span :class="updateRunning ? 'text-amber-600 font-bold' : 'text-emerald-600 font-bold'">
+                {{ updateRunning ? 'جار التحديث...' : 'جاهز' }}
+              </span>
+            </p>
+            <p v-if="updateStartedAt"><span class="text-gray-400">بدأ في:</span> {{ updateStartedAt }}</p>
+          </div>
+
+          <button @click="triggerUpdate" :disabled="updateRunning"
+            class="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition"
+            :class="updateRunning
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200'">
+            <i class="fas" :class="updateRunning ? 'fa-spinner fa-spin' : 'fa-rocket'"></i>
+            {{ updateRunning ? 'جار التحديث...' : 'تحديث النظام الآن' }}
+          </button>
+
+          <button @click="fetchUpdateLog" :disabled="updateRunning"
+            class="w-full py-2.5 rounded-xl font-semibold text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-2">
+            <i class="fas fa-file-alt text-gray-400"></i>
+            تحديث السجل
+          </button>
+
+          <div v-if="updateMsg" class="rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2"
+            :class="updateError ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'">
+            <i class="fas" :class="updateError ? 'fa-times-circle' : 'fa-check-circle'"></i>
+            {{ updateMsg }}
+          </div>
+        </div>
+
+        <!-- Log card -->
+        <div class="bg-gray-900 rounded-2xl border border-gray-700 shadow-sm p-5 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-gray-200 text-sm flex items-center gap-2">
+              <i class="fas fa-terminal text-green-400"></i>
+              سجل التحديث
+            </h3>
+            <button @click="updateLog = ''" class="text-gray-500 hover:text-gray-300 text-xs transition">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+          <div ref="logBox"
+            class="flex-1 overflow-y-auto text-xs font-mono text-green-300 whitespace-pre-wrap leading-relaxed bg-black/30 rounded-xl p-3 min-h-[260px] max-h-[420px]">
+            <span v-if="!updateLog" class="text-gray-600">لا يوجد سجل بعد — اضغط "تحديث النظام الآن" للبدء</span>
+            <span v-else>{{ updateLog }}</span>
+          </div>
+        </div>
+
+      </div>
+    </template>
+
   </div>
 </template>
 
@@ -511,12 +579,63 @@ import api from '../../api/index';
 const saving = ref(false);
 const savedNotice = ref(false);
 const logoPreview = ref<string | null>(null);
-const activeTab = ref<'general' | 'backup'>('general');
+const activeTab = ref<'general' | 'backup' | 'update'>('general');
 
 const tabs = [
   { key: 'general', label: 'الإعدادات العامة', icon: 'fas fa-cog' },
   { key: 'backup', label: 'النسخ الاحتياطي', icon: 'fas fa-database' },
+  { key: 'update', label: 'تحديث النظام', icon: 'fas fa-sync-alt' },
 ];
+
+// ── System update ──────────────────────────────────────────────────
+const updateRunning   = ref(false);
+const updateMsg       = ref('');
+const updateError     = ref(false);
+const updateLog       = ref('');
+const updateStartedAt = ref('');
+const logBox          = ref<HTMLElement | null>(null);
+let   pollInterval: ReturnType<typeof setInterval> | null = null;
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+async function fetchUpdateLog() {
+  try {
+    const res = await api.get('/deploy/admin/logs');
+    updateLog.value = res.data.log || '';
+    // Auto-scroll to bottom
+    await new Promise(r => setTimeout(r, 50));
+    if (logBox.value) logBox.value.scrollTop = logBox.value.scrollHeight;
+    // If log contains a "done" marker, stop polling
+    if (/اكتمل|تم التحديث|✓.*انتهى|error|failed|خطأ/i.test(updateLog.value)) {
+      updateRunning.value = false;
+      stopPolling();
+    }
+  } catch {}
+}
+
+async function triggerUpdate() {
+  if (updateRunning.value) return;
+  if (!confirm('هل أنت متأكد من تحديث النظام الآن؟\nسيتم إعادة تشغيل الخادم لبضع ثواني.')) return;
+  updateRunning.value  = true;
+  updateMsg.value      = '';
+  updateError.value    = false;
+  updateLog.value      = '';
+  updateStartedAt.value = new Date().toLocaleTimeString('ar-IQ');
+  try {
+    const res = await api.post('/deploy/admin');
+    updateMsg.value = res.data.message || 'بدأ التحديث';
+    // Poll log every 3 seconds
+    pollInterval = setInterval(fetchUpdateLog, 3000);
+    // Auto-stop after 5 minutes
+    setTimeout(() => { updateRunning.value = false; stopPolling(); }, 300_000);
+  } catch (e: any) {
+    updateRunning.value = false;
+    updateMsg.value = e?.response?.data?.message || 'فشل التحديث';
+    updateError.value = true;
+  }
+}
 
 const LOGO_KEY = 'isp_internet_logo';
 const STORAGE_KEY = 'isp_internet_settings';
