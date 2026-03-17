@@ -44,13 +44,45 @@
       <!-- ─── Invoice Meta ─── -->
       <div class="px-8 py-5 border-b border-gray-100 bg-gray-50/50">
         <div class="grid grid-cols-3 gap-4">
-          <!-- Customer Name -->
-          <div>
+          <!-- Customer Name (Autocomplete) -->
+          <div class="relative">
             <label class="text-xs font-bold text-gray-500 mb-1.5 block">
               اسم العميل <span class="text-red-400">*</span>
             </label>
-            <input v-model="customer.name" placeholder="أدخل اسم العميل"
-              class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition" />
+            <div class="relative">
+              <input
+                v-model="customer.name"
+                @input="onCustomerInput"
+                @focus="onCustomerInput"
+                @blur="hideCustomerSuggestions"
+                @keydown.down.prevent="customerSuggestIdx = Math.min(customerSuggestIdx + 1, customerSuggestions.length - 1)"
+                @keydown.up.prevent="customerSuggestIdx = Math.max(customerSuggestIdx - 1, 0)"
+                @keydown.enter.prevent="customerSuggestIdx >= 0 && pickCustomer(customerSuggestions[customerSuggestIdx])"
+                @keydown.escape="customerSuggestions = []"
+                placeholder="أدخل اسم العميل"
+                autocomplete="off"
+                class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition" />
+              <i v-if="customer.name" @mousedown.prevent="clearCustomer"
+                class="fas fa-times absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 cursor-pointer text-xs"></i>
+            </div>
+            <!-- Suggestions dropdown -->
+            <div v-if="customerSuggestions.length > 0"
+              class="absolute z-50 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+              <div
+                v-for="(s, idx) in customerSuggestions" :key="s.id"
+                @mousedown.prevent="pickCustomer(s)"
+                class="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition text-sm"
+                :class="customerSuggestIdx === idx ? 'bg-indigo-50' : 'hover:bg-gray-50'">
+                <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  {{ s.name[0] }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-secondary text-xs">{{ s.name }}</p>
+                  <p v-if="s.phone" class="text-[10px] text-gray-400 font-mono">{{ s.phone }}</p>
+                  <p v-if="s.address" class="text-[10px] text-gray-300 truncate">{{ s.address }}</p>
+                </div>
+              </div>
+            </div>
           </div>
           <!-- Invoice Date -->
           <div>
@@ -523,6 +555,33 @@ const invoiceDate = ref(today);
 const dueDate = ref(today);
 const customer = ref({ name: '', phone: '', address: '' });
 const notes = ref('شكراً للتعامل معنا');
+
+// ─── Customer Autocomplete ────────────────────────────────────
+const allCustomers = ref<any[]>([]);
+const customerSuggestions = ref<any[]>([]);
+const customerSuggestIdx = ref(-1);
+
+function onCustomerInput() {
+  const q = customer.value.name.trim().toLowerCase();
+  customerSuggestIdx.value = -1;
+  if (!q) { customerSuggestions.value = []; return; }
+  customerSuggestions.value = allCustomers.value
+    .filter(c => c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)))
+    .slice(0, 7);
+}
+function pickCustomer(c: any) {
+  customer.value.name    = c.name;
+  customer.value.phone   = c.phone   || '';
+  customer.value.address = c.address || '';
+  customerSuggestions.value = [];
+}
+function clearCustomer() {
+  customer.value = { name: '', phone: '', address: '' };
+  customerSuggestions.value = [];
+}
+function hideCustomerSuggestions() {
+  setTimeout(() => { customerSuggestions.value = []; }, 150);
+}
 const paymentMethod = ref('cash');
 const paidAmount = ref(0);
 const taxPercent = ref(0);
@@ -814,9 +873,14 @@ onMounted(async () => {
   } catch {}
   addRow();
   try {
-    const [prodRes, catRes] = await Promise.all([api.get('/products'), api.get('/categories')]);
+    const [prodRes, catRes, custRes] = await Promise.all([
+      api.get('/products'),
+      api.get('/categories'),
+      api.get('/sales-customers'),
+    ]);
     productsData.value = prodRes.data;
     categoriesData.value = catRes.data;
+    allCustomers.value = custRes.data;
   } catch {}
 });
 </script>
