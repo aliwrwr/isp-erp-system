@@ -59,13 +59,14 @@ Write-Host "Done." -ForegroundColor Green
 # Step 2: Install backend packages
 Write-Host ""
 Write-Host "[2/5] Installing backend packages..." -ForegroundColor Yellow
-npm install
+npm install --include=dev
 Write-Host "Done." -ForegroundColor Green
 
 # Step 3: Build backend
 Write-Host ""
 Write-Host "[3/5] Building backend..." -ForegroundColor Yellow
-npm run build
+# Use npx to ensure local nest CLI is found even without global install
+npx nest build
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Backend build failed!" -ForegroundColor Red
     exit 1
