@@ -636,9 +636,9 @@ const remaining = computed(() => grandTotal.value - (paidAmount.value || 0));
 const saving = ref(false);
 const toastMsg = ref('');
 
-function clearAll() {
-  if (cart.value.length === 0 && !customer.value.name) return;
-  if (!confirm('هل تريد مسح جميع بيانات الفاتورة؟')) return;
+function clearAll(silent = false) {
+  if (!silent && cart.value.length === 0 && !customer.value.name) return;
+  if (!silent && !confirm('هل تريد مسح جميع بيانات الفاتورة؟')) return;
   cart.value = [];
   customer.value = { name: '', phone: '', address: '' };
   notes.value = 'شكراً للتعامل معنا';
@@ -683,7 +683,7 @@ async function checkout() {
     const { data } = await api.get('/products');
     productsData.value = data;
 
-    clearAll();
+    clearAll(true);
     showToast('✓ تم حفظ الفاتورة بنجاح');
   } catch (e: any) {
     alert(e?.response?.data?.message || 'حدث خطأ أثناء حفظ الفاتورة');
