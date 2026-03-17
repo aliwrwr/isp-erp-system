@@ -15,6 +15,7 @@ import { SalesModule } from './sales/sales.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { SalesCustomersModule } from './sales-customers/sales-customers.module';
 import { EmployeesModule } from './employees/employees.module';
@@ -54,6 +55,7 @@ import config from './config/config';
     InventoryModule,
     CategoriesModule,
     ProductsModule,
+    SuppliersModule,
     InvoicesModule,
     SalesCustomersModule,
     DepartmentsModule,

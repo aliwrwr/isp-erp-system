@@ -272,6 +272,7 @@ const permissionGroups = [
       { value: 'sales.invoices', label: 'الفواتير' },
       { value: 'sales.expenses', label: 'المصروفات' },
       { value: 'sales.inventory', label: 'المخزون' },
+      { value: 'sales.suppliers', label: 'الموردين' },
     ],
   },
   {

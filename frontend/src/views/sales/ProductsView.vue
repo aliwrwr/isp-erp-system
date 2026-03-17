@@ -307,6 +307,16 @@
               </div>
             </div>
 
+            <!-- المورد -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">المورّد <span class="text-gray-300 font-normal">(اختياري)</span></label>
+              <select v-model="form.supplier"
+                class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sales bg-gray-50 focus:bg-white transition text-gray-600">
+                <option value="">بدون مورد</option>
+                <option v-for="s in suppliers" :key="s.id" :value="s.name">{{ s.name }}</option>
+              </select>
+            </div>
+
             <!-- الوصف -->
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1.5">وصف المنتج <span class="text-gray-300 font-normal">(اختياري)</span></label>
@@ -350,6 +360,8 @@ const selectedIds = ref<Set<number>>(new Set());
 const currentPage = ref(1);
 const pageSize = ref(10);
 
+const suppliers = ref<any[]>([]);
+
 const form = ref({
   name: '',
   price: 0,
@@ -357,6 +369,7 @@ const form = ref({
   barcode: '',
   stock: 0,
   categoryId: '' as number | '',
+  supplier: '',
   description: '',
 });
 
@@ -412,16 +425,17 @@ function profit(p: any) {
 
 async function loadData() {
   try {
-    const [prodRes, catRes] = await Promise.all([api.get('/products'), api.get('/categories')]);
+    const [prodRes, catRes, supRes] = await Promise.all([api.get('/products'), api.get('/categories'), api.get('/suppliers')]);
     products.value = prodRes.data;
     categories.value = catRes.data;
+    suppliers.value = supRes.data;
   } catch {}
 }
 
 function openAdd() {
   editingId.value = null;
   formError.value = false;
-  form.value = { name: '', price: 0, cost: 0, barcode: '', stock: 0, categoryId: '', description: '' };
+  form.value = { name: '', price: 0, cost: 0, barcode: '', stock: 0, categoryId: '', supplier: '', description: '' };
   showModal.value = true;
 }
 
@@ -435,6 +449,7 @@ function openEdit(p: any) {
     barcode: p.barcode || '',
     stock: p.stock,
     categoryId: p.category?.id || '',
+    supplier: p.supplier || '',
     description: p.description || '',
   };
   showModal.value = true;
@@ -618,6 +633,7 @@ async function save() {
     if (form.value.barcode) payload.barcode = form.value.barcode;
     if (form.value.description) payload.description = form.value.description;
     if (form.value.categoryId) payload.categoryId = Number(form.value.categoryId);
+    if (form.value.supplier) payload.supplier = form.value.supplier;
 
     if (editingId.value) {
       await api.patch(`/products/${editingId.value}`, payload);

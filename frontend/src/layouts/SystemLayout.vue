@@ -116,6 +116,7 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'الصندوق', icon: 'fas fa-cash-register', route: '/sales/cashbox' },
     { label: 'المصروفات', icon: 'fas fa-hand-holding-usd', route: '/sales/expenses' },
     { label: 'المخزون', icon: 'fas fa-warehouse', route: '/sales/inventory' },
+    { label: 'الموردين', icon: 'fas fa-truck', route: '/sales/suppliers' },
   ],
   hr: [
     { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/hr' },
@@ -178,6 +179,7 @@ const routePermissions: Record<string, string> = {
   '/sales/cashbox': 'sales.expenses',
   '/sales/expenses': 'sales.expenses',
   '/sales/inventory': 'sales.inventory',
+  '/sales/suppliers': 'sales.suppliers',
   '/hr/employees': 'hr.employees',
   '/hr/departments': 'hr.departments',
   '/hr/attendance': 'hr.attendance',
