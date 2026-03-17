@@ -3,8 +3,12 @@ import { Type } from 'class-transformer';
 
 class InvoiceItemDto {
   @IsNumber()
-  @IsNotEmpty()
-  productId: number;
+  @IsOptional()
+  productId?: number;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
 
   @IsNumber()
   @IsNotEmpty()

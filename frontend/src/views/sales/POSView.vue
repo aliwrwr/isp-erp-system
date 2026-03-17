@@ -669,7 +669,7 @@ async function checkout() {
       customerName: customer.value.name || undefined,
       customerPhone: customer.value.phone || undefined,
       customerAddress: customer.value.address || undefined,
-      items: validRows.map(i => ({ productId: i.id || undefined, quantity: i.qty, price: i.price, name: i.name })),
+      items: validRows.map(i => ({ ...(i.id ? { productId: i.id } : {}), name: i.name, quantity: i.qty, price: i.price })),
       total: grandTotal.value,
       discount: totalDiscountAmount.value + globalDiscountAmount.value,
       tax: taxAmount.value,
