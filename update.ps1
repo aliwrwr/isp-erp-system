@@ -62,21 +62,11 @@ Write-Host "[2/3] Installing backend packages..." -ForegroundColor Yellow
 npm install --omit=dev
 Write-Host "Done." -ForegroundColor Green
 
-# Step 3: Restart services
+# Step 3: Restart services (reload from ecosystem config so env vars are refreshed)
 Write-Host ""
 Write-Host "[3/3] Restarting services..." -ForegroundColor Yellow
 Set-Location $projectPath
-$pm2Output = pm2 list 2>$null | Out-String
-if ($pm2Output -match "online|stopped|errored") {
-    pm2 restart all
-} elseif (Test-Path "$projectPath\ecosystem.config.js") {
-    pm2 start ecosystem.config.js
-} else {
-    pm2 start dist/main.js --name isp-backend
-    Set-Location $frontendPath
-    pm2 start "npx serve dist -s -l 5173" --name isp-frontend
-    Set-Location $projectPath
-}
+pm2 reload ecosystem.config.js --update-env
 pm2 save
 Write-Host "Done." -ForegroundColor Green
 

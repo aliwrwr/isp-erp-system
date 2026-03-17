@@ -16,7 +16,7 @@ import { EmployeesModule } from '../employees/employees.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.get<string>('JWT_SECRET', 'isp-erp-secret-2026'),
         signOptions: { expiresIn: '3600s' },
       }),
       inject: [ConfigService],

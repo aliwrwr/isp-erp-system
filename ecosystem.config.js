@@ -22,8 +22,7 @@ module.exports = {
       max_restarts: 10,
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
-      },
+        PORT: 3000,        JWT_SECRET: 'isp-erp-secret-2026',      },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
