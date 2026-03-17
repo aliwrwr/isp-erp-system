@@ -74,6 +74,7 @@ const routes = [
       { path: '', name: 'SalesDashboard', component: () => import('../views/sales/DashboardView.vue') },
       { path: 'pos', name: 'POS', component: () => import('../views/sales/POSView.vue') },
       { path: 'products', name: 'Products', component: () => import('../views/sales/ProductsView.vue') },
+      { path: 'customers', name: 'SalesCustomers', component: () => import('../views/sales/CustomersView.vue') },
       { path: 'categories', name: 'Categories', component: () => import('../views/sales/CategoriesView.vue') },
       { path: 'invoices', name: 'Invoices', component: () => import('../views/sales/InvoicesView.vue') },
       { path: 'cashbox', name: 'Cashbox', component: () => import('../views/sales/CashboxView.vue') },
