@@ -178,20 +178,24 @@
               <td class="px-3 py-2 relative">
                 <div class="relative">
                   <input
+                    :id="`item-${i}-0`"
                     v-model="item.searchQuery"
                     @input="onItemSearch(i, item.searchQuery)"
                     @focus="activeSearchRow = i; onItemSearch(i, item.searchQuery)"
                     @blur="closeSearch(i)"
+                    @keydown="cellKeydown($event, i, 0)"
                     :placeholder="item.name || 'ابحث بالاسم أو الباركود...'"
+                    autocomplete="off"
                     class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50 focus:bg-white transition"
                   />
                   <!-- Search dropdown -->
                   <div v-if="activeSearchRow === i && itemSuggestions.length > 0"
                     class="absolute top-full right-0 left-0 z-50 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
                     <button
-                      v-for="prod in itemSuggestions" :key="prod.id"
+                      v-for="(prod, pidx) in itemSuggestions" :key="prod.id"
                       @mousedown.prevent="selectProduct(i, prod)"
-                      class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 text-right transition border-b border-gray-50 last:border-0">
+                      class="w-full flex items-center gap-3 px-3 py-2.5 text-right transition border-b border-gray-50 last:border-0"
+                      :class="itemSuggestIdx === pidx ? 'bg-indigo-100' : 'hover:bg-indigo-50'">
                       <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-box text-indigo-500 text-xs"></i>
                       </div>
@@ -207,6 +211,8 @@
               <!-- Unit -->
               <td class="px-3 py-2">
                 <input v-model="item.unit"
+                  :id="`item-${i}-1`"
+                  @keydown="cellKeydown($event, i, 1)"
                   class="w-full text-center px-2 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50 focus:bg-white transition" />
               </td>
               <!-- Qty -->
@@ -217,6 +223,8 @@
                     <i class="fas fa-minus"></i>
                   </button>
                   <input v-model.number="item.qty" type="number" min="1"
+                    :id="`item-${i}-2`"
+                    @keydown="cellKeydown($event, i, 2)"
                     class="w-10 text-center text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 py-1"
                     @focus="($event.target as HTMLInputElement).select()" />
                   <button @click="item.qty++"
@@ -228,12 +236,16 @@
               <!-- Price -->
               <td class="px-3 py-2">
                 <input v-model.number="item.price" type="number" min="0"
+                  :id="`item-${i}-3`"
+                  @keydown="cellKeydown($event, i, 3)"
                   class="w-full text-center px-2 py-2 border border-gray-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50 focus:bg-white transition"
                   @focus="($event.target as HTMLInputElement).select()" />
               </td>
               <!-- Discount % -->
               <td class="px-3 py-2">
                 <input v-model.number="item.discountPct" type="number" min="0" max="100" placeholder="."
+                  :id="`item-${i}-4`"
+                  @keydown="cellKeydown($event, i, 4)"
                   class="w-full text-center px-2 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50 focus:bg-white transition"
                   @focus="($event.target as HTMLInputElement).select()" />
               </td>
@@ -262,10 +274,11 @@
         </table>
 
         <!-- Add Row Button -->
-        <button @click="addRow"
+        <button @click="addRowAndFocus"
           class="mt-3 flex items-center gap-2 text-indigo-600 hover:text-indigo-700 text-sm font-semibold hover:bg-indigo-50 px-4 py-2 rounded-xl transition">
           <i class="fas fa-plus-circle"></i>
           إضافة سطر
+          <span class="text-[10px] text-gray-300 font-mono mr-1">F5</span>
         </button>
       </div>
 
@@ -335,11 +348,13 @@
             <i v-if="saving" class="fas fa-spinner fa-spin"></i>
             <i v-else class="fas fa-save"></i>
             {{ saving ? 'جاري الحفظ...' : 'حفظ الفاتورة' }}
+            <span class="mr-1 text-[10px] opacity-60 bg-black/10 px-1.5 py-0.5 rounded font-mono">F9</span>
           </button>
           <button @click="printInvoice" :disabled="cart.length === 0"
             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-amber-400 hover:bg-amber-500 text-white transition disabled:opacity-50 shadow-sm shadow-amber-200">
             <i class="fas fa-print"></i>
             طباعة
+            <span class="mr-1 text-[10px] opacity-60 bg-black/10 px-1.5 py-0.5 rounded font-mono">F8</span>
           </button>
         </div>
         <div class="flex gap-2">
@@ -352,6 +367,11 @@
             class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-purple-500 hover:bg-purple-600 text-white transition">
             <i class="fas fa-cog"></i>
             إعدادات الفاتورة
+          </button>
+          <button @click="showKbHelp = true" title="مختصرات لوحة المفاتيح (F1)"
+            class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm bg-gray-100 hover:bg-gray-200 text-gray-500 transition">
+            <i class="fas fa-keyboard"></i>
+            <span class="text-[10px] font-mono">F1</span>
           </button>
         </div>
       </div>
@@ -475,6 +495,36 @@
     </div>
   </transition>
 
+  <!-- ══ Keyboard Shortcuts Modal ══ -->
+  <transition name="modal">
+    <div v-if="showKbHelp"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      @click.self="showKbHelp = false">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm" dir="rtl">
+        <div class="bg-gradient-to-l from-indigo-600 to-purple-700 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <i class="fas fa-keyboard"></i> مختصرات لوحة المفاتيح
+          </h3>
+          <button @click="showKbHelp = false" class="text-white/70 hover:text-white">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="p-5 space-y-0.5">
+          <div v-for="kb in kbShortcuts" :key="kb.desc"
+            class="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
+            <span class="text-sm text-gray-600">{{ kb.desc }}</span>
+            <div class="flex gap-1 flex-shrink-0">
+              <kbd v-for="k in kb.keys" :key="k"
+                class="px-2 py-1 bg-gray-100 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-600 shadow-sm">
+                {{ k }}
+              </kbd>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
   <!-- Toast -->
   <transition name="toast">
     <div v-if="toastMsg"
@@ -486,7 +536,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import api from '../../api';
 
 // ─── Company Info ─────────────────────────────────────────
@@ -608,6 +658,7 @@ interface CartRow {
 const cart = ref<CartRow[]>([]);
 const activeSearchRow = ref<number | null>(null);
 const itemSuggestions = ref<any[]>([]);
+const itemSuggestIdx = ref(-1);
 
 function addRow() {
   cart.value.push({ id: 0, name: '', unit: 'قطعة', qty: 1, price: 0, discountPct: 0, searchQuery: '' });
@@ -618,6 +669,7 @@ function removeRow(i: number) {
 }
 
 function onItemSearch(rowIdx: number, q: string) {
+  itemSuggestIdx.value = -1;
   if (!q || q.length < 1) { itemSuggestions.value = []; return; }
   const lq = q.toLowerCase();
   itemSuggestions.value = products.value.filter(p =>
@@ -634,10 +686,13 @@ function selectProduct(rowIdx: number, prod: any) {
   row.searchQuery = prod.name;
   itemSuggestions.value = [];
   activeSearchRow.value = null;
+  itemSuggestIdx.value = -1;
   // إضافة سطر جديد تلقائياً إذا كان هذا هو آخر سطر
   if (rowIdx === cart.value.length - 1) {
     addRow();
   }
+  // تقديم التركيز إلى حقل الكمية
+  nextTick(() => focusCell(rowIdx, 2));
 }
 
 function closeSearch(rowIdx: number) {
@@ -647,6 +702,76 @@ function closeSearch(rowIdx: number) {
       itemSuggestions.value = [];
     }
   }, 200);
+}
+
+// ─── Keyboard Navigation ──────────────────────────────────
+const showKbHelp = ref(false);
+const kbShortcuts = [
+  { keys: ['F9'],      desc: 'حفظ الفاتورة' },
+  { keys: ['F8'],      desc: 'طباعة الفاتورة' },
+  { keys: ['F5'],      desc: 'إضافة سطر جديد' },
+  { keys: ['F1'],      desc: 'عرض / إخفاء المختصرات' },
+  { keys: ['Enter'],   desc: 'الانتقال للحقل التالي' },
+  { keys: ['Tab'],     desc: 'الانتقال للحقل التالي' },
+  { keys: ['↓', '↑'], desc: 'التنقل بين الصفوف' },
+  { keys: ['↓', '↑'], desc: 'التنقل في قائمة المنتجات' },
+  { keys: ['Esc'],     desc: 'إغلاق القائمة المنسدلة' },
+  { keys: ['Del'],     desc: 'حذف السطر (عند فراغ الوصف)' },
+];
+
+function focusCell(row: number, col: number) {
+  nextTick(() => {
+    const el = document.getElementById(`item-${row}-${col}`) as HTMLInputElement | null;
+    if (el) { el.focus(); el.select(); }
+  });
+}
+
+function navigateRow(row: number, col: number, dir: number) {
+  const nextRow = row + dir;
+  if (nextRow < 0) return;
+  if (nextRow >= cart.value.length) { addRow(); nextTick(() => focusCell(cart.value.length - 1, col)); return; }
+  focusCell(nextRow, col);
+}
+
+function cellKeydown(e: KeyboardEvent, row: number, col: number) {
+  const dropOpen = col === 0 && activeSearchRow.value === row && itemSuggestions.value.length > 0;
+  if (dropOpen) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); itemSuggestIdx.value = Math.min(itemSuggestIdx.value + 1, itemSuggestions.value.length - 1); return; }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); itemSuggestIdx.value = Math.max(itemSuggestIdx.value - 1, 0); return; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const idx = itemSuggestIdx.value >= 0 ? itemSuggestIdx.value : 0;
+      if (itemSuggestions.value[idx]) selectProduct(row, itemSuggestions.value[idx]);
+      return;
+    }
+    if (e.key === 'Escape') { e.preventDefault(); itemSuggestions.value = []; activeSearchRow.value = null; itemSuggestIdx.value = -1; return; }
+    return;
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (col < 4) focusCell(row, col + 1);
+    else navigateRow(row, 0, 1);
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault(); navigateRow(row, col, 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault(); navigateRow(row, col, -1);
+  } else if (e.key === 'Delete' && col === 0) {
+    const r = cart.value[row];
+    if (!r.name && !r.searchQuery && cart.value.length > 1) { e.preventDefault(); removeRow(row); nextTick(() => focusCell(Math.max(0, row - 1), 0)); }
+  }
+}
+
+function addRowAndFocus() {
+  addRow();
+  nextTick(() => focusCell(cart.value.length - 1, 0));
+}
+
+function onGlobalKeydown(e: KeyboardEvent) {
+  if (e.key === 'F1') { e.preventDefault(); showKbHelp.value = !showKbHelp.value; return; }
+  if (showSettings.value || showKbHelp.value) return;
+  if (e.key === 'F9') { e.preventDefault(); if (!saving.value) checkout(); }
+  else if (e.key === 'F8') { e.preventDefault(); printInvoice(); }
+  else if (e.key === 'F5') { e.preventDefault(); addRowAndFocus(); }
 }
 
 function addProductToCart(prod: any) {
@@ -860,8 +985,13 @@ function showToast(msg: string) {
   setTimeout(() => { toastMsg.value = ''; }, 3000);
 }
 
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onGlobalKeydown);
+});
+
 onMounted(async () => {
   loadCompanySettings();
+  window.addEventListener('keydown', onGlobalKeydown);
   // Load prefilled customer from invoices page
   try {
     const prefill = localStorage.getItem('pos_prefill_customer');
