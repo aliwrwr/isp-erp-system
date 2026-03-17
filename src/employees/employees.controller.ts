@@ -23,15 +23,15 @@ export class EmployeesController {
   @Get()
   findAll(@Request() req) {
     const user = req.user;
-    // Super Admin sees all employees
     if (user.isSuperAdmin) {
       return this.employeesService.findAll();
     }
-    // Check if user has hr.employees permission
-    if (!user.permissions?.includes('hr.employees')) {
+    // Allow hr.employees, support.tickets, and support.technicians to read employees list
+    const allowedPerms = ['hr.employees', 'support.tickets', 'support.technicians'];
+    const hasAccess = allowedPerms.some(p => user.permissions?.includes(p));
+    if (!hasAccess) {
       throw new ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الموظفين');
     }
-    // User with hr.employees permission sees ALL employees
     return this.employeesService.findAll();
   }
 
@@ -41,7 +41,9 @@ export class EmployeesController {
     if (user.isSuperAdmin) {
       return this.employeesService.findOne(+id);
     }
-    if (!user.permissions?.includes('hr.employees')) {
+    const allowedPerms = ['hr.employees', 'support.tickets', 'support.technicians'];
+    const hasAccess = allowedPerms.some(p => user.permissions?.includes(p));
+    if (!hasAccess) {
       throw new ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الموظفين');
     }
     return this.employeesService.findOne(+id);
