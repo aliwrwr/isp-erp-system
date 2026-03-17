@@ -50,13 +50,35 @@
           <div class="p-6 space-y-4">
 
             <!-- Status row -->
-            <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 text-sm">
+            <div class="flex items-center justify-between rounded-xl px-4 py-3 text-sm transition"
+              :class="updateRunning ? 'bg-amber-50' : updateDone === 'success' ? 'bg-emerald-50' : updateDone === 'error' ? 'bg-red-50' : 'bg-gray-50'">
               <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full" :class="updateRunning ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'"></span>
-                <span class="font-semibold text-gray-600">{{ updateRunning ? 'جار التحديث...' : 'جاهز للتحديث' }}</span>
+                <span class="w-2.5 h-2.5 rounded-full"
+                  :class="updateRunning ? 'bg-amber-400 animate-pulse' : updateDone === 'success' ? 'bg-emerald-500' : updateDone === 'error' ? 'bg-red-500' : 'bg-gray-300'">
+                </span>
+                <span class="font-bold text-sm"
+                  :class="updateRunning ? 'text-amber-700' : updateDone === 'success' ? 'text-emerald-700' : updateDone === 'error' ? 'text-red-600' : 'text-gray-500'">
+                  {{ updateRunning ? 'جار التحديث...' : updateDone === 'success' ? '✓ اكتمل التحديث بنجاح!' : updateDone === 'error' ? '✗ فشل التحديث' : 'جاهز للتحديث' }}
+                </span>
               </div>
               <span v-if="updateStartedAt" class="text-xs text-gray-400">بدأ في: {{ updateStartedAt }}</span>
             </div>
+
+            <!-- Final result banner -->
+            <transition name="modal">
+              <div v-if="updateDone" class="rounded-xl px-5 py-4 flex items-start gap-3 text-sm font-semibold"
+                :class="updateDone === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'">
+                <i class="fas mt-0.5 text-base" :class="updateDone === 'success' ? 'fa-check-circle' : 'fa-times-circle'"></i>
+                <div>
+                  <p class="font-bold text-base">{{ updateDone === 'success' ? 'تم التحديث بنجاح ✓' : 'فشل التحديث ✗' }}</p>
+                  <p class="opacity-90 text-xs mt-0.5 font-normal">
+                    {{ updateDone === 'success'
+                      ? 'النظام يعمل الآن بأحدث إصدار. تم إعادة تشغيل جميع الخدمات.'
+                      : 'حدث خطأ أثناء التحديث — راجع السجل أدناه لمعرفة التفاصيل.' }}
+                  </p>
+                </div>
+              </div>
+            </transition>
 
             <!-- Info box -->
             <div class="bg-indigo-50 rounded-xl px-4 py-3 text-xs text-indigo-700 space-y-1">
@@ -77,12 +99,7 @@
               {{ updateRunning ? 'جار التحديث...' : 'تحديث الآن' }}
             </button>
 
-            <!-- Result message -->
-            <div v-if="updateMsg" class="rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2"
-              :class="updateError ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'">
-              <i class="fas" :class="updateError ? 'fa-times-circle' : 'fa-check-circle'"></i>
-              {{ updateMsg }}
-            </div>
+
 
             <!-- Log terminal -->
             <div class="bg-gray-900 rounded-xl p-4">
@@ -164,6 +181,7 @@ const showUpdateModal  = ref(false);
 const updateRunning    = ref(false);
 const updateMsg        = ref('');
 const updateError      = ref(false);
+const updateDone       = ref<null | 'success' | 'error'>(null);
 const updateLog        = ref('');
 const updateStartedAt  = ref('');
 const logBox           = ref<HTMLElement | null>(null);
@@ -179,8 +197,14 @@ async function fetchUpdateLog() {
     updateLog.value = res.data.log || '';
     await new Promise(r => setTimeout(r, 50));
     if (logBox.value) logBox.value.scrollTop = logBox.value.scrollHeight;
-    if (/completed|Update completed|اكتمل|تم التحديث|error|failed|خطأ|Exit Code/i.test(updateLog.value)) {
+    const log = updateLog.value;
+    if (/Update completed successfully/i.test(log)) {
       updateRunning.value = false;
+      updateDone.value = 'success';
+      stopPolling();
+    } else if (/^ERROR:/m.test(log) || /Backend build failed|Frontend build failed|git pull failed/i.test(log)) {
+      updateRunning.value = false;
+      updateDone.value = 'error';
       stopPolling();
     }
   } catch {}
@@ -192,6 +216,7 @@ async function triggerUpdate() {
   updateRunning.value   = true;
   updateMsg.value       = '';
   updateError.value     = false;
+  updateDone.value      = null;
   updateLog.value       = '';
   updateStartedAt.value = new Date().toLocaleTimeString('ar-IQ');
   try {
