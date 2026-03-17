@@ -74,7 +74,7 @@
 		{
 			"label": "🚀 Build & Start (Full Deploy)",
 			"type": "shell",
-			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system; npm run build; $pm2Out = pm2 list 2>$null | Out-String; if ($pm2Out -match 'online|stopped|errored') { pm2 restart all } else { pm2 start ecosystem.config.js }; pm2 status",
+			"command": "Set-Location C:\\Users\\OMC\\isp-erp-system; npm run build; Set-Location frontend; npm run build; Set-Location C:\\Users\\OMC\\isp-erp-system; $pm2Out = pm2 list 2>$null | Out-String; if ($pm2Out -match 'online|stopped|errored') { pm2 restart all } else { pm2 start ecosystem.config.js }; pm2 status",
 			"isBackground": false,
 			"problemMatcher": ["$tsc"],
 			"group": "build"
