@@ -72,6 +72,12 @@
             <input v-model="customer.phone" placeholder="07xxxxxxxxxx" dir="ltr"
               class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition" />
           </div>
+          <!-- Address -->
+          <div>
+            <label class="text-xs font-bold text-gray-500 mb-1.5 block">العنوان</label>
+            <input v-model="customer.address" placeholder="عنوان العميل"
+              class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition" />
+          </div>
           <!-- Payment Method -->
           <div>
             <label class="text-xs font-bold text-gray-500 mb-1.5 block">شروط الدفع</label>
@@ -87,7 +93,7 @@
             </div>
           </div>
           <!-- Notes -->
-          <div>
+          <div class="col-span-3">
             <label class="text-xs font-bold text-gray-500 mb-1.5 block">ملاحظات</label>
             <input v-model="notes" placeholder="شكراً للتعامل معنا"
               class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white transition" />
@@ -142,7 +148,7 @@
                   <input
                     v-model="item.searchQuery"
                     @input="onItemSearch(i, item.searchQuery)"
-                    @focus="activeSearchRow = i"
+                    @focus="activeSearchRow = i; onItemSearch(i, item.searchQuery)"
                     @blur="closeSearch(i)"
                     :placeholder="item.name || 'ابحث بالاسم أو الباركود...'"
                     class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50 focus:bg-white transition"
@@ -569,6 +575,10 @@ function selectProduct(rowIdx: number, prod: any) {
   row.searchQuery = prod.name;
   itemSuggestions.value = [];
   activeSearchRow.value = null;
+  // إضافة سطر جديد تلقائياً إذا كان هذا هو آخر سطر
+  if (rowIdx === cart.value.length - 1) {
+    addRow();
+  }
 }
 
 function closeSearch(rowIdx: number) {
