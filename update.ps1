@@ -7,6 +7,13 @@ $PC2_IP       = "192.200.251.4"
 $projectPath  = "D:\isp-erp-system"
 $frontendPath = "$projectPath\frontend"
 
+# ─── Logging: capture ALL output to a transcript file ─────────
+$logsDir  = "$projectPath\logs"
+$logFile  = "$logsDir\deploy-update.log"
+New-Item -ItemType Directory -Path $logsDir -Force -ErrorAction SilentlyContinue | Out-Null
+Start-Transcript -Path $logFile -Force | Out-Null
+Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] update.ps1 started"
+
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "   ISP ERP System - Update PC2"          -ForegroundColor Cyan
@@ -101,3 +108,5 @@ Write-Host "   Update completed successfully!"        -ForegroundColor Green
 Write-Host "   http://${PC2_IP}:5173"                -ForegroundColor Green
 Write-Host "========================================"  -ForegroundColor Green
 Write-Host ""
+
+Stop-Transcript | Out-Null

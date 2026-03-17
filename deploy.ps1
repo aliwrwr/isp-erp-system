@@ -45,7 +45,9 @@ try {
         -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
         -TimeoutSec 15
     Write-Host "  PC2 يقوم بالتحديث الآن ✓" -ForegroundColor Green
-    Write-Host "  انتظر دقيقة ثم تحقق من: http://192.200.251.4:5173" -ForegroundColor Cyan
+    Write-Host "  انتظر دقيقتين ثم نفّذ للتحقق من التقدم:" -ForegroundColor Cyan
+    Write-Host "    powershell -File .\check-deploy-log.ps1" -ForegroundColor Gray
+    Write-Host "  أو تحقق من: http://192.200.251.4:5173" -ForegroundColor Cyan
 } catch {
     Write-Host "  تعذر الاتصال بـ PC2 تلقائياً" -ForegroundColor Yellow
     Write-Host "  شغّل update.ps1 يدوياً على PC2" -ForegroundColor Yellow
