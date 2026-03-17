@@ -139,31 +139,29 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const token = localStorage.getItem('token');
   if (to.meta.requiresAuth && !token) {
     next('/login');
   } else if (to.name === 'Login' && token) {
     next('/select-system');
   } else if (to.meta.requiresAuth && token && to.name) {
+    const auth = useAuthStore();
     // Check permission for this route
     const requiredPerm = routePermissions[to.name as string];
-    if (requiredPerm) {
-      const auth = useAuthStore();
+    if (requiredPerm && !auth.hasPermission(requiredPerm)) {
+      // Permissions may be stale — refresh from server before denying access
+      await auth.refreshProfile();
       if (!auth.hasPermission(requiredPerm)) {
-        // Redirect to system dashboard or select-system
         const system = to.meta.system as string;
-        if (system) {
-          next(`/${system}`);
-        } else {
-          next('/select-system');
-        }
+        next(system ? `/${system}` : '/select-system');
         return;
       }
     }
     // Check system-level access for non-dashboard pages
-    if (to.meta.system) {
-      const auth = useAuthStore();
+    if (to.meta.system && !auth.hasSystemAccess(to.meta.system as string)) {
+      // Refresh profile once before denying system access
+      await auth.refreshProfile();
       if (!auth.hasSystemAccess(to.meta.system as string)) {
         next('/select-system');
         return;

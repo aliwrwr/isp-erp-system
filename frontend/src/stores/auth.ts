@@ -66,6 +66,15 @@ export const useAuthStore = defineStore('auth', {
       this.currentSystem = system;
       localStorage.setItem('currentSystem', system);
     },
+    async refreshProfile() {
+      try {
+        const profile = await api.get('/auth/profile');
+        this.user = profile.data;
+        localStorage.setItem('user', JSON.stringify(profile.data));
+      } catch {
+        // silently fail — keep existing user data
+      }
+    },
     logout() {
       this.token = null;
       this.user = null;
