@@ -666,7 +666,7 @@ async function checkout() {
       : remaining.value <= 0 ? 'paid' : 'partial';
 
     await api.post('/invoices', {
-      customerName: customer.value.name || undefined,
+      customerName: customer.value.name || 'مبيعات مباشر',
       customerPhone: customer.value.phone || undefined,
       customerAddress: customer.value.address || undefined,
       items: validRows.map(i => ({ ...(i.id ? { productId: i.id } : {}), name: i.name, quantity: i.qty, price: i.price })),

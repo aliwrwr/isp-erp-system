@@ -154,10 +154,10 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2.5">
                   <div class="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 text-xs font-bold">
-                    {{ (inv.customerName || '?')[0] }}
+                    {{ (inv.customerName || 'م')[0] }}
                   </div>
                   <div>
-                    <p class="text-xs font-semibold text-secondary">{{ inv.customerName || 'عميل غير مسجل' }}</p>
+                    <p class="text-xs font-semibold text-secondary">{{ inv.customerName || 'مبيعات مباشر' }}</p>
                     <p v-if="inv.customerPhone" class="text-[10px] text-gray-400 font-mono">{{ inv.customerPhone }}</p>
                     <p v-if="inv.customerAddress" class="text-[10px] text-gray-300 truncate max-w-[120px]">{{ inv.customerAddress }}</p>
                   </div>
@@ -298,7 +298,7 @@
             <div class="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-3">
               <div>
                 <p class="text-[10px] text-gray-400 font-bold mb-0.5">العميل</p>
-                <p class="text-sm font-semibold text-secondary">{{ detailInv.customerName || '—' }}</p>
+                <p class="text-sm font-semibold text-secondary">{{ detailInv.customerName || 'مبيعات مباشر' }}</p>
               </div>
               <div>
                 <p class="text-[10px] text-gray-400 font-bold mb-0.5">الهاتف</p>
