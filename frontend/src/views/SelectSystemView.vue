@@ -16,12 +16,101 @@
           <span class="text-sm text-gray-500">
             <i class="fas fa-user ml-1"></i> {{ auth.userName || 'مدير النظام' }}
           </span>
+          <!-- Update button -->
+          <button @click="showUpdateModal = true"
+            class="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition border border-indigo-100">
+            <i class="fas fa-sync-alt" :class="updateRunning ? 'fa-spin' : ''"></i>
+            تحديث النظام
+          </button>
           <button @click="handleLogout" class="text-danger hover:text-danger-dark transition text-sm">
             <i class="fas fa-sign-out-alt ml-1"></i> خروج
           </button>
         </div>
       </div>
     </header>
+
+    <!-- Update Modal -->
+    <transition name="modal">
+      <div v-if="showUpdateModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        @click.self="showUpdateModal = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl" dir="rtl">
+
+          <!-- Modal header -->
+          <div class="bg-gradient-to-l from-indigo-600 to-violet-700 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+            <h3 class="font-bold text-white flex items-center gap-2">
+              <i class="fas fa-sync-alt" :class="updateRunning ? 'fa-spin' : ''"></i>
+              تحديث النظام
+            </h3>
+            <button @click="showUpdateModal = false" class="text-white/70 hover:text-white transition">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="p-6 space-y-4">
+
+            <!-- Status row -->
+            <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full" :class="updateRunning ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'"></span>
+                <span class="font-semibold text-gray-600">{{ updateRunning ? 'جار التحديث...' : 'جاهز للتحديث' }}</span>
+              </div>
+              <span v-if="updateStartedAt" class="text-xs text-gray-400">بدأ في: {{ updateStartedAt }}</span>
+            </div>
+
+            <!-- Info box -->
+            <div class="bg-indigo-50 rounded-xl px-4 py-3 text-xs text-indigo-700 space-y-1">
+              <p class="font-bold mb-1">ماذا يفعل هذا الزر؟</p>
+              <p><i class="fas fa-check-circle ml-1 text-indigo-400"></i>يجلب آخر التحديثات من GitHub</p>
+              <p><i class="fas fa-check-circle ml-1 text-indigo-400"></i>يبني الـ Backend والـ Frontend</p>
+              <p><i class="fas fa-check-circle ml-1 text-indigo-400"></i>يعيد تشغيل جميع الخدمات تلقائياً</p>
+              <p><i class="fas fa-exclamation-circle ml-1 text-amber-500"></i>سيتوقف النظام لثوانٍ أثناء إعادة التشغيل</p>
+            </div>
+
+            <!-- Trigger button -->
+            <button @click="triggerUpdate" :disabled="updateRunning"
+              class="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition"
+              :class="updateRunning
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200'">
+              <i class="fas" :class="updateRunning ? 'fa-spinner fa-spin' : 'fa-rocket'"></i>
+              {{ updateRunning ? 'جار التحديث...' : 'تحديث الآن' }}
+            </button>
+
+            <!-- Result message -->
+            <div v-if="updateMsg" class="rounded-xl px-4 py-3 text-sm font-semibold flex items-center gap-2"
+              :class="updateError ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'">
+              <i class="fas" :class="updateError ? 'fa-times-circle' : 'fa-check-circle'"></i>
+              {{ updateMsg }}
+            </div>
+
+            <!-- Log terminal -->
+            <div class="bg-gray-900 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-gray-400 flex items-center gap-1.5">
+                  <i class="fas fa-terminal text-green-400"></i> سجل التحديث
+                </span>
+                <div class="flex items-center gap-2">
+                  <button @click="fetchUpdateLog"
+                    class="text-[11px] text-gray-400 hover:text-gray-200 px-2 py-0.5 border border-gray-700 rounded-lg transition">
+                    <i class="fas fa-refresh ml-1"></i>تحديث السجل
+                  </button>
+                  <button @click="updateLog = ''" class="text-[11px] text-gray-500 hover:text-gray-300 transition">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              </div>
+              <div ref="logBox"
+                class="text-xs font-mono text-green-300 whitespace-pre-wrap leading-relaxed overflow-y-auto min-h-[140px] max-h-[300px]">
+                <span v-if="!updateLog" class="text-gray-600">لا يوجد سجل بعد — اضغط "تحديث الآن" للبدء</span>
+                <span v-else>{{ updateLog }}</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Systems Grid -->
     <main class="max-w-5xl mx-auto px-6 py-12">
@@ -62,12 +151,62 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import api from '../api';
 
 const router = useRouter();
 const auth = useAuthStore();
+
+// ── System update ─────────────────────────────────────────────────────
+const showUpdateModal  = ref(false);
+const updateRunning    = ref(false);
+const updateMsg        = ref('');
+const updateError      = ref(false);
+const updateLog        = ref('');
+const updateStartedAt  = ref('');
+const logBox           = ref<HTMLElement | null>(null);
+let   pollInterval: ReturnType<typeof setInterval> | null = null;
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+async function fetchUpdateLog() {
+  try {
+    const res = await api.get('/deploy/admin/logs');
+    updateLog.value = res.data.log || '';
+    await new Promise(r => setTimeout(r, 50));
+    if (logBox.value) logBox.value.scrollTop = logBox.value.scrollHeight;
+    if (/اكتمل|تم التحديث|✓.*انتهى|error|failed|خطأ/i.test(updateLog.value)) {
+      updateRunning.value = false;
+      stopPolling();
+    }
+  } catch {}
+}
+
+async function triggerUpdate() {
+  if (updateRunning.value) return;
+  if (!confirm('هل أنت متأكد من تحديث النظام الآن؟\nسيتوقف النظام لثوانٍ أثناء إعادة التشغيل.')) return;
+  updateRunning.value   = true;
+  updateMsg.value       = '';
+  updateError.value     = false;
+  updateLog.value       = '';
+  updateStartedAt.value = new Date().toLocaleTimeString('ar-IQ');
+  try {
+    const res = await api.post('/deploy/admin');
+    updateMsg.value = res.data.message || 'بدأ التحديث';
+    pollInterval = setInterval(fetchUpdateLog, 3000);
+    setTimeout(() => { updateRunning.value = false; stopPolling(); }, 300_000);
+  } catch (e: any) {
+    updateRunning.value = false;
+    updateMsg.value = e?.response?.data?.message || 'فشل الاتصال بالخادم';
+    updateError.value = true;
+  }
+}
+
+// ── Systems ───────────────────────────────────────────────────────────
 
 const allSystems = [
   { id: 'internet', nameAr: 'نظام الاشتراكات', desc: 'إدارة اشتراكات الإنترنت والمشتركين', icon: 'fas fa-wifi', color: '#2980B9', route: '/internet' },
@@ -92,3 +231,8 @@ function handleLogout() {
   router.push('/login');
 }
 </script>
+
+<style scoped>
+.modal-enter-active, .modal-leave-active { transition: all .2s; }
+.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.97); }
+</style>
