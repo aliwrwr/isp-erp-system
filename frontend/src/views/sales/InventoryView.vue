@@ -9,12 +9,25 @@
           إدارة المخزون
         </h1>
         <p class="text-teal-200 text-sm mt-1">جرد ومتابعة المواد المخزونة بشكل كامل</p>
+        <p class="text-teal-300 text-xs mt-1.5 flex items-center gap-1.5">
+          <i class="fas fa-link"></i>
+          المنتجات مرتبطة تلقائياً — أي منتج تضيفه في
+          <router-link to="/sales/products" class="underline underline-offset-2 hover:text-white font-semibold">صفحة المنتجات</router-link>
+          يظهر هنا فوراً
+        </p>
       </div>
-      <button @click="openAdd()"
-        class="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition border border-white/30">
-        <i class="fas fa-plus-circle text-base"></i>
-        إضافة حركة مخزون
-      </button>
+      <div class="flex items-center gap-2">
+        <router-link to="/sales/products"
+          class="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm px-4 py-2.5 rounded-xl transition border border-white/20">
+          <i class="fas fa-boxes text-base"></i>
+          إدارة المنتجات
+        </router-link>
+        <button @click="openAdd()"
+          class="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition border border-white/30">
+          <i class="fas fa-plus-circle text-base"></i>
+          إضافة حركة مخزون
+        </button>
+      </div>
     </div>
 
     <!-- ═══ Stats Cards ═══ -->
@@ -139,8 +152,10 @@
                 class="border-t border-gray-50 hover:bg-gray-50/50 transition group">
                 <td class="px-4 py-3 text-gray-400 text-xs font-mono">{{ idx + 1 }}</td>
                 <td class="px-4 py-3">
-                  <p class="font-bold text-gray-700 text-sm">{{ item.name }}</p>
-                  <p v-if="item.barcode" class="text-[11px] text-gray-400 font-mono mt-0.5">{{ item.barcode }}</p>
+                  <router-link :to="'/sales/products'" class="group/name">
+                    <p class="font-bold text-gray-700 text-sm group-hover/name:text-teal-600 transition">{{ item.name }}</p>
+                    <p v-if="item.barcode" class="text-[11px] text-gray-400 font-mono mt-0.5">{{ item.barcode }}</p>
+                  </router-link>
                 </td>
                 <td class="px-4 py-3 text-center">
                   <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{{ item.category || '—' }}</span>
@@ -177,10 +192,16 @@
                   <span class="text-sm font-bold text-teal-700">{{ fmt(item.stockRetailValue) }}</span>
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <button @click="openAdd(item.id)"
-                    class="opacity-0 group-hover:opacity-100 text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 mx-auto">
-                    <i class="fas fa-plus-circle"></i> حركة
-                  </button>
+                  <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 justify-center">
+                    <button @click="openAdd(item.id)"
+                      class="text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 font-semibold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1" title="إضافة حركة">
+                      <i class="fas fa-plus-circle"></i> حركة
+                    </button>
+                    <router-link :to="'/sales/products'"
+                      class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold px-2.5 py-1.5 rounded-lg transition flex items-center gap-1" title="إدارة المنتج">
+                      <i class="fas fa-external-link-alt"></i>
+                    </router-link>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -244,7 +265,13 @@
               <tr v-for="(mv, idx) in filteredMovements" :key="mv.id"
                 class="border-t border-gray-50 hover:bg-gray-50/50 transition">
                 <td class="px-4 py-3 text-gray-400 text-xs font-mono">{{ idx + 1 }}</td>
-                <td class="px-4 py-3 font-semibold text-gray-700">{{ mv.product?.name || '—' }}</td>
+                <td class="px-4 py-3">
+                  <router-link v-if="mv.product" :to="'/sales/products'" class="font-semibold text-gray-700 hover:text-teal-600 transition flex items-center gap-1">
+                    {{ mv.product.name }}
+                    <i class="fas fa-external-link-alt text-[10px] text-gray-300"></i>
+                  </router-link>
+                  <span v-else class="text-gray-400">—</span>
+                </td>
                 <td class="px-4 py-3 text-center">
                   <span class="text-xs font-bold px-2.5 py-1 rounded-full" :class="{
                     'bg-emerald-100 text-emerald-700': mv.type === 'in',
@@ -413,7 +440,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../../api';
+
+const router = useRouter();
 
 // ─── State ──────────────────────────────────────────────────────
 const activeTab = ref<'stock' | 'movements'>('stock');
@@ -425,7 +455,6 @@ const deleting   = ref(false);
 const stats          = ref({ total: 0, inStock: 0, lowStock: 0, outOfStock: 0, totalCostValue: 0, totalRetailValue: 0 });
 const stockSummary   = ref<any[]>([]);
 const movements      = ref<any[]>([]);
-const allProducts    = ref<any[]>([]);
 
 // filters
 const filterStatus = ref('all');
@@ -492,10 +521,11 @@ const filteredMovements = computed(() => {
   return list;
 });
 
+// productSearchResults يستخدم stockSummary مباشرة — مصدر واحد موحّد من جدول المنتجات
 const productSearchResults = computed(() => {
   const q = addForm.value.productSearch.trim().toLowerCase();
-  if (!q) return allProducts.value.slice(0, 10);
-  return allProducts.value.filter(p => p.name.toLowerCase().includes(q) || (p.barcode || '').includes(q)).slice(0, 10);
+  if (!q) return stockSummary.value.slice(0, 10);
+  return stockSummary.value.filter(p => p.name.toLowerCase().includes(q) || (p.barcode || '').includes(q)).slice(0, 10);
 });
 
 // ─── Utils ─────────────────────────────────────────────────────
@@ -531,16 +561,12 @@ async function loadMovements() {
     loadingMov.value = false;
   }
 }
-async function loadProducts() {
-  const { data } = await api.get('/products');
-  allProducts.value = data;
-}
 
 // ─── Add Movement ───────────────────────────────────────────────
 function openAdd(productId?: number) {
   addForm.value = { selectedProduct: null, productSearch: '', type: 'in', quantity: null, reference: '', notes: '' };
   if (productId) {
-    const p = stockSummary.value.find(s => s.id === productId) || allProducts.value.find(p => p.id === productId);
+    const p = stockSummary.value.find(s => s.id === productId);
     if (p) {
       addForm.value.selectedProduct = p;
       addForm.value.productSearch = p.name;
@@ -569,7 +595,7 @@ async function submitMovement() {
     });
     showAdd.value = false;
     showToast('تم حفظ الحركة بنجاح ✓');
-    await Promise.all([loadStats(), loadStock(), loadMovements(), loadProducts()]);
+    await Promise.all([loadStats(), loadStock(), loadMovements()]);
   } catch {
     showToast('حدث خطأ أثناء الحفظ', true);
   } finally {
@@ -599,7 +625,7 @@ async function doDelete() {
 
 // ─── Lifecycle ──────────────────────────────────────────────────
 onMounted(async () => {
-  await Promise.all([loadStats(), loadStock(), loadMovements(), loadProducts()]);
+  await Promise.all([loadStats(), loadStock(), loadMovements()]);
 });
 </script>
 
