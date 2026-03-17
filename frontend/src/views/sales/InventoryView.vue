@@ -540,14 +540,21 @@ function showToast(msg: string, error = false) {
 
 // ─── Data Loading ───────────────────────────────────────────────
 async function loadStats() {
-  const { data } = await api.get('/inventory/stats');
-  stats.value = data;
+  try {
+    const { data } = await api.get('/inventory/stats');
+    stats.value = data;
+  } catch {
+    // non-critical — keep default zeros
+  }
 }
 async function loadStock() {
   loading.value = true;
   try {
     const { data } = await api.get('/inventory/stock');
     stockSummary.value = data;
+  } catch (e: any) {
+    const msg = e?.response?.data?.message || e?.message || 'خطأ في تحميل المخزون';
+    showToast(`فشل تحميل المخزون: ${msg}`, true);
   } finally {
     loading.value = false;
   }
@@ -557,6 +564,8 @@ async function loadMovements() {
   try {
     const { data } = await api.get('/inventory');
     movements.value = data;
+  } catch {
+    // non-critical
   } finally {
     loadingMov.value = false;
   }

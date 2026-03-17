@@ -62,13 +62,20 @@ export class InventoryService {
   async getStockSummary() {
     const products = await this.productsRepository.find({ relations: ['category'] });
 
-    const soldRows: any[] = await this.dataSource.query(
-      `SELECT productId, SUM(quantity) as totalSold, SUM(quantity * price) as totalRevenue
-       FROM invoice_items WHERE productId IS NOT NULL GROUP BY productId`,
-    );
-    const soldMap = new Map<number, { totalSold: number; totalRevenue: number }>(
-      soldRows.map(r => [Number(r.productId), { totalSold: Number(r.totalSold), totalRevenue: Number(r.totalRevenue) }]),
-    );
+    // Try to get sold quantities — if it fails, continue with empty map
+    let soldMap = new Map<number, { totalSold: number; totalRevenue: number }>();
+    try {
+      const soldRows: any[] = await this.dataSource.query(
+        `SELECT productId, SUM(quantity) as totalSold, SUM(quantity * price) as totalRevenue
+         FROM invoice_items WHERE productId IS NOT NULL GROUP BY productId`,
+      );
+      soldMap = new Map<number, { totalSold: number; totalRevenue: number }>(
+        soldRows.map(r => [Number(r.productId), { totalSold: Number(r.totalSold), totalRevenue: Number(r.totalRevenue) }]),
+      );
+    } catch (e) {
+      // Log but don't block — products still show with totalSold=0
+      console.warn('[InventoryService] Could not fetch sold quantities:', e?.message);
+    }
 
     return products
       .map(p => {
