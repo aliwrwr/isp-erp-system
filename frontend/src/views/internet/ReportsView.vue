@@ -5,14 +5,43 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 class="text-xl font-bold text-secondary">تقارير الاشتراكات</h2>
-        <p class="text-sm text-gray-400 mt-0.5">تحليل شامل لأداء الاشتراكات والإيرادات</p>
+        <p class="text-sm text-gray-400 mt-0.5">
+          <span v-if="quickFilter === 'today'">عرض اشتراكات <span class="text-primary font-semibold">اليوم</span></span>
+          <span v-else-if="quickFilter === 'yesterday'">عرض اشتراكات <span class="text-primary font-semibold">الأمس</span></span>
+          <span v-else-if="quickFilter === 'week'">عرض اشتراكات <span class="text-primary font-semibold">هذا الأسبوع</span></span>
+          <span v-else>تحليل شامل لأداء الاشتراكات والإيرادات</span>
+          <span class="mr-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{{ filteredSubs.length }} اشتراك</span>
+        </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Quick date shortcuts -->
+        <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+          <button @click="setQuickFilter('today')"
+            :class="quickFilter === 'today' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-white hover:text-secondary'"
+            class="text-xs font-medium px-3 py-1.5 rounded-lg transition">
+            اليوم
+          </button>
+          <button @click="setQuickFilter('yesterday')"
+            :class="quickFilter === 'yesterday' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-white hover:text-secondary'"
+            class="text-xs font-medium px-3 py-1.5 rounded-lg transition">
+            الأمس
+          </button>
+          <button @click="setQuickFilter('week')"
+            :class="quickFilter === 'week' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-white hover:text-secondary'"
+            class="text-xs font-medium px-3 py-1.5 rounded-lg transition">
+            هذا الأسبوع
+          </button>
+          <button @click="setQuickFilter('')"
+            :class="quickFilter === '' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:bg-white hover:text-secondary'"
+            class="text-xs font-medium px-3 py-1.5 rounded-lg transition">
+            كل الفترات
+          </button>
+        </div>
         <!-- Filter: Month/Year -->
-        <select v-model="filterYear" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        <select v-model="filterYear" @change="quickFilter = ''" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
           <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
         </select>
-        <select v-model="filterMonth" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        <select v-model="filterMonth" @change="quickFilter = ''" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
           <option value="">كل الأشهر</option>
           <option v-for="(name, idx) in monthNames" :key="idx" :value="idx + 1">{{ name }}</option>
         </select>
@@ -292,6 +321,39 @@ const loading = ref(false);
 const allSubs = ref<any[]>([]);
 const filterYear = ref(new Date().getFullYear());
 const filterMonth = ref<number | ''>('');
+const quickFilter = ref<'today' | 'yesterday' | 'week' | ''>('');
+const quickDateFrom = ref<Date | null>(null);
+const quickDateTo = ref<Date | null>(null);
+
+function setQuickFilter(mode: 'today' | 'yesterday' | 'week' | '') {
+  quickFilter.value = mode;
+  const now = new Date();
+  if (mode === 'today') {
+    const from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    quickDateFrom.value = from;
+    quickDateTo.value   = to;
+    filterYear.value  = from.getFullYear();
+    filterMonth.value = from.getMonth() + 1;
+  } else if (mode === 'yesterday') {
+    const y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    quickDateFrom.value = new Date(y.getFullYear(), y.getMonth(), y.getDate());
+    quickDateTo.value   = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59);
+    filterYear.value  = y.getFullYear();
+    filterMonth.value = y.getMonth() + 1;
+  } else if (mode === 'week') {
+    const day = now.getDay(); // 0=sun
+    const diffToSat = (day + 1) % 7; // Saturday is start of Arabic week
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToSat);
+    quickDateFrom.value = weekStart;
+    quickDateTo.value   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    filterYear.value  = now.getFullYear();
+    filterMonth.value = '';
+  } else {
+    quickDateFrom.value = null;
+    quickDateTo.value   = null;
+  }
+}
 
 const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const chartColors = ['#4F81C7','#27AE60','#F39C12','#E74C3C','#9B59B6','#1ABC9C','#E67E22','#2C3E50'];
@@ -311,6 +373,11 @@ const filteredSubs = computed(() => {
   return allSubs.value.filter(s => {
     if (!s.startDate) return false;
     const d = new Date(s.startDate);
+    // Quick date range filter (today / yesterday / week)
+    if (quickDateFrom.value && quickDateTo.value) {
+      return d >= quickDateFrom.value && d <= quickDateTo.value;
+    }
+    // Normal year/month filter
     if (d.getFullYear() !== filterYear.value) return false;
     if (filterMonth.value && d.getMonth() + 1 !== filterMonth.value) return false;
     return true;
