@@ -6,6 +6,9 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceItem } from './entities/invoice-item.entity';
 import { Product } from '../products/entities/product.entity';
+import { SalesCustomer } from '../sales-customers/entities/sales-customer.entity';
+
+const DIRECT_SALE = 'مبيعات مباشر';
 
 @Injectable()
 export class InvoicesService {
@@ -16,6 +19,8 @@ export class InvoicesService {
     private invoiceItemsRepository: Repository<InvoiceItem>,
     @InjectRepository(Product)
     private productsRepository: Repository<Product>,
+    @InjectRepository(SalesCustomer)
+    private customersRepository: Repository<SalesCustomer>,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
@@ -46,6 +51,26 @@ export class InvoicesService {
     });
 
     const saved = await this.invoicesRepository.save(invoice);
+
+    // Auto-add customer if not a direct sale and has a real name
+    const name = createInvoiceDto.customerName;
+    if (name && name !== DIRECT_SALE) {
+      const phone = createInvoiceDto.customerPhone || null;
+      // Check if customer already exists (by phone if available, else by name)
+      const existing = phone
+        ? await this.customersRepository.findOne({ where: { phone } })
+        : await this.customersRepository.findOne({ where: { name } });
+      if (!existing) {
+        await this.customersRepository.save(
+          this.customersRepository.create({
+            name,
+            phone: phone || undefined,
+            address: createInvoiceDto.customerAddress || undefined,
+          }),
+        );
+      }
+    }
+
     return Array.isArray(saved) ? saved[0] : saved;
   }
 
