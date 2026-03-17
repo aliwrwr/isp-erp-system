@@ -10,8 +10,11 @@ export class InvoiceItem {
   @ManyToOne(() => Invoice, invoice => invoice.items)
   invoice: Invoice;
 
-  @ManyToOne(() => Product, product => product.invoiceItems)
+  @ManyToOne(() => Product, product => product.invoiceItems, { nullable: true })
   product: Product;
+
+  @Column({ nullable: true })
+  name: string;
 
   @Column()
   quantity: number;

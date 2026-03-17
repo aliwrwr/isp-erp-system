@@ -803,6 +803,15 @@ function showToast(msg: string) {
 
 onMounted(async () => {
   loadCompanySettings();
+  // Load prefilled customer from invoices page
+  try {
+    const prefill = localStorage.getItem('pos_prefill_customer');
+    if (prefill) {
+      const c = JSON.parse(prefill);
+      customer.value = { name: c.name || '', phone: c.phone || '', address: c.address || '' };
+      localStorage.removeItem('pos_prefill_customer');
+    }
+  } catch {}
   addRow();
   try {
     const [prodRes, catRes] = await Promise.all([api.get('/products'), api.get('/categories')]);

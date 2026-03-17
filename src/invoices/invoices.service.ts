@@ -20,17 +20,19 @@ export class InvoicesService {
 
   async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
     const items = await Promise.all(createInvoiceDto.items.map(async (itemDto) => {
-      const product = await this.productsRepository.findOneBy({ id: itemDto.productId });
-      if (!product) {
-        throw new Error(`Product with ID ${itemDto.productId} not found`);
-      }
       const item = new InvoiceItem();
-      item.product = product;
+      if (itemDto.productId) {
+        const product = await this.productsRepository.findOneBy({ id: itemDto.productId });
+        if (product) {
+          item.product = product;
+          item.name = product.name;
+          product.stock -= itemDto.quantity;
+          await this.productsRepository.save(product);
+        }
+      }
+      if (itemDto.name) item.name = itemDto.name;
       item.quantity = itemDto.quantity;
       item.price = itemDto.price;
-      // Update stock
-      product.stock -= item.quantity;
-      await this.productsRepository.save(product);
       return item;
     }));
 
