@@ -11,7 +11,18 @@ Write-Host "         ISP ERP - نظام النشر           " -ForegroundColor 
 Write-Host "========================================" -ForegroundColor Cyan
 
 # ---------- Step 1: Git ----------------------------------------
-Write-Host "`n[1/3] فحص التغييرات..." -ForegroundColor Yellow
+# ---------- Step 0: Build ----------------------------------------
+Write-Host "`n[0/4] بناء المشروع (backend + frontend)..." -ForegroundColor Yellow
+Set-Location $PSScriptRoot
+npm run build
+if ($LASTEXITCODE -ne 0) { Write-Host "  فشل build backend!" -ForegroundColor Red; exit 1 }
+Set-Location "$PSScriptRoot\frontend"
+npm run build
+if ($LASTEXITCODE -ne 0) { Write-Host "  فشل build frontend!" -ForegroundColor Red; exit 1 }
+Set-Location $PSScriptRoot
+Write-Host "  ✓ تم البناء بنجاح" -ForegroundColor Green
+
+Write-Host "`n[1/4] فحص التغييرات..." -ForegroundColor Yellow
 Set-Location $PSScriptRoot
 
 $changes = git status --short
@@ -28,7 +39,7 @@ if (-not $changes) {
 }
 
 # ---------- Step 2: Push to GitHub ----------------------------
-Write-Host "`n[2/3] رفع إلى GitHub..." -ForegroundColor Yellow
+Write-Host "`n[2/4] رفع إلى GitHub..." -ForegroundColor Yellow
 git push origin main
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  فشل git push!" -ForegroundColor Red
@@ -37,7 +48,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "  تم الرفع إلى GitHub ✓" -ForegroundColor Green
 
 # ---------- Step 3: Trigger PC2 -------------------------------
-Write-Host "`n[3/3] تشغيل التحديث على PC2..." -ForegroundColor Yellow
+Write-Host "`n[3/4] تشغيل التحديث على PC2..." -ForegroundColor Yellow
 try {
     $response = Invoke-RestMethod `
         -Uri "$PC2_URL/deploy" `

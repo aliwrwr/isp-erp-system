@@ -1,0 +1,42 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RestaurantModule = void 0;
+const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const restaurant_controller_1 = require("./restaurant.controller");
+const restaurant_service_1 = require("./restaurant.service");
+const menu_category_entity_1 = require("./entities/menu-category.entity");
+const menu_item_entity_1 = require("./entities/menu-item.entity");
+const restaurant_table_entity_1 = require("./entities/restaurant-table.entity");
+const order_entity_1 = require("./entities/order.entity");
+const order_item_entity_1 = require("./entities/order-item.entity");
+const reservation_entity_1 = require("./entities/reservation.entity");
+const restaurant_expense_entity_1 = require("./entities/restaurant-expense.entity");
+let RestaurantModule = class RestaurantModule {
+};
+exports.RestaurantModule = RestaurantModule;
+exports.RestaurantModule = RestaurantModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([
+                menu_category_entity_1.MenuCategory,
+                menu_item_entity_1.MenuItem,
+                restaurant_table_entity_1.RestaurantTable,
+                order_entity_1.Order,
+                order_item_entity_1.OrderItem,
+                reservation_entity_1.Reservation,
+                restaurant_expense_entity_1.RestaurantExpense,
+            ]),
+        ],
+        controllers: [restaurant_controller_1.RestaurantController],
+        providers: [restaurant_service_1.RestaurantService],
+        exports: [typeorm_1.TypeOrmModule],
+    })
+], RestaurantModule);
+//# sourceMappingURL=restaurant.module.js.map

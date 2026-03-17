@@ -46,7 +46,7 @@ if (Test-Path $dbFile) {
 }
 
 # Step 1: Pull latest code from GitHub
-Write-Host "[1/5] Pulling latest code from GitHub..." -ForegroundColor Yellow
+Write-Host "[1/3] Pulling latest code from GitHub..." -ForegroundColor Yellow
 git fetch origin
 git reset --hard origin/main
 git clean -fd
@@ -56,38 +56,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Done." -ForegroundColor Green
 
-# Step 2: Install backend packages
+# Step 2: Install backend runtime packages (no build needed - dist/ shipped via git)
 Write-Host ""
-Write-Host "[2/5] Installing backend packages..." -ForegroundColor Yellow
-npm install --include=dev
+Write-Host "[2/3] Installing backend packages..." -ForegroundColor Yellow
+npm install --omit=dev
 Write-Host "Done." -ForegroundColor Green
 
-# Step 3: Build backend
+# Step 3: Restart services
 Write-Host ""
-Write-Host "[3/5] Building backend..." -ForegroundColor Yellow
-# Use npx to ensure local nest CLI is found even without global install
-npx nest build
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Backend build failed!" -ForegroundColor Red
-    exit 1
-}
-Write-Host "Done." -ForegroundColor Green
-
-# Step 4: Build frontend
-Write-Host ""
-Write-Host "[4/5] Building frontend..." -ForegroundColor Yellow
-Set-Location $frontendPath
-npm install
-npm run build
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Frontend build failed!" -ForegroundColor Red
-    exit 1
-}
-Write-Host "Done." -ForegroundColor Green
-
-# Step 5: Restart services
-Write-Host ""
-Write-Host "[5/5] Restarting services..." -ForegroundColor Yellow
+Write-Host "[3/3] Restarting services..." -ForegroundColor Yellow
 Set-Location $projectPath
 $pm2Output = pm2 list 2>$null | Out-String
 if ($pm2Output -match "online|stopped|errored") {
