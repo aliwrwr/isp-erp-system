@@ -608,7 +608,7 @@ async function fetchUpdateLog() {
     await new Promise(r => setTimeout(r, 50));
     if (logBox.value) logBox.value.scrollTop = logBox.value.scrollHeight;
     // If log contains a "done" marker, stop polling
-    if (/اكتمل|تم التحديث|✓.*انتهى|error|failed|خطأ/i.test(updateLog.value)) {
+    if (/completed|Update completed|اكتمل|تم التحديث|error|failed|خطأ|Exit Code/i.test(updateLog.value)) {
       updateRunning.value = false;
       stopPolling();
     }

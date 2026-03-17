@@ -179,7 +179,7 @@ async function fetchUpdateLog() {
     updateLog.value = res.data.log || '';
     await new Promise(r => setTimeout(r, 50));
     if (logBox.value) logBox.value.scrollTop = logBox.value.scrollHeight;
-    if (/اكتمل|تم التحديث|✓.*انتهى|error|failed|خطأ/i.test(updateLog.value)) {
+    if (/completed|Update completed|اكتمل|تم التحديث|error|failed|خطأ|Exit Code/i.test(updateLog.value)) {
       updateRunning.value = false;
       stopPolling();
     }
