@@ -16,6 +16,16 @@ export class InventoryController {
     return this.inventoryService.create(dto);
   }
 
+  @Get('stats')
+  getStats() {
+    return this.inventoryService.getStats();
+  }
+
+  @Get('stock')
+  getStockSummary() {
+    return this.inventoryService.getStockSummary();
+  }
+
   @Get()
   findAll() {
     return this.inventoryService.findAll();

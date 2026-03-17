@@ -18,6 +18,7 @@ const routePermissions: Record<string, string> = {
   'Invoices': 'sales.invoices',
   'Cashbox': 'sales.expenses',
   'Expenses': 'sales.expenses',
+  'Inventory': 'sales.inventory',
   'Employees': 'hr.employees',
   'Departments': 'hr.departments',
   'Attendance': 'hr.attendance',
@@ -79,6 +80,7 @@ const routes = [
       { path: 'invoices', name: 'Invoices', component: () => import('../views/sales/InvoicesView.vue') },
       { path: 'cashbox', name: 'Cashbox', component: () => import('../views/sales/CashboxView.vue') },
       { path: 'expenses', name: 'Expenses', component: () => import('../views/sales/ExpensesView.vue') },
+      { path: 'inventory', name: 'Inventory', component: () => import('../views/sales/InventoryView.vue') },
     ],
   },
   {

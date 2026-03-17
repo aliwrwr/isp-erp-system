@@ -271,6 +271,7 @@ const permissionGroups = [
       { value: 'sales.categories', label: 'التصنيفات' },
       { value: 'sales.invoices', label: 'الفواتير' },
       { value: 'sales.expenses', label: 'المصروفات' },
+      { value: 'sales.inventory', label: 'المخزون' },
     ],
   },
   {
