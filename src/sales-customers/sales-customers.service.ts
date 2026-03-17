@@ -53,4 +53,57 @@ export class SalesCustomersService {
   async remove(id: number): Promise<void> {
     await this.repo.delete(id);
   }
+
+  /** Return all invoices for a customer (matched by phone or name) */
+  async getInvoices(id: number): Promise<any[]> {
+    const c = await this.findOne(id);
+    const invoices = await this.invoicesRepo.find({ order: { date: 'DESC' } });
+    return invoices.filter(inv =>
+      (c.phone && inv.customerPhone && inv.customerPhone === c.phone) ||
+      (!c.phone && inv.customerName === c.name),
+    );
+  }
+
+  /** Record a debt payment (reduce paidAmount gap on oldest unpaid invoices) */
+  async recordPayment(id: number, amount: number): Promise<{ settled: number }> {
+    const c = await this.findOne(id);
+    const invoices = await this.invoicesRepo.find({ order: { date: 'ASC' } });
+    const related = invoices.filter(inv =>
+      inv.paymentStatus !== 'paid' &&
+      ((c.phone && inv.customerPhone && inv.customerPhone === c.phone) ||
+       (!c.phone && inv.customerName === c.name)),
+    );
+    let remaining = amount;
+    for (const inv of related) {
+      if (remaining <= 0) break;
+      const debt = Number(inv.total) - Number(inv.paidAmount || 0);
+      if (debt <= 0) continue;
+      const settle = Math.min(debt, remaining);
+      inv.paidAmount = Number(inv.paidAmount || 0) + settle;
+      if (inv.paidAmount >= Number(inv.total)) inv.paymentStatus = 'paid';
+      else inv.paymentStatus = 'partial';
+      remaining -= settle;
+      await this.invoicesRepo.save(inv);
+    }
+    return { settled: amount - remaining };
+  }
+
+  /** Add a debt charge (create a new unpaid invoice entry) */
+  async addCharge(id: number, amount: number, note: string): Promise<any> {
+    const c = await this.findOne(id);
+    const count = await this.invoicesRepo.count();
+    const inv = this.invoicesRepo.create({
+      invoiceNumber: `CHG-${Date.now()}`,
+      customerName: c.name,
+      customerPhone: c.phone || '',
+      total: amount,
+      paidAmount: 0,
+      paymentStatus: 'unpaid',
+      paymentMethod: 'debt',
+      notes: note || 'إضافة دين',
+      discount: 0,
+      tax: 0,
+    });
+    return this.invoicesRepo.save(inv);
+  }
 }

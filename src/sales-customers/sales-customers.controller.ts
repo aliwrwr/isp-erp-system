@@ -43,4 +43,22 @@ export class SalesCustomersController {
   remove(@Param('id') id: string) {
     return this.service.remove(+id);
   }
+
+  @Get(':id/invoices')
+  @Roles('Super Admin', 'Sales Staff', 'Accountant')
+  getInvoices(@Param('id') id: string) {
+    return this.service.getInvoices(+id);
+  }
+
+  @Post(':id/payment')
+  @Roles('Super Admin', 'Sales Staff', 'Accountant')
+  recordPayment(@Param('id') id: string, @Body() body: { amount: number }) {
+    return this.service.recordPayment(+id, Number(body.amount));
+  }
+
+  @Post(':id/charge')
+  @Roles('Super Admin', 'Sales Staff')
+  addCharge(@Param('id') id: string, @Body() body: { amount: number; note?: string }) {
+    return this.service.addCharge(+id, Number(body.amount), body.note || '');
+  }
 }

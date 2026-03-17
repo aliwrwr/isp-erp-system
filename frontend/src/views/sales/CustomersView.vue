@@ -88,7 +88,12 @@
               </td>
             </tr>
             <tr v-for="(c, i) in paginated" :key="c.id"
-              class="border-b border-gray-50 hover:bg-gray-50/70 transition group">
+              class="border-b border-gray-50 hover:bg-teal-50/40 transition group cursor-pointer select-none"
+              @contextmenu.prevent="openCtx($event, c)"
+              @touchstart.passive="onTouchStart($event, c)"
+              @touchend="onTouchEnd"
+              @touchcancel="onTouchEnd"
+              @touchmove="onTouchEnd">
               <!-- # -->
               <td class="px-4 py-3 text-center text-[11px] text-gray-300 font-mono">
                 {{ (page - 1) * perPage + i + 1 }}
@@ -143,19 +148,19 @@
               <td class="px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition">
                   <!-- Use in POS -->
-                  <button @click="useInPOS(c)" title="استخدام في نقطة البيع"
+                  <button @click.stop="useInPOS(c)" title="استخدام في نقطة البيع"
                     class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center transition">
                     <i class="fas fa-cash-register text-[10px]"></i>
                   </button>
                   <!-- Edit -->
-                  <button @click="openEdit(c)" title="تعديل"
+                  <button @click.stop="openEdit(c)" title="تعديل"
                     class="w-7 h-7 rounded-lg bg-teal-50 text-teal-500 hover:bg-teal-100 flex items-center justify-center transition">
                     <i class="fas fa-pen text-[10px]"></i>
                   </button>
-                  <!-- Delete -->
-                  <button @click="doDelete(c)" title="حذف"
-                    class="w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 flex items-center justify-center transition">
-                    <i class="fas fa-trash-alt text-[10px]"></i>
+                  <!-- Context menu trigger -->
+                  <button @click.stop="openCtx($event, c)" title="المزيد"
+                    class="w-7 h-7 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 flex items-center justify-center transition">
+                    <i class="fas fa-ellipsis-v text-[10px]"></i>
                   </button>
                 </div>
               </td>
@@ -315,11 +320,269 @@
         {{ toastMsg }}
       </div>
     </transition>
+
+    <!-- ══ Context Menu ══ -->
+    <transition name="ctx">
+      <div v-if="ctx.visible" ref="ctxMenu"
+        :style="{ top: ctx.y + 'px', left: ctx.x + 'px' }"
+        class="fixed z-[200] bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 w-52 overflow-hidden"
+        @mouseleave="closeCtx">
+
+        <!-- Customer header -->
+        <div class="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2.5 mb-1">
+          <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-xs font-black flex-shrink-0">
+            {{ ctx.customer?.name?.[0] }}
+          </div>
+          <div class="overflow-hidden">
+            <p class="text-xs font-bold text-gray-700 truncate">{{ ctx.customer?.name }}</p>
+            <p class="text-[10px] text-gray-400">{{ ctx.customer?.phone || 'بدون هاتف' }}</p>
+          </div>
+        </div>
+
+        <button @click="ctxAction('details')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-teal-50 hover:text-teal-700 transition text-right">
+          <span class="w-7 h-7 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-id-card text-[11px]"></i>
+          </span>
+          عرض التفاصيل
+        </button>
+
+        <button @click="ctxAction('edit')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition text-right">
+          <span class="w-7 h-7 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-pen text-[11px]"></i>
+          </span>
+          تعديل البيانات
+        </button>
+
+        <div class="mx-3 my-1 border-t border-gray-100"></div>
+
+        <button @click="ctxAction('pay')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition text-right">
+          <span class="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-hand-holding-usd text-[11px]"></i>
+          </span>
+          تسديد دين
+          <span v-if="ctx.customer?.totalDebt > 0"
+            class="mr-auto text-[10px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded-lg">
+            {{ Number(ctx.customer?.totalDebt).toLocaleString() }}
+          </span>
+        </button>
+
+        <button @click="ctxAction('charge')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition text-right">
+          <span class="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-plus-circle text-[11px]"></i>
+          </span>
+          إضافة دين
+        </button>
+
+        <div class="mx-3 my-1 border-t border-gray-100"></div>
+
+        <button @click="ctxAction('receipt')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition text-right">
+          <span class="w-7 h-7 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-file-invoice text-[11px]"></i>
+          </span>
+          طباعة سند قبض
+        </button>
+
+        <div class="mx-3 my-1 border-t border-gray-100"></div>
+
+        <button @click="ctxAction('delete')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition text-right">
+          <span class="w-7 h-7 rounded-xl bg-red-100 text-red-500 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-trash-alt text-[11px]"></i>
+          </span>
+          حذف العميل
+        </button>
+      </div>
+    </transition>
+
+    <!-- Ctx backdrop -->
+    <div v-if="ctx.visible" class="fixed inset-0 z-[199]" @click="closeCtx" @contextmenu.prevent="closeCtx"></div>
+
+    <!-- ══ Details Modal ══ -->
+    <transition name="modal">
+      <div v-if="detailsModal.visible"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+        @click.self="detailsModal.visible = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" dir="rtl">
+          <div class="bg-gradient-to-l from-teal-600 to-emerald-500 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-black text-lg">
+                {{ detailsModal.customer?.name?.[0] }}
+              </div>
+              <div>
+                <h3 class="font-black text-white text-sm">{{ detailsModal.customer?.name }}</h3>
+                <p class="text-teal-100 text-xs">{{ detailsModal.customer?.phone || 'بدون هاتف' }}</p>
+              </div>
+            </div>
+            <button @click="detailsModal.visible = false" class="text-white/70 hover:text-white">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="p-6 space-y-5">
+            <!-- Stats row -->
+            <div class="grid grid-cols-3 gap-3">
+              <div class="bg-indigo-50 rounded-xl p-3 text-center">
+                <p class="text-xl font-black text-indigo-700">{{ detailsModal.customer?.invoiceCount }}</p>
+                <p class="text-[10px] text-indigo-400 font-semibold">فاتورة</p>
+              </div>
+              <div class="bg-teal-50 rounded-xl p-3 text-center">
+                <p class="text-lg font-black text-teal-700">{{ Number(detailsModal.customer?.totalSales || 0).toLocaleString() }}</p>
+                <p class="text-[10px] text-teal-400 font-semibold">إجمالي د.ع</p>
+              </div>
+              <div :class="detailsModal.customer?.totalDebt > 0 ? 'bg-red-50' : 'bg-emerald-50'" class="rounded-xl p-3 text-center">
+                <p class="text-lg font-black" :class="detailsModal.customer?.totalDebt > 0 ? 'text-red-600' : 'text-emerald-600'">
+                  {{ detailsModal.customer?.totalDebt > 0 ? Number(detailsModal.customer?.totalDebt).toLocaleString() : '✓' }}
+                </p>
+                <p class="text-[10px] font-semibold" :class="detailsModal.customer?.totalDebt > 0 ? 'text-red-400' : 'text-emerald-400'">
+                  {{ detailsModal.customer?.totalDebt > 0 ? 'دين د.ع' : 'مسدد' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Info -->
+            <div class="space-y-2.5">
+              <div v-if="detailsModal.customer?.address" class="flex items-start gap-3 text-sm">
+                <i class="fas fa-map-marker-alt text-teal-400 mt-0.5 w-4 text-center flex-shrink-0"></i>
+                <span class="text-gray-600">{{ detailsModal.customer?.address }}</span>
+              </div>
+              <div v-if="detailsModal.customer?.notes" class="flex items-start gap-3 text-sm">
+                <i class="fas fa-sticky-note text-amber-400 mt-0.5 w-4 text-center flex-shrink-0"></i>
+                <span class="text-gray-500 italic">{{ detailsModal.customer?.notes }}</span>
+              </div>
+              <div class="flex items-center gap-3 text-sm">
+                <i class="fas fa-calendar-alt text-gray-300 w-4 text-center flex-shrink-0"></i>
+                <span class="text-gray-400">تاريخ الإضافة: {{ formatDate(detailsModal.customer?.createdAt) }}</span>
+              </div>
+            </div>
+
+            <!-- Recent invoices -->
+            <div v-if="detailsModal.invoices.length">
+              <p class="text-xs font-bold text-gray-500 mb-2"><i class="fas fa-file-invoice ml-1 text-indigo-400"></i>آخر الفواتير</p>
+              <div class="space-y-1.5 max-h-44 overflow-y-auto">
+                <div v-for="inv in detailsModal.invoices.slice(0, 8)" :key="inv.id"
+                  class="flex items-center justify-between text-xs bg-gray-50 rounded-xl px-3 py-2">
+                  <span class="font-mono text-gray-400">{{ inv.invoiceNumber }}</span>
+                  <span class="text-gray-600 font-bold">{{ Number(inv.total).toLocaleString() }} د.ع</span>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                    :class="inv.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'">
+                    {{ inv.paymentStatus === 'paid' ? 'مسدد' : 'دين' }}
+                  </span>
+                  <span class="text-gray-300">{{ formatDate(inv.date) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="px-6 pb-5 flex gap-2 border-t border-gray-100 pt-4">
+            <button @click="detailsModal.visible = false; openEdit(detailsModal.customer)"
+              class="flex-1 py-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fas fa-pen"></i> تعديل
+            </button>
+            <button @click="detailsModal.visible = false; openPayModal(detailsModal.customer)"
+              class="flex-1 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fas fa-hand-holding-usd"></i> تسديد
+            </button>
+            <button @click="detailsModal.visible = false; printReceipt(detailsModal.customer)"
+              class="flex-1 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <i class="fas fa-print"></i> طباعة
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ══ Pay Debt Modal ══ -->
+    <transition name="modal">
+      <div v-if="payModal.visible"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+        @click.self="payModal.visible = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" dir="rtl">
+          <div class="bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-4 flex items-center justify-between">
+            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+              <i class="fas fa-hand-holding-usd"></i> تسديد دين
+            </h3>
+            <button @click="payModal.visible = false" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div class="bg-red-50 rounded-xl px-4 py-3 flex items-center justify-between">
+              <span class="text-xs text-gray-500 font-semibold">الدين الحالي:</span>
+              <span class="text-lg font-black text-red-600">{{ Number(payModal.customer?.totalDebt || 0).toLocaleString() }} د.ع</span>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1.5">مبلغ التسديد</label>
+              <div class="relative">
+                <input v-model.number="payModal.amount" type="number" min="1" placeholder="0"
+                  class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 transition text-left" dir="ltr" />
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">د.ع</span>
+              </div>
+            </div>
+            <button @click="payModal.amount = payModal.customer?.totalDebt"
+              class="w-full py-2 border border-dashed border-emerald-300 rounded-xl text-xs font-bold text-emerald-600 hover:bg-emerald-50 transition">
+              <i class="fas fa-check-double ml-1"></i> تسديد كامل المبلغ ({{ Number(payModal.customer?.totalDebt || 0).toLocaleString() }})
+            </button>
+          </div>
+          <div class="px-6 pb-5 flex gap-3">
+            <button @click="payModal.visible = false" class="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition">إلغاء</button>
+            <button @click="submitPayment" :disabled="!payModal.amount || payModal.loading"
+              class="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold transition disabled:opacity-50 flex items-center justify-center gap-2">
+              <i v-if="payModal.loading" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-check"></i>
+              تأكيد التسديد
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ══ Add Charge Modal ══ -->
+    <transition name="modal">
+      <div v-if="chargeModal.visible"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+        @click.self="chargeModal.visible = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" dir="rtl">
+          <div class="bg-gradient-to-l from-amber-500 to-orange-500 px-6 py-4 flex items-center justify-between">
+            <h3 class="font-bold text-white text-sm flex items-center gap-2">
+              <i class="fas fa-plus-circle"></i> إضافة دين
+            </h3>
+            <button @click="chargeModal.visible = false" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1.5">مبلغ الدين</label>
+              <div class="relative">
+                <input v-model.number="chargeModal.amount" type="number" min="1" placeholder="0"
+                  class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-400 transition text-left" dir="ltr" />
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">د.ع</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1.5">ملاحظة / سبب الدين</label>
+              <input v-model="chargeModal.note" placeholder="مثال: بضاعة بالآجل..." 
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition" />
+            </div>
+          </div>
+          <div class="px-6 pb-5 flex gap-3">
+            <button @click="chargeModal.visible = false" class="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition">إلغاء</button>
+            <button @click="submitCharge" :disabled="!chargeModal.amount || chargeModal.loading"
+              class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold transition disabled:opacity-50 flex items-center justify-center gap-2">
+              <i v-if="chargeModal.loading" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-plus"></i>
+              إضافة الدين
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../api';
 
@@ -400,6 +663,170 @@ const toastType = ref<'success' | 'error'>('success');
 function showToast(msg: string, type: 'success' | 'error' = 'success') {
   toastMsg.value = msg; toastType.value = type;
   setTimeout(() => toastMsg.value = '', 3500);
+}
+
+// ─── Context Menu ─────────────────────────────────────────────
+const ctxMenu = ref<HTMLElement | null>(null);
+const ctx = ref({ visible: false, x: 0, y: 0, customer: null as any });
+
+function openCtx(e: MouseEvent | PointerEvent, c: any) {
+  e.preventDefault();
+  const margin = 8;
+  let x = e.clientX + margin;
+  let y = e.clientY + margin;
+  // Clamp to viewport (approximate menu size 208x320)
+  if (x + 220 > window.innerWidth)  x = e.clientX - 220;
+  if (y + 340 > window.innerHeight) y = e.clientY - 340;
+  ctx.value = { visible: true, x, y, customer: c };
+}
+function closeCtx() { ctx.value.visible = false; }
+
+function ctxAction(action: string) {
+  const c = ctx.value.customer;
+  closeCtx();
+  if (action === 'details')  openDetailsModal(c);
+  if (action === 'edit')     openEdit(c);
+  if (action === 'pay')      openPayModal(c);
+  if (action === 'charge')   openChargeModal(c);
+  if (action === 'receipt')  printReceipt(c);
+  if (action === 'delete')   doDelete(c);
+}
+
+// Long-press support for touch devices
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+function onTouchStart(e: TouchEvent, c: any) {
+  longPressTimer = setTimeout(() => {
+    const t = e.touches[0];
+    openCtx({ clientX: t.clientX, clientY: t.clientY, preventDefault: () => {} } as any, c);
+  }, 600);
+}
+function onTouchEnd() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}
+onUnmounted(() => { if (longPressTimer) clearTimeout(longPressTimer); });
+
+// ─── Details Modal ────────────────────────────────────────────
+const detailsModal = ref({ visible: false, customer: null as any, invoices: [] as any[] });
+
+async function openDetailsModal(c: any) {
+  detailsModal.value = { visible: true, customer: c, invoices: [] };
+  try {
+    const { data } = await api.get(`/sales-customers/${c.id}/invoices`);
+    detailsModal.value.invoices = data;
+  } catch {}
+}
+
+// ─── Pay Debt Modal ───────────────────────────────────────────
+const payModal = ref({ visible: false, customer: null as any, amount: 0, loading: false });
+
+function openPayModal(c: any) {
+  payModal.value = { visible: true, customer: c, amount: 0, loading: false };
+}
+
+async function submitPayment() {
+  if (!payModal.value.amount) return;
+  payModal.value.loading = true;
+  try {
+    await api.post(`/sales-customers/${payModal.value.customer.id}/payment`, {
+      amount: payModal.value.amount,
+    });
+    showToast(`✓ تم تسجيل تسديد ${payModal.value.amount.toLocaleString()} د.ع`);
+    payModal.value.visible = false;
+    await loadCustomers();
+  } catch {
+    showToast('فشل تسجيل التسديد', 'error');
+  } finally {
+    payModal.value.loading = false;
+  }
+}
+
+// ─── Charge Modal ─────────────────────────────────────────────
+const chargeModal = ref({ visible: false, customer: null as any, amount: 0, note: '', loading: false });
+
+function openChargeModal(c: any) {
+  chargeModal.value = { visible: true, customer: c, amount: 0, note: '', loading: false };
+}
+
+async function submitCharge() {
+  if (!chargeModal.value.amount) return;
+  chargeModal.value.loading = true;
+  try {
+    await api.post(`/sales-customers/${chargeModal.value.customer.id}/charge`, {
+      amount: chargeModal.value.amount,
+      note: chargeModal.value.note,
+    });
+    showToast(`✓ تم إضافة دين ${chargeModal.value.amount.toLocaleString()} د.ع`);
+    chargeModal.value.visible = false;
+    await loadCustomers();
+  } catch {
+    showToast('فشل إضافة الدين', 'error');
+  } finally {
+    chargeModal.value.loading = false;
+  }
+}
+
+// ─── Print Receipt ────────────────────────────────────────────
+function printReceipt(c: any) {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ar-IQ', { year: 'numeric', month: 'long', day: '2-digit' });
+  const timeStr = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+  const debt = Number(c.totalDebt || 0);
+
+  const win = window.open('', '_blank', 'width=400,height=560')!;
+  win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl">
+<head><meta charset="UTF-8"><title>سند قبض - ${c.name}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+  body { background:#f5f5f5; display:flex; justify-content:center; align-items:flex-start; padding:20px; }
+  .receipt { background:#fff; border-radius:12px; box-shadow:0 4px 24px rgba(0,0,0,.12); width:340px; overflow:hidden; }
+  .header { background:linear-gradient(135deg,#0d9488,#059669); padding:20px; text-align:center; color:#fff; }
+  .header h1 { font-size:18px; font-weight:900; }
+  .header p { font-size:11px; opacity:.8; margin-top:2px; }
+  .badge { display:inline-block; background:rgba(255,255,255,.2); border-radius:20px; padding:4px 14px; font-size:12px; margin-top:8px; }
+  .body { padding:20px; }
+  .row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dashed #f0f0f0; }
+  .row:last-child { border-bottom:none; }
+  .label { font-size:11px; color:#888; font-weight:600; }
+  .value { font-size:12px; color:#333; font-weight:700; }
+  .amount-box { background:#f0fdf4; border:2px dashed #86efac; border-radius:10px; padding:14px; text-align:center; margin:14px 0; }
+  .amount-box .big { font-size:26px; font-weight:900; color:#16a34a; }
+  .amount-box .sub { font-size:11px; color:#86efac; margin-top:2px; }
+  .debt-box { background:#fff7ed; border:2px dashed #fed7aa; border-radius:10px; padding:10px 14px; text-align:center; margin:10px 0; }
+  .debt-box span { font-size:13px; font-weight:800; color:#ea580c; }
+  .footer { background:#f9fafb; border-top:1px solid #f0f0f0; padding:14px 20px; text-align:center; }
+  .footer p { font-size:10px; color:#aaa; }
+  .print-btn { display:block; width:100%; margin-top:10px; padding:10px; background:#0d9488; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+  @media print { body { background:#fff; padding:0; } .receipt { box-shadow:none; border-radius:0; width:100%; } .print-btn { display:none; } }
+</style></head>
+<body>
+<div class="receipt">
+  <div class="header">
+    <h1>سند قبض</h1>
+    <p>${dateStr} — ${timeStr}</p>
+    <span class="badge">رقم: RCP-${Date.now().toString().slice(-6)}</span>
+  </div>
+  <div class="body">
+    <div class="row"><span class="label">العميل</span><span class="value">${c.name}</span></div>
+    ${c.phone ? `<div class="row"><span class="label">الهاتف</span><span class="value" style="direction:ltr">${c.phone}</span></div>` : ''}
+    ${c.address ? `<div class="row"><span class="label">العنوان</span><span class="value">${c.address}</span></div>` : ''}
+    <div class="row"><span class="label">إجمالي الفواتير</span><span class="value">${c.invoiceCount} فاتورة</span></div>
+    <div class="row"><span class="label">إجمالي المشتريات</span><span class="value">${Number(c.totalSales).toLocaleString()} د.ع</span></div>
+
+    <div class="amount-box">
+      <div class="big">${Number(c.totalSales).toLocaleString()}</div>
+      <div class="sub">دينار عراقي — إجمالي المشتريات</div>
+    </div>
+
+    ${debt > 0 ? `<div class="debt-box"><span>الرصيد المتبقي (الدين): ${debt.toLocaleString()} د.ع</span></div>` : `<div class="debt-box" style="background:#f0fdf4;border-color:#86efac"><span style="color:#16a34a">✓ الحساب مسدد بالكامل</span></div>`}
+  </div>
+  <div class="footer">
+    <p>توقيع المستلم: ___________________</p>
+    <p style="margin-top:6px">طُبع من نظام ISP ERP</p>
+    <button class="print-btn" onclick="window.print()">🖨 طباعة</button>
+  </div>
+</div>
+</body></html>`);
+  win.document.close();
 }
 
 // ─── Form Modal ──────────────────────────────────────────────
