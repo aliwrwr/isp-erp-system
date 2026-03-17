@@ -376,8 +376,44 @@
     <!-- Toast -->
     <transition name="toast">
       <div v-if="toastMsg"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-semibold">
-        <i class="fas fa-check-circle text-lg"></i>{{ toastMsg }}
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-semibold transition-all"
+        :class="toastType === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'">
+        <i :class="toastType === 'error' ? 'fas fa-times-circle text-lg' : 'fas fa-check-circle text-lg'"></i>
+        {{ toastMsg }}
+      </div>
+    </transition>
+
+    <!-- ══ Confirm Modal ══ -->
+    <transition name="modal">
+      <div v-if="confirmModal.visible"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        @click.self="confirmModal.visible = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" dir="rtl">
+          <!-- Header -->
+          <div class="px-6 pt-6 pb-4 flex flex-col items-center text-center gap-3">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center"
+              :class="confirmModal.isDanger ? 'bg-red-100' : 'bg-amber-100'">
+              <i class="text-2xl" :class="confirmModal.isDanger ? 'fas fa-trash-alt text-red-500' : 'fas fa-exclamation-triangle text-amber-500'"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-black text-secondary">{{ confirmModal.title }}</h3>
+              <p class="text-xs text-gray-400 mt-1 leading-relaxed">{{ confirmModal.message }}</p>
+            </div>
+          </div>
+          <!-- Actions -->
+          <div class="px-6 pb-6 flex gap-3">
+            <button @click="confirmModal.visible = false"
+              class="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition">
+              إلغاء
+            </button>
+            <button @click="confirmModal.onConfirm(); confirmModal.visible = false"
+              class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition"
+              :class="confirmModal.isDanger ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'">
+              <i :class="confirmModal.isDanger ? 'fas fa-trash-alt ml-1' : 'fas fa-check ml-1'"></i>
+              {{ confirmModal.confirmText }}
+            </button>
+          </div>
+        </div>
       </div>
     </transition>
   </div>
@@ -510,8 +546,27 @@ function formatTime(d: string) {
 // ─── Actions ───────────────────────────────────────────────
 const detailInv = ref<any>(null);
 const toastMsg = ref('');
+const toastType = ref<'success' | 'error'>('success');
 
-function showToast(msg: string) { toastMsg.value = msg; setTimeout(() => toastMsg.value = '', 3000); }
+function showToast(msg: string, type: 'success' | 'error' = 'success') {
+  toastMsg.value = msg;
+  toastType.value = type;
+  setTimeout(() => toastMsg.value = '', 3500);
+}
+
+// ─── Confirm Modal ──────────────────────────────────────────
+const confirmModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  confirmText: 'تأكيد',
+  isDanger: true,
+  onConfirm: () => {},
+});
+
+function showConfirm(title: string, message: string, onConfirm: () => void, confirmText = 'حذف', isDanger = true) {
+  confirmModal.value = { visible: true, title, message, confirmText, isDanger, onConfirm };
+}
 
 function openDetails(inv: any) { detailInv.value = inv; }
 
@@ -528,28 +583,41 @@ function useCustomerInPOS(inv: any) {
   router.push('/sales/pos');
 }
 
-async function deleteInvoice(id: number) {
-  if (!confirm('هل تريد حذف هذه الفاتورة؟')) return;
-  try {
-    await api.delete(`/invoices/${id}`);
-    invoices.value = invoices.value.filter(i => i.id !== id);
-    selected.value = selected.value.filter(s => s !== id);
-    showToast('تم حذف الفاتورة');
-  } catch {
-    alert('فشل الحذف');
-  }
+function deleteInvoice(id: number) {
+  const inv = invoices.value.find(i => i.id === id);
+  const name = inv?.customerName ? `للعميل "${inv.customerName}"` : '';
+  showConfirm(
+    'حذف الفاتورة',
+    `هل أنت متأكد من حذف الفاتورة ${inv?.invoiceNumber || ''} ${name}؟ لا يمكن التراجع عن هذه العملية.`,
+    async () => {
+      try {
+        await api.delete(`/invoices/${id}`);
+        invoices.value = invoices.value.filter(i => i.id !== id);
+        selected.value = selected.value.filter(s => s !== id);
+        showToast('✓ تم حذف الفاتورة بنجاح');
+      } catch {
+        showToast('فشل حذف الفاتورة، حاول مرة أخرى', 'error');
+      }
+    }
+  );
 }
 
-async function bulkDelete() {
-  if (!confirm(`هل تريد حذف ${selected.value.length} فاتورة؟`)) return;
-  try {
-    await Promise.all(selected.value.map(id => api.delete(`/invoices/${id}`)));
-    invoices.value = invoices.value.filter(i => !selected.value.includes(i.id));
-    showToast(`تم حذف ${selected.value.length} فاتورة`);
-    selected.value = [];
-  } catch {
-    alert('فشل حذف بعض الفواتير');
-  }
+function bulkDelete() {
+  const count = selected.value.length;
+  showConfirm(
+    `حذف ${count} فاتورة`,
+    `هل أنت متأكد من حذف ${count} فاتورة؟ سيتم حذفها نهائياً ولا يمكن التراجع عن هذه العملية.`,
+    async () => {
+      try {
+        await Promise.all(selected.value.map(id => api.delete(`/invoices/${id}`)));
+        invoices.value = invoices.value.filter(i => !selected.value.includes(i.id));
+        showToast(`✓ تم حذف ${count} فاتورة بنجاح`);
+        selected.value = [];
+      } catch {
+        showToast('فشل حذف بعض الفواتير، حاول مرة أخرى', 'error');
+      }
+    }
+  );
 }
 
 function printInvoice(inv: any) {
