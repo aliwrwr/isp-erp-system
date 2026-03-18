@@ -9,52 +9,52 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Expense = void 0;
+exports.CashboxManual = void 0;
 const typeorm_1 = require("typeorm");
-let Expense = class Expense {
+let CashboxManual = class CashboxManual {
     id;
-    recipientName;
-    description;
+    type;
     amount;
-    category;
+    description;
     date;
+    reference;
     time;
     createdAt;
 };
-exports.Expense = Expense;
+exports.CashboxManual = CashboxManual;
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
-], Expense.prototype, "id", void 0);
+], CashboxManual.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
-], Expense.prototype, "recipientName", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Expense.prototype, "description", void 0);
+], CashboxManual.prototype, "type", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'real' }),
     __metadata("design:type", Number)
-], Expense.prototype, "amount", void 0);
+], CashboxManual.prototype, "amount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: 'general' }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
-], Expense.prototype, "category", void 0);
+], CashboxManual.prototype, "description", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'date' }),
     __metadata("design:type", String)
-], Expense.prototype, "date", void 0);
+], CashboxManual.prototype, "date", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
-], Expense.prototype, "time", void 0);
+], CashboxManual.prototype, "reference", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], CashboxManual.prototype, "time", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
-], Expense.prototype, "createdAt", void 0);
-exports.Expense = Expense = __decorate([
-    (0, typeorm_1.Entity)('expenses')
-], Expense);
-//# sourceMappingURL=expense.entity.js.map
+], CashboxManual.prototype, "createdAt", void 0);
+exports.CashboxManual = CashboxManual = __decorate([
+    (0, typeorm_1.Entity)('cashbox_manual')
+], CashboxManual);
+//# sourceMappingURL=cashbox-manual.entity.js.map

@@ -11,7 +11,7 @@ export class Expense {
   @Column({ nullable: true })
   description: string;           // الوصف
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'real' })
   amount: number;                // المبلغ
 
   @Column({ default: 'general' })

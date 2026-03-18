@@ -45,6 +45,6 @@ __decorate([
     __metadata("design:type", Date)
 ], Expense.prototype, "date", void 0);
 exports.Expense = Expense = __decorate([
-    (0, typeorm_1.Entity)('expenses')
+    (0, typeorm_1.Entity)('sales_expenses_legacy')
 ], Expense);
 //# sourceMappingURL=expense.entity.js.map

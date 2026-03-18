@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
-@Entity('expenses')
+@Entity('sales_expenses_legacy')
 export class Expense {
   @PrimaryGeneratedColumn()
   id: number;

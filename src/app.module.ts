@@ -30,6 +30,7 @@ import { ManagersModule } from './managers/managers.module';
 import { BackupModule } from './backup/backup.module';
 import { DeployModule } from './deploy/deploy.module';
 import { ExpensesModule } from './expenses/expenses.module';
+import { CashboxModule } from './cashbox/cashbox.module';
 import config from './config/config';
 
 @Module({
@@ -71,6 +72,7 @@ import config from './config/config';
     BackupModule,
     DeployModule,
     ExpensesModule,
+    CashboxModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,17 +6,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SalesModule = void 0;
+exports.CashboxModule = void 0;
 const common_1 = require("@nestjs/common");
-let SalesModule = class SalesModule {
+const typeorm_1 = require("@nestjs/typeorm");
+const cashbox_manual_entity_1 = require("./entities/cashbox-manual.entity");
+const cashbox_controller_1 = require("./cashbox.controller");
+const cashbox_service_1 = require("./cashbox.service");
+let CashboxModule = class CashboxModule {
 };
-exports.SalesModule = SalesModule;
-exports.SalesModule = SalesModule = __decorate([
+exports.CashboxModule = CashboxModule;
+exports.CashboxModule = CashboxModule = __decorate([
     (0, common_1.Module)({
-        imports: [],
-        controllers: [],
-        providers: [],
-        exports: [],
+        imports: [typeorm_1.TypeOrmModule.forFeature([cashbox_manual_entity_1.CashboxManual])],
+        controllers: [cashbox_controller_1.CashboxController],
+        providers: [cashbox_service_1.CashboxService],
     })
-], SalesModule);
-//# sourceMappingURL=sales.module.js.map
+], CashboxModule);
+//# sourceMappingURL=cashbox.module.js.map
