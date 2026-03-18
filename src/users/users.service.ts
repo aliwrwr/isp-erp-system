@@ -40,6 +40,21 @@ export class UsersService implements OnModuleInit {
       });
       await this.usersRepository.save(adminUser);
       this.logger.log('Created default admin user: admin@isp.com / admin123');
+    } else {
+      // Always ensure admin@isp.com exists (for existing deployments)
+      const adminUser = await this.usersRepository.findOne({ where: { email: 'admin@isp.com' } });
+      if (!adminUser) {
+        const salt = await bcrypt.genSalt();
+        const hashedPassword = await bcrypt.hash('admin123', salt);
+        const newAdmin = this.usersRepository.create({
+          name: 'Admin ISP',
+          email: 'admin@isp.com',
+          password: hashedPassword,
+          roles: [superAdminRole],
+        });
+        await this.usersRepository.save(newAdmin);
+        this.logger.log('Created missing admin@isp.com / admin123');
+      }
     }
   }
 
