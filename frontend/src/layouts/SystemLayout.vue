@@ -97,6 +97,7 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
   internet: [
     { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/internet' },
     { label: 'المشتركين', icon: 'fas fa-users', route: '/internet/subscribers' },
+    { label: 'المتصلين', icon: 'fas fa-signal', route: '/internet/connected' },
     { label: 'الباقات', icon: 'fas fa-box', route: '/internet/packages' },
     { label: 'الاشتراكات', icon: 'fas fa-file-contract', route: '/internet/subscriptions' },
     { label: 'الراوترات', icon: 'fas fa-server', route: '/internet/routers' },
@@ -163,6 +164,7 @@ const currentSystem = computed(() => (route.meta.system as string) || 'internet'
 // Permission mapping: route -> permission key
 const routePermissions: Record<string, string> = {
   '/internet/subscribers': 'internet.subscribers',
+  '/internet/connected': 'internet.connected',
   '/internet/packages': 'internet.packages',
   '/internet/subscriptions': 'internet.subscriptions',
   '/internet/routers': 'internet.routers',

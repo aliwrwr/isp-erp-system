@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/auth';
 // Permission mapping for routes
 const routePermissions: Record<string, string> = {
   'Subscribers': 'internet.subscribers',
+  'ConnectedUsers': 'internet.connected',
   'Packages': 'internet.packages',
   'Subscriptions': 'internet.subscriptions',
   'Routers': 'internet.routers',
@@ -58,6 +59,7 @@ const routes = [
     children: [
       { path: '', name: 'InternetDashboard', component: () => import('../views/internet/DashboardView.vue') },
       { path: 'subscribers', name: 'Subscribers', component: () => import('../views/internet/SubscribersView.vue') },
+      { path: 'connected', name: 'ConnectedUsers', component: () => import('../views/internet/ConnectedView.vue') },
       { path: 'packages', name: 'Packages', component: () => import('../views/internet/PackagesView.vue') },
       { path: 'subscriptions', name: 'Subscriptions', component: () => import('../views/internet/SubscriptionsView.vue') },
       { path: 'routers', name: 'Routers', component: () => import('../views/internet/RoutersView.vue') },

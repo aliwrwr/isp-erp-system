@@ -248,6 +248,7 @@ const permissionGroups = [
     color: '#2980B9',
     items: [
       { value: 'internet.subscribers', label: 'المشتركين' },
+      { value: 'internet.connected', label: 'المتصلين' },
       { value: 'internet.packages', label: 'الباقات' },
       { value: 'internet.subscriptions', label: 'الاشتراكات' },
       { value: 'internet.routers', label: 'الراوترات' },

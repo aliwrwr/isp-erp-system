@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { RouterOSAPI } from 'node-routeros';
 
 export interface RouterStatus {
@@ -34,6 +34,7 @@ export interface ActiveConnection {
   name: string;
   service: string;
   address: string;
+  macAddress: string;
   uptime: string;
   bytesIn: number;
   bytesOut: number;
@@ -168,7 +169,8 @@ export class MikrotikService {
         id: s['.id'] || '',
         name: s.name || '',
         service: s.service || 'pppoe',
-        address: s.address || s['caller-id'] || '',
+        address: s.address || '',
+        macAddress: s['caller-id'] || '',
         uptime: s.uptime || '',
         bytesIn: parseInt(s['bytes-out']) || 0,
         bytesOut: parseInt(s['bytes-in']) || 0,
@@ -199,6 +201,26 @@ export class MikrotikService {
       }));
     } catch (err: any) {
       return [];
+    }
+  }
+
+  async disconnectPppSession(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    sessionId: string,
+  ): Promise<boolean> {
+    const isSsl = router.connectionType === 'API-SSL';
+    const conn = this.createConnection(
+      router.ipAddress, router.username, router.password,
+      router.port || (isSsl ? 8729 : 8728), isSsl,
+    );
+    try {
+      await conn.connect();
+      await conn.write('/ppp/active/remove', [`=.id=${sessionId}`]);
+      conn.close();
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`disconnectPppSession failed: ${err.message}`);
+      return false;
     }
   }
 }

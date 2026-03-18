@@ -1,8 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { RoutersService } from './routers.service';
 import { MikrotikService } from './mikrotik.service';
 import { CreateRouterDto } from './dto/create-router.dto';
 import { UpdateRouterDto } from './dto/update-router.dto';
+import { Subscriber } from '../subscribers/entities/subscriber.entity';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -17,7 +20,56 @@ export class RoutersController {
   constructor(
     private readonly routersService: RoutersService,
     private readonly mikrotikService: MikrotikService,
+    @InjectRepository(Subscriber) private subscriberRepo: Repository<Subscriber>,
   ) {}
+
+  // ── All active connections (aggregated from all routers) ─────────────────────
+  @Get('connections')
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.connected')
+  async getAllConnections() {
+    const routers = await this.routersService.findAll();
+    const subscribers = await this.subscriberRepo.find({ relations: ['package'] });
+    const subMap = new Map(subscribers.map(s => [s.username.toLowerCase(), s]));
+
+    const results: any[] = [];
+    await Promise.allSettled(
+      routers.map(async (router) => {
+        try {
+          const conns = await this.mikrotikService.getActiveConnections(router);
+          for (const conn of conns) {
+            const sub = subMap.get(conn.name.toLowerCase());
+            const connStatus = !sub ? 'unknown' : sub.status === 'active' ? 'active' : 'disabled';
+            results.push({
+              ...conn,
+              routerId: router.id,
+              routerName: router.name,
+              subscriberId: sub?.id ?? null,
+              subscriberName: sub?.name ?? '',
+              packageName: sub?.package?.name ?? '',
+              subscriberStatus: connStatus,
+            });
+          }
+        } catch (_) {}
+      }),
+    );
+    return results;
+  }
+
+  // ── Disconnect a PPPoE session ────────────────────────────────────────────────
+  @Post(':id/disconnect-session')
+  @HttpCode(200)
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.connected')
+  async disconnectSession(
+    @Param('id') id: string,
+    @Body() body: { sessionId: string },
+  ) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return { success: false, message: 'Router not found' };
+    const ok = await this.mikrotikService.disconnectPppSession(router, body.sessionId);
+    return { success: ok, message: ok ? 'تم قطع الاتصال' : 'فشل قطع الاتصال' };
+  }
 
   @Post()
   @Roles('Super Admin', 'Network Admin')
