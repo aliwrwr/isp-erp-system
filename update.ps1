@@ -58,8 +58,12 @@ Write-Host "Done." -ForegroundColor Green
 
 # Step 2: Install backend runtime packages (no build needed - dist/ shipped via git)
 Write-Host ""
-Write-Host "[2/3] Installing backend packages..." -ForegroundColor Yellow
+Write-Host "[2/3] Installing packages..." -ForegroundColor Yellow
+Set-Location $projectPath
 npm install --omit=dev
+Set-Location $frontendPath
+npm install --omit=dev
+Set-Location $projectPath
 Write-Host "Done." -ForegroundColor Green
 
 # Step 3: Restart services (reload from ecosystem config so env vars are refreshed)
