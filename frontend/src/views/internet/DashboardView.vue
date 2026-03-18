@@ -16,11 +16,23 @@
           <i class="fas fa-server text-internet text-sm"></i>
           <h3 class="font-bold text-secondary text-sm">حالة الراوترات</h3>
           <span class="text-xs text-gray-400">({{ routerOnlineCount }}/{{ routers.length }} متصل)</span>
+          <!-- LIVE badge -->
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping inline-block"></span>
+            LIVE
+          </span>
         </div>
-        <button @click="refreshRouters" :disabled="routersLoading"
-          class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition">
-          <i class="fas fa-sync-alt text-[10px]" :class="{ 'fa-spin': routersLoading }"></i> تحديث
-        </button>
+        <div class="flex items-center gap-3">
+          <!-- countdown -->
+          <span class="text-[11px] text-gray-400 flex items-center gap-1">
+            <i class="fas fa-sync-alt text-[9px]" :class="{ 'fa-spin': routersLoading }"></i>
+            تحديث بعد {{ countdown }}ث
+          </span>
+          <button @click="refreshRouters(); countdown = LIVE_INTERVAL" :disabled="routersLoading"
+            class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition">
+            تحديث الآن
+          </button>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -184,7 +196,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import StatsCard from '../../components/StatsCard.vue';
 import DataTable from '../../components/DataTable.vue';
 import api from '../../api';
@@ -236,6 +248,25 @@ const routerOnlineCount  = computed(() => Object.values(routerStatuses.value).fi
 const routerOfflineCount = computed(() => Object.values(routerStatuses.value).filter(s => s === 'offline').length);
 const routerUnknownCount = computed(() => routers.value.filter(r => !routerStatuses.value[r.id] || routerStatuses.value[r.id] === 'unknown').length);
 
+// ── Live refresh ──────────────────────────────────────────────────
+let liveTimer: ReturnType<typeof setInterval> | null = null;
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+const LIVE_INTERVAL = 10; // seconds
+const countdown = ref(LIVE_INTERVAL);
+
+function startLiveRefresh() {
+  if (liveTimer) clearInterval(liveTimer);
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdown.value = LIVE_INTERVAL;
+  countdownTimer = setInterval(() => {
+    countdown.value--;
+    if (countdown.value <= 0) countdown.value = LIVE_INTERVAL;
+  }, 1000);
+  liveTimer = setInterval(() => {
+    refreshRouters();
+  }, LIVE_INTERVAL * 1000);
+}
+
 function routerStatus(id: number): string {
   return routerStatuses.value[id] || 'unknown';
 }
@@ -283,6 +314,14 @@ onMounted(async () => {
     if (routersRes) routers.value = routersRes.data;
   } catch {}
   // Check routers status in background (non-blocking)
-  if (canSeeRouters.value) refreshRouters();
+  if (canSeeRouters.value) {
+    refreshRouters();
+    startLiveRefresh();
+  }
+});
+
+onUnmounted(() => {
+  if (liveTimer) clearInterval(liveTimer);
+  if (countdownTimer) clearInterval(countdownTimer);
 });
 </script>
