@@ -67,7 +67,7 @@ let DeployController = class DeployController {
         if (!(0, fs_1.existsSync)(this.logFile)) {
             return { ok: false, log: 'لم يتم تشغيل أي تحديث بعد على هذا الجهاز.' };
         }
-        const content = (0, fs_1.readFileSync)(this.logFile, 'utf8');
+        const content = (0, fs_1.readFileSync)(this.logFile, 'utf8').replace(/\0/g, '');
         const lines = content.split(/\r?\n/).slice(-200).join('\n');
         return { ok: true, log: lines };
     }
@@ -78,7 +78,7 @@ let DeployController = class DeployController {
         if (!(0, fs_1.existsSync)(this.logFile)) {
             return { ok: false, log: 'لم يتم تشغيل أي تحديث بعد على هذا الجهاز.' };
         }
-        const content = (0, fs_1.readFileSync)(this.logFile, 'utf8');
+        const content = (0, fs_1.readFileSync)(this.logFile, 'utf8').replace(/\0/g, '');
         const lines = content.split(/\r?\n/).slice(-300).join('\n');
         return { ok: true, log: lines };
     }

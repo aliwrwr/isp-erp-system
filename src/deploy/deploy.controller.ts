@@ -27,7 +27,8 @@ export class DeployController {
     if (!existsSync(this.logFile)) {
       return { ok: false, log: 'لم يتم تشغيل أي تحديث بعد على هذا الجهاز.' };
     }
-    const content = readFileSync(this.logFile, 'utf8');
+    // PowerShell 5.1 Start-Transcript writes UTF-16 LE; strip null bytes when read as UTF-8
+    const content = readFileSync(this.logFile, 'utf8').replace(/\0/g, '');
     // Return last 200 lines to keep the response small
     const lines = content.split(/\r?\n/).slice(-200).join('\n');
     return { ok: true, log: lines };
@@ -48,7 +49,8 @@ export class DeployController {
     if (!existsSync(this.logFile)) {
       return { ok: false, log: 'لم يتم تشغيل أي تحديث بعد على هذا الجهاز.' };
     }
-    const content = readFileSync(this.logFile, 'utf8');
+    // PowerShell 5.1 Start-Transcript writes UTF-16 LE; strip null bytes when read as UTF-8
+    const content = readFileSync(this.logFile, 'utf8').replace(/\0/g, '');
     const lines = content.split(/\r?\n/).slice(-300).join('\n');
     return { ok: true, log: lines };
   }
