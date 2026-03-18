@@ -67,6 +67,13 @@ export const ACTION_LABELS: Record<string, string> = {
   add_manager:         'إضافة مدير',
   edit_manager:        'تعديل مدير',
   delete_manager:      'حذف مدير',
+  // ── Routers ───────────────────────────────────────────
+  add_router:          'إضافة راوتر',
+  edit_router:         'تعديل راوتر',
+  delete_router:       'حذف راوتر',
+  ping_router:         'اختبار اتصال راوتر',
+  router_online:       'راوتر متصل',
+  router_offline:      'راوتر غير متصل',
 };
 
 // Badge color per action (Tailwind classes)
@@ -87,6 +94,13 @@ export const ACTION_COLORS: Record<string, string> = {
   add_manager:         'bg-cyan-100 text-cyan-800 border-cyan-200',
   edit_manager:        'bg-sky-100 text-sky-800 border-sky-200',
   delete_manager:      'bg-red-100 text-red-800 border-red-200',
+  // ── Routers ───────────────────────────────────────────
+  add_router:          'bg-emerald-100 text-emerald-800 border-emerald-200',
+  edit_router:         'bg-amber-100 text-amber-800 border-amber-200',
+  delete_router:       'bg-red-100 text-red-800 border-red-200',
+  ping_router:         'bg-blue-100 text-blue-800 border-blue-200',
+  router_online:       'bg-green-100 text-green-800 border-green-200',
+  router_offline:      'bg-orange-100 text-orange-800 border-orange-200',
 };
 
 // Icon per action (simple unicode / emoji — rendered as-is)
@@ -107,6 +121,13 @@ export const ACTION_ICONS: Record<string, string> = {
   add_manager:         '👤',
   edit_manager:        '✏️',
   delete_manager:      '🗑️',
+  // ── Routers ───────────────────────────────────────────
+  add_router:          '🖥️',
+  edit_router:         '✏️',
+  delete_router:       '🗑️',
+  ping_router:         '📡',
+  router_online:       '🟢',
+  router_offline:      '🔴',
 };
 
 // Module label
@@ -115,4 +136,5 @@ export const MODULE_LABELS: Record<string, string> = {
   subscription: 'الاشتراكات',
   package:      'الباقات',
   manager:      'المدراء',
+  router:       'الراوترات',
 };

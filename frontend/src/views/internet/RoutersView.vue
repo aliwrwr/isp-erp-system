@@ -433,6 +433,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../../api';
+import { logActivity } from '../../utils/activityLog';
 
 // ── Types ─────────────────────────────────────────────────────────
 interface RouterStatus {
@@ -577,12 +578,25 @@ async function pingRouter(r: any) {
   pingingId.value = r.id;
   try {
     const { data } = await api.post(`/routers/${r.id}/ping`);
-    statuses.value[r.id] = data.online ? 'online' : 'offline';
-    if (data.online) await checkStatus(r);
-    showToast(r.name, data.online);
+    const online = data.online as boolean;
+    statuses.value[r.id] = online ? 'online' : 'offline';
+    if (online) await checkStatus(r);
+    showToast(r.name, online);
+    logActivity({
+      action: online ? 'router_online' : 'router_offline',
+      module: 'router',
+      details: online
+        ? `اختبار الاتصال بالراوتر "${r.name}" (${r.ipAddress}) — الاتصال ناجح ✅`
+        : `اختبار الاتصال بالراوتر "${r.name}" (${r.ipAddress}) — لا يوجد اتصال ❌`,
+    });
   } catch {
     statuses.value[r.id] = 'offline';
     showToast(r.name, false);
+    logActivity({
+      action: 'router_offline',
+      module: 'router',
+      details: `فشل اختبار الاتصال بالراوتر "${r.name}" (${r.ipAddress})`,
+    });
   } finally {
     pingingId.value = null;
   }
@@ -655,14 +669,22 @@ function openEdit(r: any) {
 
 async function save() {
   saving.value = true;
+  const isEdit = !!editingId.value;
   try {
     const payload: any = { ...form.value, port: Number(form.value.port) };
     if (!payload.password) delete payload.password;
-    if (editingId.value) {
+    if (isEdit) {
       await api.patch(`/routers/${editingId.value}`, payload);
     } else {
       await api.post('/routers', payload);
     }
+    logActivity({
+      action: isEdit ? 'edit_router' : 'add_router',
+      module: 'router',
+      details: isEdit
+        ? `تعديل بيانات الراوتر "${form.value.name}" — IP: ${form.value.ipAddress}${form.value.location ? ' — الموقع: ' + form.value.location : ''}`
+        : `إضافة راوتر جديد "${form.value.name}" — IP: ${form.value.ipAddress}:${form.value.port}${form.value.location ? ' — الموقع: ' + form.value.location : ''} — النوع: ${form.value.connectionType}`,
+    });
     showModal.value = false;
     await loadData();
     await checkAllStatus();
@@ -673,8 +695,16 @@ async function save() {
 
 async function remove(id: number) {
   if (!confirm('هل أنت متأكد من حذف هذا الراوتر؟')) return;
+  const router = routers.value.find(r => r.id === id);
   try {
     await api.delete(`/routers/${id}`);
+    logActivity({
+      action: 'delete_router',
+      module: 'router',
+      details: router
+        ? `حذف الراوتر "${router.name}" — IP: ${router.ipAddress}${router.location ? ' — الموقع: ' + router.location : ''}`
+        : `حذف راوتر (id: ${id})`,
+    });
     delete statuses.value[id];
     delete statusData.value[id];
     await loadData();
