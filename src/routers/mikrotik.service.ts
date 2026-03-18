@@ -160,8 +160,10 @@ export class MikrotikService {
     try {
       await conn.connect();
 
-      // Try PPPoE active sessions first
-      const pppoe = await conn.write('/ppp/active/print').catch(() => []);
+      // Request all fields explicitly so RouterOS returns bytes-in/bytes-out regardless of version
+      const pppoe = await conn.write('/ppp/active/print', [
+        '=.proplist=.id,name,service,address,uptime,bytes-in,bytes-out,caller-id,encoding',
+      ]).catch(() => conn.write('/ppp/active/print').catch(() => []));
 
       conn.close();
 

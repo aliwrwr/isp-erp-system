@@ -181,7 +181,18 @@
                 <span v-else class="text-gray-400">—</span>
               </td>
               <!-- IP -->
-              <td class="px-3 py-2 font-mono text-blue-500">{{ conn.address || '—' }}</td>
+              <td class="px-3 py-2 font-mono">
+                <a v-if="conn.address"
+                  :href="`http://${conn.address}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-500 hover:text-blue-700 hover:underline flex items-center gap-1 w-fit"
+                  title="فتح صفحة الجهاز في المتصفح">
+                  {{ conn.address }}
+                  <i class="fas fa-external-link-alt text-[9px] opacity-60"></i>
+                </a>
+                <span v-else class="text-gray-400">—</span>
+              </td>
               <!-- MAC -->
               <td class="px-3 py-2 font-mono text-gray-500 text-[11px]">{{ conn.macAddress || '—' }}</td>
               <!-- Uptime -->
