@@ -31,7 +31,7 @@ module.exports = {
     // ─── Frontend (Vue 3 - Static via serve) ─────────────────────────
     {
       name: 'isp-frontend',
-      script: 'node_modules/.bin/serve',
+      script: 'node_modules/serve/build/main.js',
       args: 'dist -s -l 5173',
       cwd: __dirname + '/frontend',
       watch: false,
