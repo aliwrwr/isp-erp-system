@@ -28,11 +28,11 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
     },
 
-    // ─── Frontend (Vue 3 + Vite) ─────────────────────────────────────
+    // ─── Frontend (Vue 3 - Static via serve) ─────────────────────────
     {
       name: 'isp-frontend',
-      script: './node_modules/vite/bin/vite.js',
-      args: 'preview --host',
+      script: 'node_modules/.bin/serve',
+      args: 'dist -s -l 5173',
       cwd: __dirname + '/frontend',
       watch: false,
       autorestart: true,
