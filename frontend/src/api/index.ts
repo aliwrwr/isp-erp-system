@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-const apiBase = import.meta.env.VITE_API_URL ||
-  `http://${window.location.hostname}:3000`;
-
 const api = axios.create({
-  baseURL: apiBase,
+  baseURL: (import.meta.env.VITE_API_URL as string) || `http://${window.location.hostname}:3000`,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -28,3 +25,5 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+
