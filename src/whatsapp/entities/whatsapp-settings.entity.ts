@@ -6,6 +6,9 @@ export class WhatsappSettings {
   id: number;
 
   @Column({ default: false })
+  autoConnect: boolean;
+
+  @Column({ default: false })
   activationEnabled: boolean;
 
   @Column({ default: false })

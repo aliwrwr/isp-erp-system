@@ -3,6 +3,10 @@ import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator'
 export class UpdateWhatsappSettingsDto {
   @IsBoolean()
   @IsOptional()
+  autoConnect?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
   activationEnabled?: boolean;
 
   @IsBoolean()

@@ -83,6 +83,11 @@
             <i class="fas fa-sign-out-alt text-xs"></i>
             قطع الاتصال
           </button>
+          <button @click="changeDevice" :disabled="changingDevice || actionLoading"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium transition-colors disabled:opacity-50">
+            <i class="fas fa-mobile-alt text-xs" :class="changingDevice ? 'fa-spin' : ''"></i>
+            تغيير الجهاز
+          </button>
           <button v-if="status.connected" @click="showTestModal = true"
             class="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors">
             <i class="fas fa-paper-plane text-xs"></i>
@@ -158,6 +163,31 @@
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- Auto-Connect Toggle -->
+        <div class="p-4 rounded-xl border-2 transition-colors cursor-pointer md:col-span-3"
+          :class="settings.autoConnect ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-gray-50'"
+          @click="settings.autoConnect = !settings.autoConnect">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+                :class="settings.autoConnect ? 'bg-blue-500' : 'bg-gray-300'">
+                <i class="fas fa-plug text-white text-sm"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-700">اتصال تلقائي عند تشغيل النظام</p>
+                <p class="text-xs text-gray-500 mt-0.5">يقوم النظام بالاتصال بواتساب تلقائياً عند كل إعادة تشغيل — يستخدم الجلسة المحفوظة دون الحاجة لمسح QR</p>
+              </div>
+            </div>
+            <div class="relative flex-shrink-0">
+              <div class="w-12 h-6 rounded-full transition-colors"
+                :class="settings.autoConnect ? 'bg-blue-500' : 'bg-gray-300'">
+                <div class="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all"
+                  :class="settings.autoConnect ? 'right-1' : 'left-1'"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Activation Toggle -->
         <div class="p-4 rounded-xl border-2 transition-colors cursor-pointer"
           :class="settings.activationEnabled ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-gray-50'"
@@ -558,6 +588,7 @@ const status = reactive({
 });
 
 const settings = reactive({
+  autoConnect: false,
   activationEnabled: false,
   expiryWarningEnabled: false,
   expiryEnabled: false,
@@ -676,10 +707,10 @@ async function disconnect() {
 async function saveSettings() {
   savingSettings.value = true;
   try {
-    const { activationEnabled, expiryWarningEnabled, expiryEnabled, warningDays,
+    const { autoConnect, activationEnabled, expiryWarningEnabled, expiryEnabled, warningDays,
             activationTemplate, expiryWarningTemplate, expiryTemplate } = settings;
     await api.patch('/whatsapp/settings', {
-      activationEnabled, expiryWarningEnabled, expiryEnabled, warningDays,
+      autoConnect, activationEnabled, expiryWarningEnabled, expiryEnabled, warningDays,
       activationTemplate, expiryWarningTemplate, expiryTemplate,
     });
     showToast('تم حفظ الإعدادات بنجاح ✅', 'success');
@@ -687,6 +718,22 @@ async function saveSettings() {
     showToast('حدث خطأ أثناء الحفظ', 'error');
   } finally {
     savingSettings.value = false;
+  }
+}
+
+const changingDevice = ref(false);
+async function changeDevice() {
+  if (!confirm('سيتم قطع الاتصال الحالي ومسح بيانات الجلسة. هل تريد المتابعة لربط جهاز واتساب آخر؟')) return;
+  changingDevice.value = true;
+  try {
+    await api.post('/whatsapp/change-device');
+    Object.assign(status, { connected: false, phone: null, hasQR: false, qr: null, initializing: true });
+    showToast('جاري تهيئة الاتصال — امسح رمز QR الجديد', 'success');
+    setTimeout(loadStatus, 3000);
+  } catch (_) {
+    showToast('حدث خطأ أثناء تغيير الجهاز', 'error');
+  } finally {
+    changingDevice.value = false;
   }
 }
 

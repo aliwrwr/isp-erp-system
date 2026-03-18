@@ -44,6 +44,13 @@ export class WhatsappController {
     return { message: 'تم قطع الاتصال' };
   }
 
+  /** Change WhatsApp device — clears session and generates new QR */
+  @Post('change-device')
+  async changeDevice() {
+    await this.whatsappService.changeDevice();
+    return { message: 'تم مسح الجلسة — امسح رمز QR لربط جهاز جديد' };
+  }
+
   /** Send a test message */
   @Post('send-test')
   async sendTest(@Body() dto: SendTestMessageDto) {

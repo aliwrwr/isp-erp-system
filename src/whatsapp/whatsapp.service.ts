@@ -34,8 +34,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     if (count === 0) {
       await this.settingsRepository.save(this.settingsRepository.create({}));
     }
-    // Do NOT auto-init Chrome — user must click "اتصال" from the UI
-    // This prevents Chrome crashes from killing the backend on startup
+    // Auto-connect if the user enabled this option
+    const settings = await this.settingsRepository.findOne({ where: { id: 1 } });
+    if (settings?.autoConnect) {
+      this.logger.log('Auto-connect enabled — initializing WhatsApp client...');
+      // Delay slightly so the DB/ORM is fully ready
+      setTimeout(() => this.initializeClient(), 3000);
+    }
   }
 
   async onModuleDestroy() {
@@ -139,6 +144,37 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     this.isConnected = false;
     this.qrDataUrl = null;
     this.phoneNumber = null;
+  }
+
+  /**
+   * Change WhatsApp device: wipe saved session files then re-init
+   * so a fresh QR code is generated for a new phone.
+   */
+  async changeDevice(): Promise<void> {
+    // Destroy existing client
+    if (this.client) {
+      try {
+        await this.client.logout();
+        await this.client.destroy();
+      } catch (_) {}
+      this.client = null;
+    }
+    this.isConnected = false;
+    this.qrDataUrl = null;
+    this.phoneNumber = null;
+    this.isInitializing = false;
+
+    // Delete saved session folder so a new QR is generated
+    const fs = await import('fs');
+    const path = await import('path');
+    const sessionPath = path.resolve('.wwebjs_auth');
+    if (fs.existsSync(sessionPath)) {
+      fs.rmSync(sessionPath, { recursive: true, force: true });
+      this.logger.log('WhatsApp session data cleared for device change');
+    }
+
+    // Start fresh — user will scan a new QR
+    await this.initializeClient();
   }
 
   // ─── Messaging ───────────────────────────────────────────────────────────────
