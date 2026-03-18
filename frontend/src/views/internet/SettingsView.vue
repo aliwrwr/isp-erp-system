@@ -526,7 +526,7 @@
             <p v-if="updateStartedAt"><span class="text-gray-400">بدأ في:</span> {{ updateStartedAt }}</p>
           </div>
 
-          <button @click="triggerUpdate" :disabled="updateRunning"
+          <button @click="showUpdateConfirm = true" :disabled="updateRunning"
             class="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition"
             :class="updateRunning
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -570,6 +570,63 @@
     </template>
 
   </div>
+
+  <!-- Update Confirm Modal -->
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="showUpdateConfirm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        @click.self="showUpdateConfirm = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" dir="rtl">
+
+          <!-- Header -->
+          <div class="bg-gradient-to-l from-indigo-600 to-violet-600 px-6 py-5 rounded-t-2xl">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
+                <i class="fas fa-rocket text-white text-lg"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base">تحديث النظام</h3>
+                <p class="text-white/70 text-xs">تأكيد تشغيل عملية التحديث</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="p-6 space-y-4">
+            <div class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5"></i>
+              <div class="text-sm text-amber-800 space-y-1">
+                <p class="font-bold">تنبيه: سيتوقف النظام لثوانٍ أثناء التحديث</p>
+                <p class="text-xs text-amber-700 opacity-90">يُنصح بعدم تشغيل هذا أثناء وقت ذروة الاستخدام</p>
+              </div>
+            </div>
+
+            <div class="space-y-2 text-sm text-gray-600">
+              <p class="font-semibold text-gray-700 mb-2">سيقوم التحديث بالخطوات التالية:</p>
+              <div class="flex items-center gap-2"><i class="fas fa-check-circle text-indigo-400 w-4"></i><span>جلب آخر التحديثات من GitHub</span></div>
+              <div class="flex items-center gap-2"><i class="fas fa-check-circle text-indigo-400 w-4"></i><span>بناء Backend و Frontend</span></div>
+              <div class="flex items-center gap-2"><i class="fas fa-check-circle text-indigo-400 w-4"></i><span>إعادة تشغيل جميع الخدمات تلقائياً</span></div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="px-6 pb-6 flex gap-3 justify-end">
+            <button @click="showUpdateConfirm = false"
+              class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">
+              إلغاء
+            </button>
+            <button @click="showUpdateConfirm = false; triggerUpdate()"
+              class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold flex items-center gap-2 transition shadow-md shadow-indigo-200">
+              <i class="fas fa-rocket text-xs"></i>
+              تأكيد التحديث
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -586,6 +643,8 @@ const tabs = [
   { key: 'backup', label: 'النسخ الاحتياطي', icon: 'fas fa-database' },
   { key: 'update', label: 'تحديث النظام', icon: 'fas fa-sync-alt' },
 ];
+
+const showUpdateConfirm = ref(false);
 
 // ── System update ──────────────────────────────────────────────────
 const updateRunning   = ref(false);
@@ -617,7 +676,6 @@ async function fetchUpdateLog() {
 
 async function triggerUpdate() {
   if (updateRunning.value) return;
-  if (!confirm('هل أنت متأكد من تحديث النظام الآن؟\nسيتم إعادة تشغيل الخادم لبضع ثواني.')) return;
   updateRunning.value  = true;
   updateMsg.value      = '';
   updateError.value    = false;

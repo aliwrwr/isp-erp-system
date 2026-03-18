@@ -223,7 +223,6 @@ async function fetchUpdateLog() {
 
 async function triggerUpdate() {
   if (updateRunning.value) return;
-  if (!confirm('هل أنت متأكد من تحديث النظام الآن؟\nسيتوقف النظام لثوانٍ أثناء إعادة التشغيل.')) return;
   updateRunning.value   = true;
   updateMsg.value       = '';
   updateError.value     = false;
