@@ -38,6 +38,10 @@ let WhatsappController = class WhatsappController {
         await this.whatsappService.disconnect();
         return { message: 'تم قطع الاتصال' };
     }
+    async changeDevice() {
+        await this.whatsappService.changeDevice();
+        return { message: 'تم مسح الجلسة — امسح رمز QR لربط جهاز جديد' };
+    }
     async sendTest(dto) {
         const sent = await this.whatsappService.sendMessage(dto.phone, dto.message);
         return {
@@ -87,6 +91,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "disconnect", null);
+__decorate([
+    (0, common_1.Post)('change-device'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], WhatsappController.prototype, "changeDevice", null);
 __decorate([
     (0, common_1.Post)('send-test'),
     __param(0, (0, common_1.Body)()),

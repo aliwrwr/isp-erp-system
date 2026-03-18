@@ -1,4 +1,5 @@
 export declare class UpdateWhatsappSettingsDto {
+    autoConnect?: boolean;
     activationEnabled?: boolean;
     expiryWarningEnabled?: boolean;
     expiryEnabled?: boolean;

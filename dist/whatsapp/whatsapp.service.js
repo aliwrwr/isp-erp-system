@@ -72,6 +72,11 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         if (count === 0) {
             await this.settingsRepository.save(this.settingsRepository.create({}));
         }
+        const settings = await this.settingsRepository.findOne({ where: { id: 1 } });
+        if (settings?.autoConnect) {
+            this.logger.log('Auto-connect enabled — initializing WhatsApp client...');
+            setTimeout(() => this.initializeClient(), 3000);
+        }
     }
     async onModuleDestroy() {
         if (this.client) {
@@ -163,6 +168,28 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         this.isConnected = false;
         this.qrDataUrl = null;
         this.phoneNumber = null;
+    }
+    async changeDevice() {
+        if (this.client) {
+            try {
+                await this.client.logout();
+                await this.client.destroy();
+            }
+            catch (_) { }
+            this.client = null;
+        }
+        this.isConnected = false;
+        this.qrDataUrl = null;
+        this.phoneNumber = null;
+        this.isInitializing = false;
+        const fs = await import('fs');
+        const path = await import('path');
+        const sessionPath = path.resolve('.wwebjs_auth');
+        if (fs.existsSync(sessionPath)) {
+            fs.rmSync(sessionPath, { recursive: true, force: true });
+            this.logger.log('WhatsApp session data cleared for device change');
+        }
+        await this.initializeClient();
     }
     formatPhone(phone) {
         let cleaned = phone.replace(/[\s\-\(\)\+]/g, '');

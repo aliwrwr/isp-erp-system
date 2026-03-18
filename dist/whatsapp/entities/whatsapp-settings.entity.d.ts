@@ -1,5 +1,6 @@
 export declare class WhatsappSettings {
     id: number;
+    autoConnect: boolean;
     activationEnabled: boolean;
     expiryWarningEnabled: boolean;
     expiryEnabled: boolean;

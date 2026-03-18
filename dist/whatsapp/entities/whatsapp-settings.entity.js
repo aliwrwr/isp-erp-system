@@ -13,6 +13,7 @@ exports.WhatsappSettings = void 0;
 const typeorm_1 = require("typeorm");
 let WhatsappSettings = class WhatsappSettings {
     id;
+    autoConnect;
     activationEnabled;
     expiryWarningEnabled;
     expiryEnabled;
@@ -26,6 +27,10 @@ __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
 ], WhatsappSettings.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], WhatsappSettings.prototype, "autoConnect", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: false }),
     __metadata("design:type", Boolean)

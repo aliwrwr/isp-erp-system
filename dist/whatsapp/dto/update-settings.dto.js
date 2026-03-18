@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateWhatsappSettingsDto = void 0;
 const class_validator_1 = require("class-validator");
 class UpdateWhatsappSettingsDto {
+    autoConnect;
     activationEnabled;
     expiryWarningEnabled;
     expiryEnabled;
@@ -21,6 +22,11 @@ class UpdateWhatsappSettingsDto {
     expiryTemplate;
 }
 exports.UpdateWhatsappSettingsDto = UpdateWhatsappSettingsDto;
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateWhatsappSettingsDto.prototype, "autoConnect", void 0);
 __decorate([
     (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),

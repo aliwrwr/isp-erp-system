@@ -19,6 +19,9 @@ export declare class WhatsappController {
     disconnect(): Promise<{
         message: string;
     }>;
+    changeDevice(): Promise<{
+        message: string;
+    }>;
     sendTest(dto: SendTestMessageDto): Promise<{
         success: boolean;
         message: string;
