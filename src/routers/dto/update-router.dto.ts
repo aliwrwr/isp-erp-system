@@ -20,4 +20,16 @@ export class UpdateRouterDto {
   @IsNumber()
   @IsOptional()
   port?: number;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  location?: string;
+
+  @IsString()
+  @IsOptional()
+  connectionType?: string;
 }

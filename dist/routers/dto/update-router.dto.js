@@ -17,6 +17,9 @@ class UpdateRouterDto {
     username;
     password;
     port;
+    description;
+    location;
+    connectionType;
 }
 exports.UpdateRouterDto = UpdateRouterDto;
 __decorate([
@@ -44,4 +47,19 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], UpdateRouterDto.prototype, "port", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateRouterDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateRouterDto.prototype, "location", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateRouterDto.prototype, "connectionType", void 0);
 //# sourceMappingURL=update-router.dto.js.map

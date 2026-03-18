@@ -4,4 +4,7 @@ export declare class UpdateRouterDto {
     username?: string;
     password?: string;
     port?: number;
+    description?: string;
+    location?: string;
+    connectionType?: string;
 }
