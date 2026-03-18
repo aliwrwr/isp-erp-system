@@ -88,10 +88,37 @@ if (-not $hasNewCommit) {
         Write-Host "  شغّل update.ps1 يدوياً على PC2" -ForegroundColor Yellow
     }
 } else {
-    # New commits but GitHub is blocked
-    Write-Host "  تحذير: GitHub محجوب ولا يمكن رفع الكود." -ForegroundColor Red
-    Write-Host "  الحل: تأكد من اتصال الإنترنت ثم شغّل deploy.ps1 مجدداً." -ForegroundColor Yellow
-    Write-Host "  أو فعّل VPN وحاول مرة أخرى." -ForegroundColor Yellow
+    # New commits but GitHub is blocked — copy dist/ directly over LAN
+    Write-Host "  تحذير: GitHub محجوب — جاري النشر المباشر عبر الشبكة المحلية..." -ForegroundColor Yellow
+    $pc2Share    = "\\192.200.251.4\D`$\isp-erp-system"
+    $backendDist = ".\dist"
+    $frontDist   = ".\frontend\dist"
+
+    if (Test-Path $pc2Share) {
+        Write-Host "  نسخ dist (backend)..." -ForegroundColor Yellow
+        robocopy $backendDist "$pc2Share\dist" /MIR /NJH /NJS /NDL /R:1 /W:1 | Out-Null
+
+        Write-Host "  نسخ frontend\dist..." -ForegroundColor Yellow
+        robocopy $frontDist "$pc2Share\frontend\dist" /MIR /NJH /NJS /NDL /R:1 /W:1 | Out-Null
+
+        Write-Host "  إعادة تشغيل PM2 على PC2..." -ForegroundColor Yellow
+        try {
+            Invoke-RestMethod -Uri "$PC2_URL/deploy/restart" `
+                -Method POST `
+                -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
+                -TimeoutSec 10 | Out-Null
+            Write-Host "  ✓ تم النسخ المباشر وإعادة تشغيل PM2" -ForegroundColor Green
+            $pc2Updated = $true
+        } catch {
+            Write-Host "  تم نسخ الملفات — يرجى إعادة تشغيل PM2 يدوياً على PC2" -ForegroundColor Yellow
+            $pc2Updated = $true
+        }
+    } else {
+        Write-Host "  تعذّر الوصول إلى $pc2Share" -ForegroundColor Red
+        Write-Host "  تأكد من:" -ForegroundColor Yellow
+        Write-Host "    1. تفعيل المشاركة الإدارية على PC2 (D`$)" -ForegroundColor Yellow
+        Write-Host "    2. أو فعّل VPN وشغّل deploy.ps1 مجدداً" -ForegroundColor Yellow
+    }
 }
 
 if ($pc2Updated) {
