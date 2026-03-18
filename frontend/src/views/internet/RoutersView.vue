@@ -1,5 +1,14 @@
 <template>
   <div>
+    <!-- Toast Notification -->
+    <Transition name="toast">
+      <div v-if="toast.show" class="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl shadow-lg text-sm font-medium"
+        :class="toast.online ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+        <i :class="toast.online ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+        <span>{{ toast.name }} — {{ toast.online ? 'الاتصال ناجح ✅' : 'لا يوجد اتصال ❌' }}</span>
+      </div>
+    </Transition>
+
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -467,6 +476,15 @@ const checkingAll = ref(false);
 const pingingId = ref<number | null>(null);
 const saving = ref(false);
 
+// Toast notification
+const toast = ref<{ show: boolean; online: boolean; name: string }>({ show: false, online: false, name: '' });
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
+function showToast(name: string, online: boolean) {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value = { show: true, online, name };
+  toastTimer = setTimeout(() => { toast.value.show = false; }, 3500);
+}
+
 // Add/Edit modal
 const showModal = ref(false);
 const editingId = ref<number | null>(null);
@@ -561,8 +579,10 @@ async function pingRouter(r: any) {
     const { data } = await api.post(`/routers/${r.id}/ping`);
     statuses.value[r.id] = data.online ? 'online' : 'offline';
     if (data.online) await checkStatus(r);
+    showToast(r.name, data.online);
   } catch {
     statuses.value[r.id] = 'offline';
+    showToast(r.name, false);
   } finally {
     pingingId.value = null;
   }
@@ -666,3 +686,9 @@ onMounted(async () => {
   checkAllStatus();
 });
 </script>
+
+<style scoped>
+.toast-enter-active { transition: all 0.3s ease; }
+.toast-leave-active { transition: all 0.3s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+</style>

@@ -19,8 +19,9 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
             password,
             port,
             tls: isSsl,
+            tlsOptions: isSsl ? { rejectUnauthorized: false } : undefined,
             keepalive: false,
-            timeout: 8,
+            timeout: 10,
         });
     }
     async ping(router) {
@@ -55,12 +56,12 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
                 identity: identity?.name || '',
                 version: res?.version || '',
                 uptime: res?.uptime || '',
-                cpuLoad: parseInt(res?.['cpu-load']) || 0,
+                cpu: parseInt(res?.['cpu-load']) || 0,
                 freeMemory: parseBytes(res?.['free-memory']),
                 totalMemory: parseBytes(res?.['total-memory']),
                 freeHdd: parseBytes(res?.['free-hdd-space']),
                 totalHdd: parseBytes(res?.['total-hdd-space']),
-                board: board?.model || res?.['board-name'] || '',
+                boardName: board?.model || res?.['board-name'] || '',
                 serialNumber: board?.['serial-number'] || '',
             };
         }
@@ -116,8 +117,8 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
                 service: s.service || 'pppoe',
                 address: s.address || s['caller-id'] || '',
                 uptime: s.uptime || '',
-                rxBytes: parseInt(s['bytes-in']) || 0,
-                txBytes: parseInt(s['bytes-out']) || 0,
+                bytesIn: parseInt(s['bytes-out']) || 0,
+                bytesOut: parseInt(s['bytes-in']) || 0,
                 encoding: s.encoding || '',
                 comment: s.comment || '',
             }));

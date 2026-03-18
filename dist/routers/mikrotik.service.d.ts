@@ -3,12 +3,12 @@ export interface RouterStatus {
     identity?: string;
     version?: string;
     uptime?: string;
-    cpuLoad?: number;
+    cpu?: number;
     freeMemory?: number;
     totalMemory?: number;
     freeHdd?: number;
     totalHdd?: number;
-    board?: string;
+    boardName?: string;
     serialNumber?: string;
     error?: string;
 }
@@ -30,8 +30,8 @@ export interface ActiveConnection {
     service: string;
     address: string;
     uptime: string;
-    rxBytes: number;
-    txBytes: number;
+    bytesIn: number;
+    bytesOut: number;
     encoding?: string;
     comment?: string;
 }

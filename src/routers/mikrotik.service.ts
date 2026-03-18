@@ -6,12 +6,12 @@ export interface RouterStatus {
   identity?: string;
   version?: string;
   uptime?: string;
-  cpuLoad?: number;
+  cpu?: number;
   freeMemory?: number;
   totalMemory?: number;
   freeHdd?: number;
   totalHdd?: number;
-  board?: string;
+  boardName?: string;
   serialNumber?: string;
   error?: string;
 }
@@ -35,8 +35,8 @@ export interface ActiveConnection {
   service: string;
   address: string;
   uptime: string;
-  rxBytes: number;
-  txBytes: number;
+  bytesIn: number;
+  bytesOut: number;
   encoding?: string;
   comment?: string;
 }
@@ -58,8 +58,9 @@ export class MikrotikService {
       password,
       port,
       tls: isSsl,
+      tlsOptions: isSsl ? { rejectUnauthorized: false } : undefined,
       keepalive: false,
-      timeout: 8,
+      timeout: 10,
     } as any);
   }
 
@@ -100,12 +101,12 @@ export class MikrotikService {
         identity: identity?.name || '',
         version: res?.version || '',
         uptime: res?.uptime || '',
-        cpuLoad: parseInt(res?.['cpu-load']) || 0,
+        cpu: parseInt(res?.['cpu-load']) || 0,
         freeMemory: parseBytes(res?.['free-memory']),
         totalMemory: parseBytes(res?.['total-memory']),
         freeHdd: parseBytes(res?.['free-hdd-space']),
         totalHdd: parseBytes(res?.['total-hdd-space']),
-        board: board?.model || res?.['board-name'] || '',
+        boardName: board?.model || res?.['board-name'] || '',
         serialNumber: board?.['serial-number'] || '',
       };
     } catch (err: any) {
@@ -169,8 +170,8 @@ export class MikrotikService {
         service: s.service || 'pppoe',
         address: s.address || s['caller-id'] || '',
         uptime: s.uptime || '',
-        rxBytes: parseInt(s['bytes-in']) || 0,
-        txBytes: parseInt(s['bytes-out']) || 0,
+        bytesIn: parseInt(s['bytes-out']) || 0,
+        bytesOut: parseInt(s['bytes-in']) || 0,
         encoding: s.encoding || '',
         comment: s.comment || '',
       }));
