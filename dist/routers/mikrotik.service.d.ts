@@ -29,6 +29,7 @@ export interface ActiveConnection {
     name: string;
     service: string;
     address: string;
+    macAddress: string;
     uptime: string;
     bytesIn: number;
     bytesOut: number;
@@ -73,4 +74,11 @@ export declare class MikrotikService {
         port?: number;
         connectionType?: string;
     }): Promise<any[]>;
+    disconnectPppSession(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, sessionId: string): Promise<boolean>;
 }

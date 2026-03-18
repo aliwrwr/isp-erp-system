@@ -115,7 +115,8 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
                 id: s['.id'] || '',
                 name: s.name || '',
                 service: s.service || 'pppoe',
-                address: s.address || s['caller-id'] || '',
+                address: s.address || '',
+                macAddress: s['caller-id'] || '',
                 uptime: s.uptime || '',
                 bytesIn: parseInt(s['bytes-out']) || 0,
                 bytesOut: parseInt(s['bytes-in']) || 0,
@@ -146,6 +147,20 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
         }
         catch (err) {
             return [];
+        }
+    }
+    async disconnectPppSession(router, sessionId) {
+        const isSsl = router.connectionType === 'API-SSL';
+        const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
+        try {
+            await conn.connect();
+            await conn.write('/ppp/active/remove', [`=.id=${sessionId}`]);
+            conn.close();
+            return true;
+        }
+        catch (err) {
+            this.logger.warn(`disconnectPppSession failed: ${err.message}`);
+            return false;
         }
     }
 };
