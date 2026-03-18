@@ -1676,17 +1676,29 @@ async function savePayDebt() {
 }
 
 // ===================== PRINT INVOICE =====================
-function printInvoice() {
+async function printInvoice() {
   const sub = contextMenuSub.value;
   closeContextMenu();
   if (!sub) return;
   const latest = getLatestSub(sub);
   const pkg = sub.package || latest?.package;
 
-  // Load company settings & logo
+  // Load company settings & logo from API (fallback to localStorage)
   let co = { companyName: '', companyPhone: '', companyEmail: '', companyAddress: '' };
-  try { Object.assign(co, JSON.parse(localStorage.getItem('isp_internet_settings') || '{}')); } catch {}
-  const logo = localStorage.getItem('isp_internet_logo') || '';
+  let logo = '';
+  try {
+    const { data: sysData } = await api.get('/system-settings');
+    Object.assign(co, {
+      companyName: sysData.companyName || '',
+      companyPhone: sysData.companyPhone || '',
+      companyEmail: sysData.companyEmail || '',
+      companyAddress: sysData.companyAddress || '',
+    });
+    logo = sysData.logoBase64 || '';
+  } catch {
+    try { Object.assign(co, JSON.parse(localStorage.getItem('isp_internet_settings') || '{}')); } catch {}
+    logo = localStorage.getItem('isp_internet_logo') || '';
+  }
 
   // Payment info
   const payLabels: Record<string, string> = { cash: 'نقداً', credit: 'آجل', partial: 'دفع جزئي' };

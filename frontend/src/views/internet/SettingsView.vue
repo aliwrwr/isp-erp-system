@@ -865,12 +865,18 @@ async function disableDrive() {
 }
 
 // ── General settings ──────────────────────────────────────────
-onMounted(() => {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try { Object.assign(settings.value, JSON.parse(saved)); } catch {}
+onMounted(async () => {
+  try {
+    const { data } = await api.get('/system-settings');
+    const { logoBase64, id, ...rest } = data;
+    Object.assign(settings.value, rest);
+    if (logoBase64) logoPreview.value = logoBase64;
+  } catch {
+    // fallback: try legacy localStorage
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) { try { Object.assign(settings.value, JSON.parse(saved)); } catch {} }
+    logoPreview.value = localStorage.getItem(LOGO_KEY) || null;
   }
-  logoPreview.value = localStorage.getItem(LOGO_KEY) || null;
   loadBackupStatus();
 });
 
@@ -894,14 +900,23 @@ function removeLogo() {
 
 async function saveAll() {
   saving.value = true;
-  await new Promise(r => setTimeout(r, 300));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings.value));
-  if (logoPreview.value) {
-    localStorage.setItem(LOGO_KEY, logoPreview.value);
-  } else {
-    localStorage.removeItem(LOGO_KEY);
+  try {
+    await api.post('/system-settings', {
+      ...settings.value,
+      logoBase64: logoPreview.value ?? '',
+    });
+    // keep localStorage in sync for backward compat (print functions in other views)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings.value));
+    if (logoPreview.value) {
+      localStorage.setItem(LOGO_KEY, logoPreview.value);
+    } else {
+      localStorage.removeItem(LOGO_KEY);
+    }
+  } catch {
+    alert('فشل في حفظ الإعدادات — تأكد من الاتصال بالخادم');
+  } finally {
+    saving.value = false;
   }
-  saving.value = false;
   savedNotice.value = true;
   setTimeout(() => { savedNotice.value = false; }, 3000);
 }
