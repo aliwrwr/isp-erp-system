@@ -9,7 +9,7 @@
     </div>
 
     <!-- Routers Overview -->
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
+    <div v-if="canSeeRouters" class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
       <!-- Header -->
       <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -188,6 +188,10 @@ import { ref, computed, onMounted } from 'vue';
 import StatsCard from '../../components/StatsCard.vue';
 import DataTable from '../../components/DataTable.vue';
 import api from '../../api';
+import { useAuthStore } from '../../stores/auth';
+
+const authStore = useAuthStore();
+const canSeeRouters = computed(() => authStore.hasPermission('internet.routers'));
 
 // ── Subscribers / Subscriptions ───────────────────────────────────
 const subscribersData = ref<any[]>([]);
@@ -271,16 +275,14 @@ async function refreshRouters() {
 // ── Mount ─────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const [subRes, subscRes, routersRes] = await Promise.all([
-      api.get('/subscribers'),
-      api.get('/subscriptions'),
-      api.get('/routers'),
-    ]);
+    const requests: Promise<any>[] = [api.get('/subscribers'), api.get('/subscriptions')];
+    if (canSeeRouters.value) requests.push(api.get('/routers'));
+    const [subRes, subscRes, routersRes] = await Promise.all(requests);
     subscribersData.value = subRes.data;
     subscriptionsData.value = subscRes.data;
-    routers.value = routersRes.data;
+    if (routersRes) routers.value = routersRes.data;
   } catch {}
   // Check routers status in background (non-blocking)
-  refreshRouters();
+  if (canSeeRouters.value) refreshRouters();
 });
 </script>
