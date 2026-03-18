@@ -16,5 +16,9 @@ export declare class DeployController {
         ok: boolean;
         log: string;
     };
+    restart(secret: string): {
+        ok: boolean;
+        message: string;
+    };
     private runUpdate;
 }

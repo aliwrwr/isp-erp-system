@@ -55,6 +55,26 @@ export class DeployController {
     return { ok: true, log: lines };
   }
 
+  // ── restart only (no git pull) — used by direct-copy deploy fallback ──
+
+  @Post('restart')
+  @HttpCode(200)
+  restart(@Headers('x-deploy-secret') secret: string) {
+    if (!secret || secret !== DEPLOY_SECRET) {
+      throw new UnauthorizedException('Invalid deploy secret');
+    }
+    const child = spawn(
+      'cmd.exe',
+      ['/c', 'start', '', '/B', 'powershell.exe',
+        '-ExecutionPolicy', 'Bypass',
+        '-NonInteractive',
+        '-Command', 'pm2 reload ecosystem.config.js --update-env; pm2 save'],
+      { detached: true, stdio: 'ignore', windowsHide: true },
+    );
+    child.unref();
+    return { ok: true, message: 'PM2 reload triggered' };
+  }
+
   // ── shared update logic ────────────────────────────────────────────
 
   private runUpdate() {

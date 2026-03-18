@@ -82,6 +82,17 @@ let DeployController = class DeployController {
         const lines = content.split(/\r?\n/).slice(-300).join('\n');
         return { ok: true, log: lines };
     }
+    restart(secret) {
+        if (!secret || secret !== DEPLOY_SECRET) {
+            throw new common_1.UnauthorizedException('Invalid deploy secret');
+        }
+        const child = (0, child_process_1.spawn)('cmd.exe', ['/c', 'start', '', '/B', 'powershell.exe',
+            '-ExecutionPolicy', 'Bypass',
+            '-NonInteractive',
+            '-Command', 'pm2 reload ecosystem.config.js --update-env; pm2 save'], { detached: true, stdio: 'ignore', windowsHide: true });
+        child.unref();
+        return { ok: true, message: 'PM2 reload triggered' };
+    }
     runUpdate() {
         const scriptPath = path.join(process.cwd(), 'update.ps1');
         (0, fs_1.mkdirSync)(path.dirname(this.logFile), { recursive: true });
@@ -126,6 +137,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], DeployController.prototype, "getAdminLogs", null);
+__decorate([
+    (0, common_1.Post)('restart'),
+    (0, common_1.HttpCode)(200),
+    __param(0, (0, common_1.Headers)('x-deploy-secret')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], DeployController.prototype, "restart", null);
 exports.DeployController = DeployController = __decorate([
     (0, common_1.Controller)('deploy')
 ], DeployController);
