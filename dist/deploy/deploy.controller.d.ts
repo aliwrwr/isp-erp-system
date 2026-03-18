@@ -20,5 +20,9 @@ export declare class DeployController {
         ok: boolean;
         message: string;
     };
+    uploadDeploy(secret: string, file: Express.Multer.File): {
+        ok: boolean;
+        message: string;
+    };
     private runUpdate;
 }

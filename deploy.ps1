@@ -88,27 +88,39 @@ if (-not $hasNewCommit) {
         Write-Host "  شغّل update.ps1 يدوياً على PC2" -ForegroundColor Yellow
     }
 } else {
-    # New commits but GitHub is blocked — copy dist files directly over LAN
-    Write-Host "  GitHub محجوب — جاري نسخ الملفات مباشرة عبر الشبكة..." -ForegroundColor Yellow
-    $PC2_SHARE = "\\192.200.251.4\d$\isp-erp-system"
-    if (Test-Path $PC2_SHARE) {
-        robocopy "$PSScriptRoot\dist"          "$PC2_SHARE\dist"          /MIR /NFL /NDL /NJH /NJS | Out-Null
-        robocopy "$PSScriptRoot\frontend\dist" "$PC2_SHARE\frontend\dist" /MIR /NFL /NDL /NJH /NJS | Out-Null
-        Write-Host "  تم نسخ الملفات مباشرة إلى PC2 ✓" -ForegroundColor Green
-        try {
-            Invoke-RestMethod -Uri "$PC2_URL/deploy/restart" `
-                -Method POST `
-                -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
-                -TimeoutSec 10 | Out-Null
-            Write-Host "  تم إعادة تشغيل PM2 على PC2 ✓" -ForegroundColor Green
-        } catch {
-            Write-Host "  تنبيه: أعد تشغيل PM2 يدوياً على PC2: pm2 reload isp-backend" -ForegroundColor Yellow
-        }
+    # New commits but GitHub is blocked — try HTTP upload directly to PC2
+    Write-Host "  GitHub محجوب — جاري رفع الملفات مباشرة إلى PC2 عبر HTTP..." -ForegroundColor Yellow
+
+    # Build a zip: dist/ + frontend/dist/ → temp deploy package
+    $tempDir  = "$env:TEMP\isp-deploy-pkg"
+    $zipPath  = "$env:TEMP\isp-deploy.zip"
+    if (Test-Path $tempDir)  { Remove-Item $tempDir -Recurse -Force }
+    if (Test-Path $zipPath)  { Remove-Item $zipPath -Force }
+    New-Item -ItemType Directory -Path "$tempDir\dist"          -Force | Out-Null
+    New-Item -ItemType Directory -Path "$tempDir\frontend\dist" -Force | Out-Null
+    Copy-Item "$PSScriptRoot\dist\*"          "$tempDir\dist\"          -Recurse -Force
+    Copy-Item "$PSScriptRoot\frontend\dist\*" "$tempDir\frontend\dist\" -Recurse -Force
+    Compress-Archive -Path "$tempDir\*" -DestinationPath $zipPath -Force
+    Remove-Item $tempDir -Recurse -Force
+
+    $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
+    Write-Host "  الحجم: ${zipSize} MB — جاري الإرسال..." -ForegroundColor Gray
+
+    try {
+        $form = @{ file = Get-Item $zipPath }
+        Invoke-RestMethod -Uri "$PC2_URL/deploy/upload" `
+            -Method POST `
+            -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
+            -Form $form `
+            -TimeoutSec 120
+        Remove-Item $zipPath -Force
+        Write-Host "  تم رفع الملفات وإعادة تشغيل PC2 ✓" -ForegroundColor Green
         $pc2Updated = $true
-    } else {
-        Write-Host "  تعذر الوصول إلى مجلد PC2 ($PC2_SHARE)" -ForegroundColor Red
-        Write-Host "  الحل: انقل ملفات dist/ و frontend/dist/ يدوياً إلى PC2 ثم شغّل:" -ForegroundColor Yellow
-        Write-Host "    pm2 reload ecosystem.config.js --update-env" -ForegroundColor Gray
+    } catch {
+        Write-Host "  فشل الرفع عبر HTTP: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  الحل اليدوي: انسخ dist/ و frontend/dist/ إلى D:\isp-erp-system\ على PC2" -ForegroundColor Yellow
+        Write-Host "  ثم شغّل: pm2 reload ecosystem.config.js --update-env" -ForegroundColor Gray
+        Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
     }
 }
 

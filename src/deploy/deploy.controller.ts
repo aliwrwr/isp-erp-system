@@ -1,7 +1,10 @@
-import { Controller, Post, Get, Headers, UnauthorizedException, HttpCode, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Headers, UnauthorizedException, HttpCode, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import { spawn } from 'child_process';
-import { readFileSync, mkdirSync, openSync, closeSync, existsSync } from 'fs';
+import { readFileSync, mkdirSync, openSync, closeSync, existsSync, unlinkSync } from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 const DEPLOY_SECRET = 'isp-deploy-secret-2026';
@@ -73,6 +76,54 @@ export class DeployController {
     );
     child.unref();
     return { ok: true, message: 'PM2 reload triggered' };
+  }
+
+  // ── HTTP upload deploy (fallback when GitHub is blocked) ───────────
+  // Accepts a zip containing dist/ and frontend/dist/, extracts it,
+  // then reloads PM2. Protected by deploy secret.
+
+  @Post('upload')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: os.tmpdir(),
+      filename: (_req, _file, cb) => cb(null, `isp-deploy-${Date.now()}.zip`),
+    }),
+    limits: { fileSize: 200 * 1024 * 1024 }, // 200 MB max
+  }))
+  uploadDeploy(
+    @Headers('x-deploy-secret') secret: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!secret || secret !== DEPLOY_SECRET) {
+      if (file) unlinkSync(file.path);
+      throw new UnauthorizedException('Invalid deploy secret');
+    }
+    if (!file) {
+      throw new UnauthorizedException('No file received');
+    }
+
+    const projectRoot = process.cwd();
+    const zipPath = file.path;
+
+    // Extract zip then reload PM2 (detached so response returns immediately)
+    const psCmd = [
+      `Expand-Archive -Path '${zipPath}' -DestinationPath '${projectRoot}' -Force`,
+      `Remove-Item '${zipPath}' -Force`,
+      `pm2 reload ecosystem.config.js --update-env`,
+      `pm2 save`,
+    ].join('; ');
+
+    const child = spawn(
+      'cmd.exe',
+      ['/c', 'start', '', '/B', 'powershell.exe',
+        '-ExecutionPolicy', 'Bypass',
+        '-NonInteractive',
+        '-Command', psCmd],
+      { detached: true, stdio: 'ignore', windowsHide: true },
+    );
+    child.unref();
+    return { ok: true, message: 'Upload received — extracting and restarting PM2' };
   }
 
   // ── shared update logic ────────────────────────────────────────────
