@@ -52,7 +52,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("./entities/user.entity");
 const role_entity_1 = require("./entities/role.entity");
-const bcrypt = __importStar(require("bcrypt"));
+const bcrypt = __importStar(require("bcryptjs"));
 let UsersService = UsersService_1 = class UsersService {
     usersRepository;
     rolesRepository;

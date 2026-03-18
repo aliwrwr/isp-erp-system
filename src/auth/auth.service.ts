@@ -16,19 +16,22 @@ export class AuthService {
   ) {}
 
   async validateUser(emailOrUsername: string, pass: string): Promise<any> {
-    // Try finding by email first, then treat input as username
-    let user = await this.usersService.findByEmail(emailOrUsername);
-    if (user && (await bcrypt.compare(pass, user.password))) {
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
+    const user = await this.usersService.findByEmail(emailOrUsername);
+    if (!user) return null;
+    const passwordMatch = await bcrypt.compare(pass, user.password);
+    if (!passwordMatch) return null;
+    const { password, ...result } = user;
+    return result;
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+    const user = await this.usersService.findByEmail(loginDto.email);
     if (!user) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('البريد الإلكتروني غير مسجل في النظام');
+    }
+    const passwordMatch = await bcrypt.compare(loginDto.password, user.password);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('كلمة المرور غير صحيحة');
     }
     const payload = { email: user.email, sub: user.id, roles: user.roles.map(role => role.name) };
     return {

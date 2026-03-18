@@ -58,17 +58,23 @@ let AuthService = class AuthService {
         this.employeesService = employeesService;
     }
     async validateUser(emailOrUsername, pass) {
-        let user = await this.usersService.findByEmail(emailOrUsername);
-        if (user && (await bcrypt.compare(pass, user.password))) {
-            const { password, ...result } = user;
-            return result;
-        }
-        return null;
+        const user = await this.usersService.findByEmail(emailOrUsername);
+        if (!user)
+            return null;
+        const passwordMatch = await bcrypt.compare(pass, user.password);
+        if (!passwordMatch)
+            return null;
+        const { password, ...result } = user;
+        return result;
     }
     async login(loginDto) {
-        const user = await this.validateUser(loginDto.email, loginDto.password);
+        const user = await this.usersService.findByEmail(loginDto.email);
         if (!user) {
-            throw new common_1.UnauthorizedException();
+            throw new common_1.UnauthorizedException('البريد الإلكتروني غير مسجل في النظام');
+        }
+        const passwordMatch = await bcrypt.compare(loginDto.password, user.password);
+        if (!passwordMatch) {
+            throw new common_1.UnauthorizedException('كلمة المرور غير صحيحة');
         }
         const payload = { email: user.email, sub: user.id, roles: user.roles.map(role => role.name) };
         return {
