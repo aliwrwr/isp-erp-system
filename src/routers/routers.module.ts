@@ -3,10 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Router } from './entities/router.entity';
 import { RoutersController } from './routers.controller';
 import { RoutersService } from './routers.service';
+import { MikrotikService } from './mikrotik.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Router])],
   controllers: [RoutersController],
-  providers: [RoutersService],
+  providers: [RoutersService, MikrotikService],
+  exports: [RoutersService, MikrotikService],
 })
 export class RoutersModule {}

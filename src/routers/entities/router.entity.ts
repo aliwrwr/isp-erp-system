@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('routers')
 export class Router {
@@ -17,6 +17,21 @@ export class Router {
   @Column()
   password: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: 8728 })
   port: number;
+
+  @Column({ nullable: true })
+  description: string;
+
+  @Column({ nullable: true })
+  location: string;
+
+  @Column({ nullable: true, default: 'API' })
+  connectionType: string;  // API | API-SSL
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

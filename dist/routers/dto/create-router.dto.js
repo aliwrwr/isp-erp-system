@@ -17,6 +17,9 @@ class CreateRouterDto {
     username;
     password;
     port;
+    description;
+    location;
+    connectionType;
 }
 exports.CreateRouterDto = CreateRouterDto;
 __decorate([
@@ -37,11 +40,26 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", Object)
+    __metadata("design:type", String)
 ], CreateRouterDto.prototype, "password", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateRouterDto.prototype, "port", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateRouterDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateRouterDto.prototype, "location", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateRouterDto.prototype, "connectionType", void 0);
 //# sourceMappingURL=create-router.dto.js.map

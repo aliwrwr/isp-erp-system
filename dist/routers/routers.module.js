@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const router_entity_1 = require("./entities/router.entity");
 const routers_controller_1 = require("./routers.controller");
 const routers_service_1 = require("./routers.service");
+const mikrotik_service_1 = require("./mikrotik.service");
 let RoutersModule = class RoutersModule {
 };
 exports.RoutersModule = RoutersModule;
@@ -19,7 +20,8 @@ exports.RoutersModule = RoutersModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([router_entity_1.Router])],
         controllers: [routers_controller_1.RoutersController],
-        providers: [routers_service_1.RoutersService],
+        providers: [routers_service_1.RoutersService, mikrotik_service_1.MikrotikService],
+        exports: [routers_service_1.RoutersService, mikrotik_service_1.MikrotikService],
     })
 ], RoutersModule);
 //# sourceMappingURL=routers.module.js.map

@@ -18,6 +18,11 @@ let Router = class Router {
     username;
     password;
     port;
+    description;
+    location;
+    connectionType;
+    createdAt;
+    updatedAt;
 };
 exports.Router = Router;
 __decorate([
@@ -41,9 +46,29 @@ __decorate([
     __metadata("design:type", String)
 ], Router.prototype, "password", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, default: 8728 }),
     __metadata("design:type", Number)
 ], Router.prototype, "port", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Router.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Router.prototype, "location", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true, default: 'API' }),
+    __metadata("design:type", String)
+], Router.prototype, "connectionType", void 0);
+__decorate([
+    (0, typeorm_1.CreateDateColumn)(),
+    __metadata("design:type", Date)
+], Router.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.UpdateDateColumn)(),
+    __metadata("design:type", Date)
+], Router.prototype, "updatedAt", void 0);
 exports.Router = Router = __decorate([
     (0, typeorm_1.Entity)('routers')
 ], Router);

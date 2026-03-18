@@ -5,4 +5,9 @@ export declare class Router {
     username: string;
     password: string;
     port: number;
+    description: string;
+    location: string;
+    connectionType: string;
+    createdAt: Date;
+    updatedAt: Date;
 }

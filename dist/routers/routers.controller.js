@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoutersController = void 0;
 const common_1 = require("@nestjs/common");
 const routers_service_1 = require("./routers.service");
+const mikrotik_service_1 = require("./mikrotik.service");
 const create_router_dto_1 = require("./dto/create-router.dto");
 const update_router_dto_1 = require("./dto/update-router.dto");
 const swagger_1 = require("@nestjs/swagger");
@@ -24,8 +25,10 @@ const roles_guard_1 = require("../auth/guards/roles.guard");
 const permissions_decorator_1 = require("../auth/decorators/permissions.decorator");
 let RoutersController = class RoutersController {
     routersService;
-    constructor(routersService) {
+    mikrotikService;
+    constructor(routersService, mikrotikService) {
         this.routersService = routersService;
+        this.mikrotikService = mikrotikService;
     }
     create(createRouterDto) {
         return this.routersService.create(createRouterDto);
@@ -41,6 +44,37 @@ let RoutersController = class RoutersController {
     }
     remove(id) {
         return this.routersService.remove(+id);
+    }
+    async getStatus(id) {
+        const router = await this.routersService.findOne(+id);
+        if (!router)
+            return { online: false, error: 'Router not found' };
+        return this.mikrotikService.getStatus(router);
+    }
+    async getInterfaces(id) {
+        const router = await this.routersService.findOne(+id);
+        if (!router)
+            return [];
+        return this.mikrotikService.getInterfaces(router);
+    }
+    async getActiveConnections(id) {
+        const router = await this.routersService.findOne(+id);
+        if (!router)
+            return [];
+        return this.mikrotikService.getActiveConnections(router);
+    }
+    async getIpAddresses(id) {
+        const router = await this.routersService.findOne(+id);
+        if (!router)
+            return [];
+        return this.mikrotikService.getIpAddresses(router);
+    }
+    async ping(id) {
+        const router = await this.routersService.findOne(+id);
+        if (!router)
+            return { online: false };
+        const online = await this.mikrotikService.ping(router);
+        return { online };
     }
 };
 exports.RoutersController = RoutersController;
@@ -89,11 +123,58 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], RoutersController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)(':id/status'),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.routers'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "getStatus", null);
+__decorate([
+    (0, common_1.Get)(':id/interfaces'),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.routers'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "getInterfaces", null);
+__decorate([
+    (0, common_1.Get)(':id/active-connections'),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.routers'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "getActiveConnections", null);
+__decorate([
+    (0, common_1.Get)(':id/ip-addresses'),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.routers'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "getIpAddresses", null);
+__decorate([
+    (0, common_1.Post)(':id/ping'),
+    (0, common_1.HttpCode)(200),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.routers'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "ping", null);
 exports.RoutersController = RoutersController = __decorate([
     (0, swagger_1.ApiTags)('Routers'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, common_1.Controller)('routers'),
-    __metadata("design:paramtypes", [routers_service_1.RoutersService])
+    __metadata("design:paramtypes", [routers_service_1.RoutersService,
+        mikrotik_service_1.MikrotikService])
 ], RoutersController);
 //# sourceMappingURL=routers.controller.js.map

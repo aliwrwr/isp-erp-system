@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode } from '@nestjs/common';
 import { RoutersService } from './routers.service';
+import { MikrotikService } from './mikrotik.service';
 import { CreateRouterDto } from './dto/create-router.dto';
 import { UpdateRouterDto } from './dto/update-router.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -13,7 +14,10 @@ import { Permissions } from '../auth/decorators/permissions.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('routers')
 export class RoutersController {
-  constructor(private readonly routersService: RoutersService) {}
+  constructor(
+    private readonly routersService: RoutersService,
+    private readonly mikrotikService: MikrotikService,
+  ) {}
 
   @Post()
   @Roles('Super Admin', 'Network Admin')
@@ -48,5 +52,54 @@ export class RoutersController {
   @Permissions('internet.routers')
   remove(@Param('id') id: string) {
     return this.routersService.remove(+id);
+  }
+
+  // ── MikroTik Live Data Endpoints ──────────────────────────────────
+
+  @Get(':id/status')
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.routers')
+  async getStatus(@Param('id') id: string) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return { online: false, error: 'Router not found' };
+    return this.mikrotikService.getStatus(router);
+  }
+
+  @Get(':id/interfaces')
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.routers')
+  async getInterfaces(@Param('id') id: string) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return [];
+    return this.mikrotikService.getInterfaces(router);
+  }
+
+  @Get(':id/active-connections')
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.routers')
+  async getActiveConnections(@Param('id') id: string) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return [];
+    return this.mikrotikService.getActiveConnections(router);
+  }
+
+  @Get(':id/ip-addresses')
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.routers')
+  async getIpAddresses(@Param('id') id: string) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return [];
+    return this.mikrotikService.getIpAddresses(router);
+  }
+
+  @Post(':id/ping')
+  @HttpCode(200)
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.routers')
+  async ping(@Param('id') id: string) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return { online: false };
+    const online = await this.mikrotikService.ping(router);
+    return { online };
   }
 }
