@@ -47,12 +47,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DeployController = void 0;
 const common_1 = require("@nestjs/common");
-const platform_express_1 = require("@nestjs/platform-express");
-const multer_1 = require("multer");
 const child_process_1 = require("child_process");
 const fs_1 = require("fs");
 const path = __importStar(require("path"));
-const os = __importStar(require("os"));
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const DEPLOY_SECRET = 'isp-deploy-secret-2026';
 let DeployController = class DeployController {
@@ -95,30 +92,6 @@ let DeployController = class DeployController {
             '-Command', 'pm2 reload ecosystem.config.js --update-env; pm2 save'], { detached: true, stdio: 'ignore', windowsHide: true });
         child.unref();
         return { ok: true, message: 'PM2 reload triggered' };
-    }
-    uploadDeploy(secret, file) {
-        if (!secret || secret !== DEPLOY_SECRET) {
-            if (file)
-                (0, fs_1.unlinkSync)(file.path);
-            throw new common_1.UnauthorizedException('Invalid deploy secret');
-        }
-        if (!file) {
-            throw new common_1.UnauthorizedException('No file received');
-        }
-        const projectRoot = process.cwd();
-        const zipPath = file.path;
-        const psCmd = [
-            `Expand-Archive -Path '${zipPath}' -DestinationPath '${projectRoot}' -Force`,
-            `Remove-Item '${zipPath}' -Force`,
-            `pm2 reload ecosystem.config.js --update-env`,
-            `pm2 save`,
-        ].join('; ');
-        const child = (0, child_process_1.spawn)('cmd.exe', ['/c', 'start', '', '/B', 'powershell.exe',
-            '-ExecutionPolicy', 'Bypass',
-            '-NonInteractive',
-            '-Command', psCmd], { detached: true, stdio: 'ignore', windowsHide: true });
-        child.unref();
-        return { ok: true, message: 'Upload received — extracting and restarting PM2' };
     }
     runUpdate() {
         const scriptPath = path.join(process.cwd(), 'update.ps1');
@@ -172,22 +145,6 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DeployController.prototype, "restart", null);
-__decorate([
-    (0, common_1.Post)('upload'),
-    (0, common_1.HttpCode)(200),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
-        storage: (0, multer_1.diskStorage)({
-            destination: os.tmpdir(),
-            filename: (_req, _file, cb) => cb(null, `isp-deploy-${Date.now()}.zip`),
-        }),
-        limits: { fileSize: 200 * 1024 * 1024 },
-    })),
-    __param(0, (0, common_1.Headers)('x-deploy-secret')),
-    __param(1, (0, common_1.UploadedFile)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
-], DeployController.prototype, "uploadDeploy", null);
 exports.DeployController = DeployController = __decorate([
     (0, common_1.Controller)('deploy')
 ], DeployController);

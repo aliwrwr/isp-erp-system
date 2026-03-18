@@ -88,40 +88,10 @@ if (-not $hasNewCommit) {
         Write-Host "  شغّل update.ps1 يدوياً على PC2" -ForegroundColor Yellow
     }
 } else {
-    # New commits but GitHub is blocked — try HTTP upload directly to PC2
-    Write-Host "  GitHub محجوب — جاري رفع الملفات مباشرة إلى PC2 عبر HTTP..." -ForegroundColor Yellow
-
-    # Build a zip: dist/ + frontend/dist/ → temp deploy package
-    $tempDir  = "$env:TEMP\isp-deploy-pkg"
-    $zipPath  = "$env:TEMP\isp-deploy.zip"
-    if (Test-Path $tempDir)  { Remove-Item $tempDir -Recurse -Force }
-    if (Test-Path $zipPath)  { Remove-Item $zipPath -Force }
-    New-Item -ItemType Directory -Path "$tempDir\dist"          -Force | Out-Null
-    New-Item -ItemType Directory -Path "$tempDir\frontend\dist" -Force | Out-Null
-    Copy-Item "$PSScriptRoot\dist\*"          "$tempDir\dist\"          -Recurse -Force
-    Copy-Item "$PSScriptRoot\frontend\dist\*" "$tempDir\frontend\dist\" -Recurse -Force
-    Compress-Archive -Path "$tempDir\*" -DestinationPath $zipPath -Force
-    Remove-Item $tempDir -Recurse -Force
-
-    $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
-    Write-Host "  الحجم: ${zipSize} MB — جاري الإرسال..." -ForegroundColor Gray
-
-    try {
-        $form = @{ file = Get-Item $zipPath }
-        Invoke-RestMethod -Uri "$PC2_URL/deploy/upload" `
-            -Method POST `
-            -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
-            -Form $form `
-            -TimeoutSec 120
-        Remove-Item $zipPath -Force
-        Write-Host "  تم رفع الملفات وإعادة تشغيل PC2 ✓" -ForegroundColor Green
-        $pc2Updated = $true
-    } catch {
-        Write-Host "  فشل الرفع عبر HTTP: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "  الحل اليدوي: انسخ dist/ و frontend/dist/ إلى D:\isp-erp-system\ على PC2" -ForegroundColor Yellow
-        Write-Host "  ثم شغّل: pm2 reload ecosystem.config.js --update-env" -ForegroundColor Gray
-        Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
-    }
+    # New commits but GitHub is blocked
+    Write-Host "  تحذير: GitHub محجوب ولا يمكن رفع الكود." -ForegroundColor Red
+    Write-Host "  الحل: تأكد من اتصال الإنترنت ثم شغّل deploy.ps1 مجدداً." -ForegroundColor Yellow
+    Write-Host "  أو فعّل VPN وحاول مرة أخرى." -ForegroundColor Yellow
 }
 
 if ($pc2Updated) {
