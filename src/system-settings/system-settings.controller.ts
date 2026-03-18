@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SystemSettingsService } from './system-settings.service';
+import { SystemSettings } from './entities/system-settings.entity';
 
 @Controller('system-settings')
 @UseGuards(JwtAuthGuard)
@@ -13,7 +14,8 @@ export class SystemSettingsController {
   }
 
   @Post()
-  update(@Body() body: any) {
+  @UsePipes(new ValidationPipe({ whitelist: false, forbidNonWhitelisted: false, transform: false }))
+  update(@Body() body: Partial<SystemSettings>) {
     return this.service.update(body);
   }
 }

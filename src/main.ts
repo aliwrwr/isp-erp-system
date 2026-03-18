@@ -9,6 +9,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get('port') || 3000;
 
+  // Increase body size limit to handle base64 logo images
+  app.use(require('express').json({ limit: '10mb' }));
+  app.use(require('express').urlencoded({ limit: '10mb', extended: true }));
+
   // Enable CORS for frontend
   app.enableCors({
     origin: (origin, callback) => {

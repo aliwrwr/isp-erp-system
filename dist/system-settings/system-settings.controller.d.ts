@@ -1,7 +1,8 @@
 import { SystemSettingsService } from './system-settings.service';
+import { SystemSettings } from './entities/system-settings.entity';
 export declare class SystemSettingsController {
     private readonly service;
     constructor(service: SystemSettingsService);
-    get(): Promise<import("./entities/system-settings.entity").SystemSettings>;
-    update(body: any): Promise<import("./entities/system-settings.entity").SystemSettings>;
+    get(): Promise<SystemSettings>;
+    update(body: Partial<SystemSettings>): Promise<SystemSettings>;
 }
