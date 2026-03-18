@@ -73,7 +73,7 @@
                   <p class="font-bold text-base">{{ updateDone === 'success' ? 'تم التحديث بنجاح ✓' : 'فشل التحديث ✗' }}</p>
                   <p class="opacity-90 text-xs mt-0.5 font-normal">
                     {{ updateDone === 'success'
-                      ? 'النظام يعمل الآن بأحدث إصدار. تم إعادة تشغيل جميع الخدمات.'
+                      ? `النظام يعمل الآن بأحدث إصدار. سيتم تحديث الصفحة خلال ${reloadCountdown} ثانية...`
                       : 'حدث خطأ أثناء التحديث — راجع السجل أدناه لمعرفة التفاصيل.' }}
                   </p>
                 </div>
@@ -186,6 +186,8 @@ const updateLog        = ref('');
 const updateStartedAt  = ref('');
 const logBox           = ref<HTMLElement | null>(null);
 let   pollInterval: ReturnType<typeof setInterval> | null = null;
+const reloadCountdown  = ref(0);
+let   reloadTimer: ReturnType<typeof setInterval> | null = null;
 
 function stopPolling() {
   if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
@@ -202,6 +204,15 @@ async function fetchUpdateLog() {
       updateRunning.value = false;
       updateDone.value = 'success';
       stopPolling();
+      // Auto-reload the page after 5 seconds so new JS/CSS is fetched
+      reloadCountdown.value = 5;
+      reloadTimer = setInterval(() => {
+        reloadCountdown.value--;
+        if (reloadCountdown.value <= 0) {
+          clearInterval(reloadTimer!);
+          window.location.reload();
+        }
+      }, 1000);
     } else if (/^ERROR:/m.test(log) || /Backend build failed|Frontend build failed|git pull failed/i.test(log)) {
       updateRunning.value = false;
       updateDone.value = 'error';
