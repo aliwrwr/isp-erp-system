@@ -146,7 +146,16 @@ let RestaurantService = class RestaurantService {
         if ((dto.status === 'paid' || dto.status === 'cancelled') && order.table) {
             await this.tablesRepo.update(order.table.id, { status: 'available' });
         }
-        await this.ordersRepo.update(id, { status: dto.status, notes: dto.notes, waiter: dto.waiter });
+        const updateFields = {};
+        if (dto.status !== undefined)
+            updateFields.status = dto.status;
+        if (dto.notes !== undefined)
+            updateFields.notes = dto.notes;
+        if (dto.waiter !== undefined)
+            updateFields.waiter = dto.waiter;
+        if (dto.customerName !== undefined)
+            updateFields.customerName = dto.customerName;
+        await this.ordersRepo.update(id, updateFields);
         return this.findOneOrder(id);
     }
     async removeOrder(id) {

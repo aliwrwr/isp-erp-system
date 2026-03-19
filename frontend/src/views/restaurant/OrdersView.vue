@@ -44,6 +44,8 @@
                 <button v-if="o.status === 'served'" @click="updateStatus(o.id, 'paid')" class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100" title="تم الدفع"><i class="fas fa-money-bill"></i></button>
                 <button v-if="o.status !== 'paid' && o.status !== 'cancelled'" @click="updateStatus(o.id, 'cancelled')" class="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100" title="إلغاء"><i class="fas fa-times"></i></button>
                 <button @click="viewOrder(o)" class="text-xs px-2 py-1 bg-gray-50 text-gray-500 rounded-lg hover:bg-gray-100" title="عرض"><i class="fas fa-eye"></i></button>
+                <button @click="openEdit(o)" class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title="تعديل"><i class="fas fa-edit"></i></button>
+                <button @click="deleteOrder(o.id)" class="text-xs px-2 py-1 bg-red-50 text-red-500 rounded-lg hover:bg-red-100" title="حذف"><i class="fas fa-trash"></i></button>
               </div>
             </td>
           </tr>
@@ -66,6 +68,7 @@
               <option value="dine-in">محلي</option>
               <option value="takeaway">سفري</option>
               <option value="delivery">توصيل</option>
+              <option value="direct">بيع مباشر 💰</option>
             </select>
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -92,8 +95,54 @@
           </div>
         </div>
         <div class="flex gap-2 mt-4">
-          <button @click="saveOrder" class="flex-1 py-2 bg-restaurant text-white rounded-lg text-sm font-medium">إنشاء الطلب</button>
+          <button @click="saveOrder"
+            :class="form.orderType === 'direct' ? 'bg-green-600 hover:bg-green-700' : 'bg-restaurant hover:opacity-90'"
+            class="flex-1 py-2 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+            <i :class="form.orderType === 'direct' ? 'fas fa-money-bill-wave' : 'fas fa-plus'"></i>
+            {{ form.orderType === 'direct' ? 'بيع مباشر (مدفوع)' : 'إنشاء الطلب' }}
+          </button>
           <button @click="showModal = false" class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">إلغاء</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Order Modal -->
+    <div v-if="editingOrder" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="editingOrder = null">
+      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-secondary">تعديل الطلب {{ editingOrder.orderNumber }}</h3>
+          <button @click="editingOrder = null" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-bold text-gray-500 mb-1 block">الحالة</label>
+            <select v-model="editForm.status" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-restaurant">
+              <option value="pending">قيد الانتظار</option>
+              <option value="preparing">قيد التحضير</option>
+              <option value="ready">جاهز</option>
+              <option value="served">تم التقديم</option>
+              <option value="paid">مدفوع</option>
+              <option value="cancelled">ملغي</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500 mb-1 block">اسم العميل</label>
+            <input v-model="editForm.customerName" placeholder="اسم العميل" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-restaurant" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500 mb-1 block">النادل</label>
+            <input v-model="editForm.waiter" placeholder="النادل" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-restaurant" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-500 mb-1 block">ملاحظات</label>
+            <textarea v-model="editForm.notes" rows="2" placeholder="ملاحظات" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-restaurant"></textarea>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-5">
+          <button @click="saveEdit" class="flex-1 py-2.5 bg-restaurant text-white rounded-xl text-sm font-bold hover:opacity-90 transition">
+            <i class="fas fa-save ml-1"></i> حفظ التعديلات
+          </button>
+          <button @click="editingOrder = null" class="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-200 transition">إلغاء</button>
         </div>
       </div>
     </div>
@@ -135,6 +184,8 @@ const menuItems = ref<any[]>([]);
 const activeStatus = ref('all');
 const showModal = ref(false);
 const viewingOrder = ref<any>(null);
+const editingOrder = ref<any>(null);
+const editForm = ref<any>({ status: '', customerName: '', waiter: '', notes: '' });
 const form = ref<any>({ tableId: '', orderType: 'dine-in', customerName: '', waiter: '', notes: '', items: [{ menuItemId: '', quantity: 1 }] });
 
 const statusFilters = [
@@ -174,15 +225,36 @@ function addFormItem() { form.value.items.push({ menuItemId: '', quantity: 1 });
 
 async function saveOrder() {
   const body: any = {
-    orderType: form.value.orderType,
+    orderType: form.value.orderType === 'direct' ? 'takeaway' : form.value.orderType,
     customerName: form.value.customerName,
     waiter: form.value.waiter,
     notes: form.value.notes,
     items: form.value.items.filter((fi: any) => fi.menuItemId).map((fi: any) => ({ menuItemId: fi.menuItemId, quantity: fi.quantity })),
   };
   if (form.value.tableId) body.tableId = form.value.tableId;
-  await api.post('/restaurant/orders', body);
+  const res = await api.post('/restaurant/orders', body);
+  // Direct sale → auto-approve as paid
+  if (form.value.orderType === 'direct' && res.data?.id) {
+    await api.patch(`/restaurant/orders/${res.data.id}`, { status: 'paid' });
+  }
   showModal.value = false;
+  await load();
+}
+
+function openEdit(o: any) {
+  editingOrder.value = o;
+  editForm.value = { status: o.status, customerName: o.customerName || '', waiter: o.waiter || '', notes: o.notes || '' };
+}
+
+async function saveEdit() {
+  await api.patch(`/restaurant/orders/${editingOrder.value.id}`, editForm.value);
+  editingOrder.value = null;
+  await load();
+}
+
+async function deleteOrder(id: number) {
+  if (!confirm('هل تريد حذف هذا الطلب؟')) return;
+  await api.delete(`/restaurant/orders/${id}`);
   await load();
 }
 
@@ -200,10 +272,10 @@ function statusLabel(s: string) {
   return { pending: 'قيد الانتظار', preparing: 'قيد التحضير', ready: 'جاهز', served: 'تم التقديم', paid: 'مدفوع', cancelled: 'ملغي' }[s] || s;
 }
 function typeClass(t: string) {
-  return { 'dine-in': 'bg-blue-50 text-blue-700', takeaway: 'bg-orange-50 text-orange-700', delivery: 'bg-green-50 text-green-700' }[t] || 'bg-gray-50 text-gray-500';
+  return ({ 'dine-in': 'bg-blue-50 text-blue-700', takeaway: 'bg-orange-50 text-orange-700', delivery: 'bg-green-50 text-green-700', direct: 'bg-green-100 text-green-800' } as Record<string,string>)[t] ?? 'bg-gray-50 text-gray-500';
 }
 function typeLabel(t: string) {
-  return { 'dine-in': 'محلي', takeaway: 'سفري', delivery: 'توصيل' }[t] || t;
+  return ({ 'dine-in': 'محلي', takeaway: 'سفري', delivery: 'توصيل', direct: 'مباشر' } as Record<string,string>)[t] ?? t;
 }
 
 onMounted(load);
