@@ -28,6 +28,15 @@ let SystemSettings = class SystemSettings {
     pageSize;
     dateFormat;
     showExpired;
+    restaurantName;
+    restaurantPhone;
+    restaurantAddress;
+    restaurantLogoBase64;
+    receiptPaperSize;
+    receiptCurrency;
+    taxEnabled;
+    taxRate;
+    receiptFooter;
 };
 exports.SystemSettings = SystemSettings;
 __decorate([
@@ -94,6 +103,42 @@ __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)
 ], SystemSettings.prototype, "showExpired", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: '' }),
+    __metadata("design:type", String)
+], SystemSettings.prototype, "restaurantName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: '' }),
+    __metadata("design:type", String)
+], SystemSettings.prototype, "restaurantPhone", void 0);
+__decorate([
+    (0, typeorm_1.Column)('text', { default: '' }),
+    __metadata("design:type", String)
+], SystemSettings.prototype, "restaurantAddress", void 0);
+__decorate([
+    (0, typeorm_1.Column)('text', { default: '' }),
+    __metadata("design:type", String)
+], SystemSettings.prototype, "restaurantLogoBase64", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: '80mm' }),
+    __metadata("design:type", String)
+], SystemSettings.prototype, "receiptPaperSize", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 'د.ع' }),
+    __metadata("design:type", String)
+], SystemSettings.prototype, "receiptCurrency", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], SystemSettings.prototype, "taxEnabled", void 0);
+__decorate([
+    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], SystemSettings.prototype, "taxRate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 'شكراً لزيارتكم 🙏' }),
+    __metadata("design:type", String)
+], SystemSettings.prototype, "receiptFooter", void 0);
 exports.SystemSettings = SystemSettings = __decorate([
     (0, typeorm_1.Entity)('system_settings')
 ], SystemSettings);

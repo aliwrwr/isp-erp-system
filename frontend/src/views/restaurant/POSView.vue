@@ -165,12 +165,16 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '../../api';
 
-// Company / restaurant info loaded from DB
+// Restaurant info loaded from DB (restaurant-specific settings)
 const companyName    = ref('');
 const companyPhone   = ref('');
 const companyAddress = ref('');
 const logoBase64     = ref('');
 const currency       = ref('د.ع');
+const taxEnabled     = ref(false);
+const taxRate        = ref(0);
+const receiptFooter  = ref('شكراً لزيارتكم 🙏');
+const paperSize      = ref('80mm');
 
 const categories = ref<any[]>([]);
 const menuItems = ref<any[]>([]);
@@ -208,8 +212,9 @@ const filteredMenu = computed(() => {
   return activeCat.value ? available.filter(i => i.category?.id === activeCat.value) : available;
 });
 const availableTables = computed(() => tables.value.filter(t => t.status === 'available'));
-const subtotal = computed(() => cart.value.reduce((sum, ci) => sum + ci.price * ci.quantity, 0));
-const grandTotal = computed(() => Math.max(0, subtotal.value - (discount.value || 0)));
+const subtotal  = computed(() => cart.value.reduce((sum, ci) => sum + ci.price * ci.quantity, 0));
+const taxAmount  = computed(() => taxEnabled.value ? Math.round(subtotal.value * taxRate.value / 100) : 0);
+const grandTotal = computed(() => Math.max(0, subtotal.value - (discount.value || 0) + taxAmount.value));
 
 function setOrderType(type: string) {
   orderType.value = type;
@@ -230,11 +235,15 @@ async function load() {
   menuItems.value = mRes.data;
   tables.value = tRes.data;
   const s = sRes.data;
-  companyName.value    = s.companyName    || '';
-  companyPhone.value   = s.companyPhone   || '';
-  companyAddress.value = s.companyAddress || '';
-  logoBase64.value     = s.logoBase64     || '';
-  currency.value       = s.currency       || 'د.ع';
+  companyName.value    = s.restaurantName    || s.companyName    || '';
+  companyPhone.value   = s.restaurantPhone   || s.companyPhone   || '';
+  companyAddress.value = s.restaurantAddress || s.companyAddress || '';
+  logoBase64.value     = s.restaurantLogoBase64 || s.logoBase64  || '';
+  currency.value       = s.receiptCurrency   || s.currency       || 'د.ع';
+  taxEnabled.value     = s.taxEnabled   ?? false;
+  taxRate.value        = Number(s.taxRate) || 0;
+  receiptFooter.value  = s.receiptFooter || 'شكراً لزيارتكم 🙏';
+  paperSize.value      = s.receiptPaperSize || '80mm';
 }
 
 function addToCart(item: any) {
@@ -301,11 +310,14 @@ function printReceipt() {
     </tr>`).join('');
 
   /* ── totals ── */
-  const subtotalRow = discount.value > 0
+  const subtotalRow = discount.value > 0 || taxEnabled.value
     ? `<tr><td colspan="2" class="tot-lbl">المجموع الفرعي</td><td colspan="2" class="tot-val">${subtotal.value.toFixed(0)} ${cur}</td></tr>`
     : '';
   const discountRow = discount.value > 0
     ? `<tr class="discount-row"><td colspan="2" class="tot-lbl">الخصم</td><td colspan="2" class="tot-val">− ${Number(discount.value).toFixed(0)} ${cur}</td></tr>`
+    : '';
+  const taxRow = taxEnabled.value
+    ? `<tr><td colspan="2" class="tot-lbl">ضريبة ${taxRate.value}%</td><td colspan="2" class="tot-val">${taxAmount.value.toFixed(0)} ${cur}</td></tr>`
     : '';
 
   /* ── cash change ── */
@@ -333,7 +345,7 @@ function printReceipt() {
        Font sizes kept ≤ 11pt for readability
        ═══════════════════════════════════════ */
     @page {
-      size: 80mm auto;          /* change to 58mm for 58mm rolls */
+      size: ${paperSize.value} auto;
       margin: 3mm 4mm;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -342,7 +354,7 @@ function printReceipt() {
       font-size: 10pt;
       color: #000;
       background: #fff;
-      width: 72mm;              /* printable width for 80mm roll */
+      width: ${paperSize.value === '58mm' ? '48mm' : '72mm'};
       direction: rtl;
     }
 
@@ -462,7 +474,7 @@ function printReceipt() {
 
     /* ── Print trigger ── */
     @media print {
-      body { width: 72mm; }
+      body { width: ${paperSize.value === '58mm' ? '48mm' : '72mm'}; }
     }
   </style>
 </head>
@@ -530,10 +542,7 @@ function printReceipt() {
   <table class="tot-table">
     ${subtotalRow}
     ${discountRow}
-    <tr style="border-top:1px solid #000;">
-      <td colspan="2" class="tot-lbl grand-label">▶ الإجمالي الكلي</td>
-      <td colspan="2" class="tot-val grand-amount">${grandTotal.value.toFixed(0)} ${cur}</td>
-    </tr>
+    ${taxRow}
   </table>
 
   <!-- ══ CASH CHANGE ══ -->
@@ -543,7 +552,7 @@ function printReceipt() {
 
   <!-- ══ FOOTER ══ -->
   <div class="footer">
-    <div class="thanks">شكراً لكم 🙏</div>
+    <div class="thanks">${receiptFooter.value}</div>
     <div>نتمنى لكم تجربة طعام رائعة</div>
     <div style="margin-top:4px; font-size:7.5pt; color:#aaa;">
       ${new Date().getFullYear()} © ${companyName.value || 'نظام إدارة المطاعم'}

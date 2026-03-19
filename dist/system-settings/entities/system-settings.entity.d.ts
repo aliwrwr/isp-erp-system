@@ -15,4 +15,13 @@ export declare class SystemSettings {
     pageSize: number;
     dateFormat: string;
     showExpired: boolean;
+    restaurantName: string;
+    restaurantPhone: string;
+    restaurantAddress: string;
+    restaurantLogoBase64: string;
+    receiptPaperSize: string;
+    receiptCurrency: string;
+    taxEnabled: boolean;
+    taxRate: number;
+    receiptFooter: string;
 }

@@ -49,4 +49,32 @@ export class SystemSettings {
 
   @Column({ default: true })
   showExpired: boolean;
+
+  // ── Restaurant-specific settings ──────────────────────────
+  @Column({ default: '' })
+  restaurantName: string;
+
+  @Column({ default: '' })
+  restaurantPhone: string;
+
+  @Column('text', { default: '' })
+  restaurantAddress: string;
+
+  @Column('text', { default: '' })
+  restaurantLogoBase64: string;
+
+  @Column({ default: '80mm' })
+  receiptPaperSize: string; // '80mm' | '58mm'
+
+  @Column({ default: 'د.ع' })
+  receiptCurrency: string;
+
+  @Column({ default: false })
+  taxEnabled: boolean;
+
+  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  taxRate: number;
+
+  @Column({ default: 'شكراً لزيارتكم 🙏' })
+  receiptFooter: string;
 }
