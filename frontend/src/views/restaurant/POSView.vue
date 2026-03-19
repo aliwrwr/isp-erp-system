@@ -543,6 +543,10 @@ function printReceipt() {
     ${subtotalRow}
     ${discountRow}
     ${taxRow}
+    <tr style="border-top:1px solid #000;">
+      <td colspan="2" class="tot-lbl grand-label">▶ الإجمالي الكلي</td>
+      <td colspan="2" class="tot-val grand-amount">${grandTotal.value.toFixed(0)} ${cur}</td>
+    </tr>
   </table>
 
   <!-- ══ CASH CHANGE ══ -->
