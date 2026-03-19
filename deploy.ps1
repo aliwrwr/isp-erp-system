@@ -108,7 +108,7 @@ if (-not $hasNewCommit) {
                 -Method POST `
                 -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
                 -TimeoutSec 15 | Out-Null
-            Write-Host "  ✓ تم النسخ وإعادة تشغيل PM2 بنجاح" -ForegroundColor Green
+            Write-Host "  ✓ أُرسل أمر إعادة التشغيل — انتظار عودة PC2..." -ForegroundColor Green
             $pc2Updated = $true
         } catch {
             Write-Host "  تعذّر الاتصال بـ PC2 لإعادة التشغيل" -ForegroundColor Red
@@ -125,8 +125,35 @@ if (-not $hasNewCommit) {
     }
 }
 
-if ($pc2Updated) {
-    Write-Host "  تحقق من: http://192.200.251.4:8080" -ForegroundColor Cyan
+# ---------- Step 4: Verify PC2 is back online -------------------------
+if ($pc2Updated -and $hasNewCommit -and -not $githubPushOk) {
+    Write-Host "`n[4/4] التحقق من عودة PC2 للعمل..." -ForegroundColor Yellow
+    $online = $false
+    # Backend takes ~20 seconds to restart (10s delay + ~10s startup)
+    Start-Sleep -Seconds 22
+    for ($i = 1; $i -le 6; $i++) {
+        try {
+            $null = Invoke-WebRequest -Uri "$PC2_URL" -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
+            Write-Host "  ✓ PC2 عاد للعمل بنجاح!" -ForegroundColor Green
+            $online = $true
+            break
+        } catch {
+            if ($_.Exception.Response -ne $null) {
+                # Got HTTP response (even 404) — server is up
+                Write-Host "  ✓ PC2 عاد للعمل بنجاح!" -ForegroundColor Green
+                $online = $true
+                break
+            }
+            Write-Host "  انتظار... ($i/6)" -ForegroundColor Gray
+            Start-Sleep -Seconds 5
+        }
+    }
+    if (-not $online) {
+        Write-Host "  ⚠ تحذير: لم يتمكن من التحقق من PC2 — قد يستغرق وقتاً أطول" -ForegroundColor Yellow
+        Write-Host "  تحقق يدوياً من: http://192.200.251.4:8080" -ForegroundColor Cyan
+    }
+} elseif ($pc2Updated) {
+    Write-Host "`n[4/4] تحقق من: http://192.200.251.4:8080" -ForegroundColor Cyan
 }
 
 Write-Host ""

@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Headers, UnauthorizedException, HttpCode, UseGuards } from '@nestjs/common';
 import { spawn } from 'child_process';
-import { readFileSync, mkdirSync, openSync, closeSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, openSync, closeSync, existsSync } from 'fs';
 import * as path from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -63,10 +63,35 @@ export class DeployController {
     if (!secret || secret !== DEPLOY_SECRET) {
       throw new UnauthorizedException('Invalid deploy secret');
     }
-    // Use full pm2 path via %APPDATA% so it works in detached context
     const pm2 = `${process.env.APPDATA}\\npm\\pm2.cmd`;
-    const cmd = `"${pm2}" restart isp-backend & timeout /t 3 /nobreak & "${pm2}" restart isp-frontend & "${pm2}" save`;
-    spawn('cmd.exe', ['/c', cmd], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    const tempDir = process.env.TEMP || 'C:\\Windows\\Temp';
+    const scriptPath = path.join(tempDir, 'isp-pm2-restart.ps1');
+
+    // Write a standalone restart script to disk
+    writeFileSync(
+      scriptPath,
+      `# ISP ERP PM2 Restart Script\r\n` +
+      `Start-Sleep -Seconds 10\r\n` +
+      `& "${pm2}" resurrect\r\n` +
+      `Start-Sleep -Seconds 3\r\n` +
+      `& "${pm2}" restart isp-backend\r\n` +
+      `Start-Sleep -Seconds 5\r\n` +
+      `& "${pm2}" restart isp-frontend\r\n` +
+      `& "${pm2}" save\r\n`,
+    );
+
+    // Use Start-Process so the new PowerShell is NOT a child of Node.js.
+    // When PM2 kills this Node process, the restarted PowerShell keeps running.
+    spawn(
+      'powershell.exe',
+      [
+        '-NonInteractive', '-WindowStyle', 'Hidden',
+        '-Command',
+        `Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"'`,
+      ],
+      { detached: true, stdio: 'ignore', windowsHide: true },
+    ).unref();
+
     return { ok: true, message: 'PM2 restart triggered' };
   }
 

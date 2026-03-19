@@ -87,8 +87,21 @@ let DeployController = class DeployController {
             throw new common_1.UnauthorizedException('Invalid deploy secret');
         }
         const pm2 = `${process.env.APPDATA}\\npm\\pm2.cmd`;
-        const cmd = `"${pm2}" restart isp-backend & timeout /t 3 /nobreak & "${pm2}" restart isp-frontend & "${pm2}" save`;
-        (0, child_process_1.spawn)('cmd.exe', ['/c', cmd], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+        const tempDir = process.env.TEMP || 'C:\\Windows\\Temp';
+        const scriptPath = path.join(tempDir, 'isp-pm2-restart.ps1');
+        (0, fs_1.writeFileSync)(scriptPath, `# ISP ERP PM2 Restart Script\r\n` +
+            `Start-Sleep -Seconds 10\r\n` +
+            `& "${pm2}" resurrect\r\n` +
+            `Start-Sleep -Seconds 3\r\n` +
+            `& "${pm2}" restart isp-backend\r\n` +
+            `Start-Sleep -Seconds 5\r\n` +
+            `& "${pm2}" restart isp-frontend\r\n` +
+            `& "${pm2}" save\r\n`);
+        (0, child_process_1.spawn)('powershell.exe', [
+            '-NonInteractive', '-WindowStyle', 'Hidden',
+            '-Command',
+            `Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"'`,
+        ], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
         return { ok: true, message: 'PM2 restart triggered' };
     }
     runUpdate() {
