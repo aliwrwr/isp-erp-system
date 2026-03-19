@@ -5,6 +5,8 @@ export class CreateOrderDto {
   @IsNumber() @IsOptional() tableId?: number;
   @IsArray() items: any[];
   @IsString() @IsOptional() customerName?: string;
+  @IsString() @IsOptional() phone?: string;
+  @IsString() @IsOptional() address?: string;
   @IsString() @IsOptional() waiter?: string;
   @IsString() @IsOptional() notes?: string;
   @IsString() @IsOptional() orderType?: string;

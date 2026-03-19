@@ -8,6 +8,8 @@ export declare class Order {
     status: string;
     totalAmount: number;
     customerName: string;
+    phone: string;
+    address: string;
     waiter: string;
     notes: string;
     orderType: string;

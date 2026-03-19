@@ -3,6 +3,8 @@ export declare class CreateOrderDto {
     tableId?: number;
     items: any[];
     customerName?: string;
+    phone?: string;
+    address?: string;
     waiter?: string;
     notes?: string;
     orderType?: string;

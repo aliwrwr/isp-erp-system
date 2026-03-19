@@ -26,13 +26,19 @@ export class Order {
   customerName: string;
 
   @Column({ nullable: true })
+  phone: string;
+
+  @Column('text', { nullable: true })
+  address: string;
+
+  @Column({ nullable: true })
   waiter: string;
 
   @Column('text', { nullable: true })
   notes: string;
 
   @Column({ default: 'dine-in' })
-  orderType: string; // dine-in, takeaway, delivery
+  orderType: string; // direct, dine-in, takeaway, delivery
 
   @CreateDateColumn()
   createdAt: Date;

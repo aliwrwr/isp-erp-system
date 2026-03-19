@@ -119,6 +119,8 @@ export class RestaurantService {
       orderNumber,
       totalAmount,
       customerName: dto.customerName,
+      phone: dto.phone,
+      address: dto.address,
       waiter: dto.waiter,
       notes: dto.notes,
       orderType: dto.orderType,
