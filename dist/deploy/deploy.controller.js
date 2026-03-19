@@ -87,22 +87,24 @@ let DeployController = class DeployController {
             throw new common_1.UnauthorizedException('Invalid deploy secret');
         }
         const pm2 = `${process.env.APPDATA}\\npm\\pm2.cmd`;
-        const tempDir = process.env.TEMP || 'C:\\Windows\\Temp';
+        const tempDir = process.env.TEMP ?? `${process.env.USERPROFILE}\\AppData\\Local\\Temp`;
         const scriptPath = path.join(tempDir, 'isp-pm2-restart.ps1');
-        (0, fs_1.writeFileSync)(scriptPath, `# ISP ERP PM2 Restart Script\r\n` +
-            `Start-Sleep -Seconds 10\r\n` +
-            `& "${pm2}" resurrect\r\n` +
-            `Start-Sleep -Seconds 3\r\n` +
-            `& "${pm2}" restart isp-backend\r\n` +
-            `Start-Sleep -Seconds 5\r\n` +
+        (0, fs_1.writeFileSync)(scriptPath, `& "${pm2}" restart isp-backend\r\n` +
+            `Start-Sleep -Seconds 8\r\n` +
             `& "${pm2}" restart isp-frontend\r\n` +
             `& "${pm2}" save\r\n`);
-        (0, child_process_1.spawn)('powershell.exe', [
-            '-NonInteractive', '-WindowStyle', 'Hidden',
-            '-Command',
-            `Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"'`,
-        ], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
-        return { ok: true, message: 'PM2 restart triggered' };
+        const future = new Date(Date.now() + 120000);
+        const timeStr = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
+        const dateStr = `${String(future.getMonth() + 1).padStart(2, '0')}/${String(future.getDate()).padStart(2, '0')}/${future.getFullYear()}`;
+        (0, child_process_1.spawn)('schtasks', [
+            '/create', '/f',
+            '/tn', 'ISP-PM2-Restart',
+            '/sc', 'once',
+            '/sd', dateStr,
+            '/st', timeStr,
+            '/tr', `powershell.exe -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`,
+        ], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
+        return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
     }
     runUpdate() {
         const scriptPath = path.join(process.cwd(), 'update.ps1');

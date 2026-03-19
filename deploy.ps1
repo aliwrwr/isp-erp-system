@@ -61,18 +61,18 @@ Write-Host "`n[3/4] تشغيل التحديث على PC2..." -ForegroundColor Ye
 $pc2Updated = $false
 
 if (-not $hasNewCommit) {
-    # No code changes — just make sure PM2 is running the existing code
+    # No code changes — just verify PC2 is reachable, no restart needed
     try {
-        Invoke-RestMethod -Uri "$PC2_URL/deploy/restart" `
-            -Method POST `
-            -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
-            -TimeoutSec 10 | Out-Null
-        Write-Host "  تم التأكد من تشغيل PM2 على PC2 ✓" -ForegroundColor Green
-        $pc2Updated = $true
+        $null = Invoke-WebRequest -Uri "$PC2_URL" -TimeoutSec 8 -UseBasicParsing -ErrorAction Stop
+        Write-Host "  PC2 يعمل بالفعل ✓" -ForegroundColor Green
     } catch {
-        Write-Host "  PC2 يعمل بالفعل — لا تحديث مطلوب." -ForegroundColor Gray
-        $pc2Updated = $true
+        if ($_.Exception.Response -ne $null) {
+            Write-Host "  PC2 يعمل بالفعل ✓" -ForegroundColor Green
+        } else {
+            Write-Host "  تحذير: PC2 قد لا يكون متاحاً — تحقق من http://192.200.251.4:8080" -ForegroundColor Yellow
+        }
     }
+    $pc2Updated = $true
 } elseif ($githubPushOk) {
     # New commits pushed to GitHub — trigger PC2 to pull and restart
     try {
@@ -108,7 +108,7 @@ if (-not $hasNewCommit) {
                 -Method POST `
                 -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
                 -TimeoutSec 15 | Out-Null
-            Write-Host "  ✓ أُرسل أمر إعادة التشغيل — انتظار عودة PC2..." -ForegroundColor Green
+            Write-Host "  ✓ أُرسل أمر إعادة التشغيل — سيبدأ PM2 بالإعادة خلال دقيقتين..." -ForegroundColor Green
             $pc2Updated = $true
         } catch {
             Write-Host "  تعذّر الاتصال بـ PC2 لإعادة التشغيل" -ForegroundColor Red
@@ -130,7 +130,8 @@ if ($pc2Updated -and $hasNewCommit -and -not $githubPushOk) {
     Write-Host "`n[4/4] التحقق من عودة PC2 للعمل..." -ForegroundColor Yellow
     $online = $false
     # Backend takes ~20 seconds to restart (10s delay + ~10s startup)
-    Start-Sleep -Seconds 22
+    Write-Host "  انتظار ~دقيقتين حتى يُعيد Task Scheduler تشغيل PM2..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 130
     for ($i = 1; $i -le 6; $i++) {
         try {
             $null = Invoke-WebRequest -Uri "$PC2_URL" -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop

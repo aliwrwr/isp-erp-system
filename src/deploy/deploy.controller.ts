@@ -63,36 +63,41 @@ export class DeployController {
     if (!secret || secret !== DEPLOY_SECRET) {
       throw new UnauthorizedException('Invalid deploy secret');
     }
+
     const pm2 = `${process.env.APPDATA}\\npm\\pm2.cmd`;
-    const tempDir = process.env.TEMP || 'C:\\Windows\\Temp';
+    const tempDir = process.env.TEMP ?? `${process.env.USERPROFILE}\\AppData\\Local\\Temp`;
     const scriptPath = path.join(tempDir, 'isp-pm2-restart.ps1');
 
-    // Write a standalone restart script to disk
+    // Write restart script to disk
     writeFileSync(
       scriptPath,
-      `# ISP ERP PM2 Restart Script\r\n` +
-      `Start-Sleep -Seconds 10\r\n` +
-      `& "${pm2}" resurrect\r\n` +
-      `Start-Sleep -Seconds 3\r\n` +
       `& "${pm2}" restart isp-backend\r\n` +
-      `Start-Sleep -Seconds 5\r\n` +
+      `Start-Sleep -Seconds 8\r\n` +
       `& "${pm2}" restart isp-frontend\r\n` +
       `& "${pm2}" save\r\n`,
     );
 
-    // Use Start-Process so the new PowerShell is NOT a child of Node.js.
-    // When PM2 kills this Node process, the restarted PowerShell keeps running.
+    // Schedule via Windows Task Scheduler — runs inside svchost.exe, completely
+    // independent of this Node.js process and PM2 Job Objects.
+    // 2-minute delay guarantees the HTTP response is sent before restart begins.
+    const future = new Date(Date.now() + 120000);
+    const timeStr = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
+    const dateStr = `${String(future.getMonth() + 1).padStart(2, '0')}/${String(future.getDate()).padStart(2, '0')}/${future.getFullYear()}`;
+
     spawn(
-      'powershell.exe',
+      'schtasks',
       [
-        '-NonInteractive', '-WindowStyle', 'Hidden',
-        '-Command',
-        `Start-Process powershell.exe -WindowStyle Hidden -ArgumentList '-NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"'`,
+        '/create', '/f',
+        '/tn', 'ISP-PM2-Restart',
+        '/sc', 'once',
+        '/sd', dateStr,
+        '/st', timeStr,
+        '/tr', `powershell.exe -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`,
       ],
-      { detached: true, stdio: 'ignore', windowsHide: true },
+      { stdio: 'ignore', windowsHide: true, detached: true },
     ).unref();
 
-    return { ok: true, message: 'PM2 restart triggered' };
+    return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
   }
 
   // ── shared update logic ────────────────────────────────────────────
