@@ -10,25 +10,42 @@
 
     <!-- Category Tabs -->
     <div class="relative mb-8">
-      <div class="flex gap-3 overflow-x-auto pb-2 px-2 bg-white rounded-2xl shadow-md border border-gray-100 custom-scrollbar min-h-[80px] items-center">
+      <div class="flex gap-3 overflow-x-auto pb-3 pt-3 px-3 bg-white rounded-2xl shadow-md border border-gray-100 custom-scrollbar min-h-[100px] items-center">
+        <!-- "الكل" button -->
         <button @click="activeCategory = null"
-          :class="!activeCategory ? 'bg-restaurant text-white shadow' : 'bg-gray-50 text-gray-600 border border-gray-200'"
-          class="flex flex-col items-center justify-center min-w-[90px] px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all hover:bg-restaurant/90 hover:text-white focus:outline-none shrink-0">
-          <i class="fas fa-layer-group text-lg mb-1"></i>
-          الكل ({{ items.length }})
+          :class="!activeCategory
+            ? 'bg-restaurant text-white shadow-lg scale-105 ring-2 ring-restaurant/30'
+            : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-restaurant/40 hover:text-restaurant hover:bg-restaurant/5'"
+          class="flex flex-col items-center justify-center min-w-[90px] px-4 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all duration-200 focus:outline-none shrink-0">
+          <div :class="!activeCategory ? 'bg-white/20' : 'bg-restaurant/10'" class="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5">
+            <i class="fas fa-layer-group text-lg" :class="!activeCategory ? 'text-white' : 'text-restaurant'"></i>
+          </div>
+          <span class="text-xs font-bold">الكل</span>
+          <span :class="!activeCategory ? 'bg-white/25 text-white' : 'bg-restaurant/10 text-restaurant'" class="text-[10px] font-bold px-2 py-0.5 rounded-full mt-1">{{ items.length }}</span>
         </button>
+
+        <!-- Divider -->
+        <div class="w-px h-14 bg-gray-200 shrink-0"></div>
+
+        <!-- Category buttons -->
         <div v-for="c in categories" :key="c.id" class="flex flex-col items-center shrink-0">
           <div class="relative group/cat">
             <button @click="activeCategory = c.id"
-              :class="activeCategory === c.id ? 'bg-restaurant text-white shadow' : 'bg-gray-50 text-gray-600 border border-gray-200'"
-              class="flex flex-col items-center justify-center min-w-[90px] px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all hover:bg-restaurant/90 hover:text-white focus:outline-none">
-              <img v-if="c.image" :src="c.image" class="w-8 h-8 rounded-lg object-cover mb-1" />
-              <i v-else :class="c.icon || 'fas fa-folder'" class="text-lg mb-1"></i>
-              {{ c.name }} ({{ c.items?.length || 0 }})
+              :class="activeCategory === c.id
+                ? 'bg-restaurant text-white shadow-lg scale-105 ring-2 ring-restaurant/30'
+                : 'bg-gray-50 text-gray-500 border border-gray-200 hover:border-restaurant/40 hover:text-restaurant hover:bg-restaurant/5'"
+              class="flex flex-col items-center justify-center min-w-[90px] px-4 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all duration-200 focus:outline-none">
+              <div :class="activeCategory === c.id ? 'bg-white/20' : 'bg-restaurant/10'" class="w-10 h-10 rounded-xl flex items-center justify-center mb-1.5 overflow-hidden">
+                <img v-if="c.image" :src="c.image" class="w-full h-full object-cover" />
+                <i v-else :class="[c.icon || 'fas fa-utensils', activeCategory === c.id ? 'text-white' : 'text-restaurant']" class="text-lg"></i>
+              </div>
+              <span class="text-xs font-bold max-w-[80px] truncate">{{ c.name }}</span>
+              <span :class="activeCategory === c.id ? 'bg-white/25 text-white' : 'bg-restaurant/10 text-restaurant'" class="text-[10px] font-bold px-2 py-0.5 rounded-full mt-1">{{ items.filter(i => i.categoryId === c.id || i.category?.id === c.id).length }}</span>
             </button>
+            <!-- Edit/Delete on hover -->
             <div class="absolute -top-2 -right-2 hidden group-hover/cat:flex flex-col gap-1 z-20">
-              <button @click.stop="openEditCat(c)" class="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md hover:bg-blue-600" title="تعديل"><i class="fas fa-edit text-xs"></i></button>
-              <button @click.stop="removeCat(c.id)" class="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600" title="حذف"><i class="fas fa-trash text-xs"></i></button>
+              <button @click.stop="openEditCat(c)" class="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-md hover:bg-blue-600 transition" title="تعديل"><i class="fas fa-edit text-xs"></i></button>
+              <button @click.stop="removeCat(c.id)" class="w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:bg-red-600 transition" title="حذف"><i class="fas fa-trash text-xs"></i></button>
             </div>
           </div>
         </div>
