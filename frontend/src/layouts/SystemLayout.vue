@@ -105,6 +105,7 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'المدراء', icon: 'fas fa-user-shield', route: '/internet/managers' },
     { label: 'سجل العمليات', icon: 'fas fa-history', route: '/internet/log' },
     { label: 'واتساب', icon: 'fab fa-whatsapp', route: '/internet/whatsapp' },
+    { label: 'الإعدادات', icon: 'fas fa-cog', route: '/internet/settings' },
   ],
   sales: [
     { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/sales' },
