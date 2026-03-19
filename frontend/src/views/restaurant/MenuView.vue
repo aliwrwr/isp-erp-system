@@ -2,9 +2,27 @@
   <div>
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-lg font-bold text-secondary">قائمة الطعام</h2>
-      <div class="flex gap-2">
-        <button @click="openAddCat" class="bg-gray-100 hover:bg-gray-200 text-secondary px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2"><i class="fas fa-folder-plus"></i> تصنيف جديد</button>
-        <button @click="openAddItem" class="bg-restaurant hover:opacity-90 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2"><i class="fas fa-plus"></i> صنف جديد</button>
+      <div class="flex gap-3">
+        <button @click="openAddCat"
+          class="group relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200
+                 border-2 border-restaurant/30 text-restaurant bg-restaurant/5
+                 hover:bg-restaurant hover:text-white hover:border-restaurant hover:shadow-lg hover:shadow-restaurant/25 hover:scale-105
+                 focus:outline-none active:scale-95">
+          <span class="w-7 h-7 rounded-lg bg-restaurant/10 group-hover:bg-white/20 flex items-center justify-center transition-all duration-200">
+            <i class="fas fa-folder-plus text-sm"></i>
+          </span>
+          تصنيف جديد
+        </button>
+        <button @click="openAddItem"
+          class="group flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200
+                 bg-restaurant text-white shadow-md shadow-restaurant/30
+                 hover:opacity-90 hover:shadow-lg hover:shadow-restaurant/40 hover:scale-105
+                 focus:outline-none active:scale-95">
+          <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+            <i class="fas fa-plus text-sm"></i>
+          </span>
+          صنف جديد
+        </button>
       </div>
     </div>
 
