@@ -103,14 +103,12 @@ if (-not $hasNewCommit) {
 
         Write-Host "  إعادة تشغيل PM2 على PC2..." -ForegroundColor Yellow
         try {
-            Invoke-RestMethod -Uri "$PC2_URL/deploy/restart" `
-                -Method POST `
-                -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
-                -TimeoutSec 10 | Out-Null
+            ssh 192.200.251.4 "pm2 restart isp-backend ; pm2 restart isp-frontend" 2>$null
             Write-Host "  ✓ تم النسخ المباشر وإعادة تشغيل PM2" -ForegroundColor Green
             $pc2Updated = $true
         } catch {
-            Write-Host "  تم نسخ الملفات — يرجى إعادة تشغيل PM2 يدوياً على PC2" -ForegroundColor Yellow
+            Write-Host "  تم نسخ الملفات — يرجى تشغيل هذا على PC2:" -ForegroundColor Yellow
+            Write-Host "    pm2 restart isp-backend ; pm2 restart isp-frontend" -ForegroundColor Cyan
             $pc2Updated = $true
         }
     } else {
@@ -122,7 +120,7 @@ if (-not $hasNewCommit) {
 }
 
 if ($pc2Updated) {
-    Write-Host "  تحقق من: http://192.200.251.4:5173" -ForegroundColor Cyan
+    Write-Host "  تحقق من: http://192.200.251.4:8080" -ForegroundColor Cyan
 }
 
 Write-Host ""

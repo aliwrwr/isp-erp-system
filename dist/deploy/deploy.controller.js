@@ -89,7 +89,7 @@ let DeployController = class DeployController {
         const child = (0, child_process_1.spawn)('cmd.exe', ['/c', 'start', '', '/B', 'powershell.exe',
             '-ExecutionPolicy', 'Bypass',
             '-NonInteractive',
-            '-Command', 'pm2 reload ecosystem.config.js --update-env; pm2 save'], { detached: true, stdio: 'ignore', windowsHide: true });
+            '-Command', 'pm2 restart isp-backend; pm2 restart isp-frontend; pm2 save'], { detached: true, stdio: 'ignore', windowsHide: true });
         child.unref();
         return { ok: true, message: 'PM2 reload triggered' };
     }

@@ -68,7 +68,7 @@ export class DeployController {
       ['/c', 'start', '', '/B', 'powershell.exe',
         '-ExecutionPolicy', 'Bypass',
         '-NonInteractive',
-        '-Command', 'pm2 reload ecosystem.config.js --update-env; pm2 save'],
+        '-Command', 'pm2 restart isp-backend; pm2 restart isp-frontend; pm2 save'],
       { detached: true, stdio: 'ignore', windowsHide: true },
     );
     child.unref();
