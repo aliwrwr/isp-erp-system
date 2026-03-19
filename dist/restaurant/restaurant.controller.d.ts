@@ -45,7 +45,7 @@ export declare class RestaurantController {
     findOneExpense(id: string): Promise<import("./entities/restaurant-expense.entity").RestaurantExpense | null>;
     updateExpense(id: string, dto: UpdateExpenseDto): Promise<import("./entities/restaurant-expense.entity").RestaurantExpense | null>;
     removeExpense(id: string): Promise<void>;
-    getReportsSummary(): Promise<{
+    getReportsSummary(from?: string, to?: string): Promise<{
         totalOrders: number;
         todayOrders: number;
         paidOrders: number;

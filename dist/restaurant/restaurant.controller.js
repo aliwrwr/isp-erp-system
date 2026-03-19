@@ -129,22 +129,40 @@ let RestaurantController = class RestaurantController {
     removeExpense(id) {
         return this.restaurantService.removeExpense(+id);
     }
-    async getReportsSummary() {
+    async getReportsSummary(from, to) {
         const orders = await this.restaurantService.findAllOrders();
         const expenses = await this.restaurantService.findAllExpenses();
         const today = new Date().toISOString().split('T')[0];
+        const dateFrom = from || null;
+        const dateTo = to || null;
+        const inRange = (dateStr) => {
+            if (!dateStr)
+                return false;
+            const d = dateStr.split('T')[0];
+            if (dateFrom && d < dateFrom)
+                return false;
+            if (dateTo && d > dateTo)
+                return false;
+            return true;
+        };
+        const filteredOrders = (dateFrom || dateTo)
+            ? orders.filter(o => o.createdAt && inRange(new Date(o.createdAt).toISOString()))
+            : orders;
+        const filteredExpenses = (dateFrom || dateTo)
+            ? expenses.filter(e => inRange(e.date))
+            : expenses;
         const todayOrders = orders.filter(o => o.createdAt && new Date(o.createdAt).toISOString().split('T')[0] === today);
-        const paidOrders = orders.filter(o => o.status === 'paid');
+        const paidOrders = filteredOrders.filter(o => o.status === 'paid');
         const todayPaid = todayOrders.filter(o => o.status === 'paid');
-        const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+        const cancelledOrders = filteredOrders.filter(o => o.status === 'cancelled');
         const totalRevenue = paidOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
         const todayRevenue = todayPaid.reduce((sum, o) => sum + Number(o.totalAmount), 0);
-        const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+        const totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
         const todayExpenses = expenses.filter(e => e.date === today).reduce((sum, e) => sum + Number(e.amount), 0);
         const dailyData = [];
-        for (let i = 29; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
+        const rangeStart = dateFrom ? new Date(dateFrom) : (() => { const d = new Date(); d.setDate(d.getDate() - 29); return d; })();
+        const rangeEnd = dateTo ? new Date(dateTo) : new Date();
+        for (let d = new Date(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
             const ds = d.toISOString().split('T')[0];
             const dayOrders = orders.filter(o => o.createdAt && new Date(o.createdAt).toISOString().split('T')[0] === ds && o.status === 'paid');
             const dayExpenses = expenses.filter(e => e.date === ds);
@@ -156,7 +174,7 @@ let RestaurantController = class RestaurantController {
             });
         }
         const expensesByCategory = {};
-        expenses.forEach(e => {
+        filteredExpenses.forEach(e => {
             expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + Number(e.amount);
         });
         const itemSales = {};
@@ -171,7 +189,7 @@ let RestaurantController = class RestaurantController {
         });
         const topItems = Object.values(itemSales).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
         return {
-            totalOrders: orders.length,
+            totalOrders: filteredOrders.length,
             todayOrders: todayOrders.length,
             paidOrders: paidOrders.length,
             cancelledOrders: cancelledOrders.length,
@@ -438,8 +456,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)('reports/summary'),
     (0, permissions_decorator_1.Permissions)('restaurant.reports'),
+    __param(0, (0, common_1.Query)('from')),
+    __param(1, (0, common_1.Query)('to')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], RestaurantController.prototype, "getReportsSummary", null);
 exports.RestaurantController = RestaurantController = __decorate([
