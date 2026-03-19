@@ -142,7 +142,7 @@
                   class="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-400 hover:text-blue-600 flex items-center justify-center transition">
                   <i class="fas fa-edit text-xs"></i>
                 </button>
-                <button @click="remove(e.id)" title="حذف"
+                <button @click="remove(e)" title="حذف"
                   class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-300 hover:text-danger flex items-center justify-center transition">
                   <i class="fas fa-trash text-xs"></i>
                 </button>
@@ -249,6 +249,54 @@
       </div>
     </Transition>
 
+    <!-- ═══ DELETE CONFIRMATION MODAL ═══ -->
+    <Transition name="modal">
+      <div v-if="deleteTarget" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4" @click.self="deleteTarget = null">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <!-- Red header -->
+          <div class="bg-gradient-to-l from-red-600 to-red-500 px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <i class="fas fa-trash-alt text-white text-lg"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-black text-base">تأكيد الحذف</h3>
+              <p class="text-red-100 text-xs mt-0.5">هذا الإجراء لا يمكن التراجع عنه</p>
+            </div>
+          </div>
+          <!-- Body -->
+          <div class="px-6 py-5">
+            <p class="text-gray-600 text-sm mb-3">هل تريد حذف هذا المصروف؟</p>
+            <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" :class="catClass(deleteTarget.category)">
+                <i :class="catIcon(deleteTarget.category)" class="text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-black text-secondary text-sm truncate">{{ deleteTarget.title }}</p>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  <span class="font-bold text-danger">{{ Number(deleteTarget.amount).toLocaleString() }} د.ع</span>
+                  <span class="mx-1">&#x2022;</span>{{ catLabel(deleteTarget.category) }}
+                  <span class="mx-1">&#x2022;</span>{{ formatDate(deleteTarget.date) }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <!-- Actions -->
+          <div class="flex gap-3 px-6 pb-5">
+            <button @click="confirmDelete"
+              :disabled="deleting"
+              class="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-black transition shadow-md shadow-red-200 flex items-center justify-center gap-2 disabled:opacity-60">
+              <i :class="deleting ? 'fas fa-spinner fa-spin' : 'fas fa-trash'"></i>
+              {{ deleting ? 'جاري الحذف...' : 'نعم، احذف' }}
+            </button>
+            <button @click="deleteTarget = null"
+              class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition">
+              <i class="fas fa-times ml-1"></i> إلغاء
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
@@ -259,7 +307,9 @@ import api from '../../api';
 const expenses   = ref<any[]>([]);
 const loading    = ref(false);
 const saving     = ref(false);
+const deleting   = ref(false);
 const showModal  = ref(false);
+const deleteTarget = ref<any>(null);
 const editing    = ref<any>(null);
 const activeCategory = ref('all');
 const dateFrom   = ref('');
@@ -364,9 +414,16 @@ async function save() {
   } finally { saving.value = false; }
 }
 
-async function remove(id: number) {
-  if (!confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
-  await api.delete(`/restaurant/expenses/${id}`);
+function remove(e: any) {
+  deleteTarget.value = e;
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return;
+  deleting.value = true;
+  await api.delete(`/restaurant/expenses/${deleteTarget.value.id}`);
+  deleteTarget.value = null;
+  deleting.value = false;
   await load();
 }
 
@@ -376,6 +433,8 @@ onMounted(load);
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity .2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+.modal-enter-active, .modal-leave-active { transition: all .2s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(0.95); }
 </style>
 
 
