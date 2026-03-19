@@ -63,16 +63,11 @@ export class DeployController {
     if (!secret || secret !== DEPLOY_SECRET) {
       throw new UnauthorizedException('Invalid deploy secret');
     }
-    const child = spawn(
-      'cmd.exe',
-      ['/c', 'start', '', '/B', 'powershell.exe',
-        '-ExecutionPolicy', 'Bypass',
-        '-NonInteractive',
-        '-Command', 'pm2 restart isp-backend; pm2 restart isp-frontend; pm2 save'],
-      { detached: true, stdio: 'ignore', windowsHide: true },
-    );
-    child.unref();
-    return { ok: true, message: 'PM2 reload triggered' };
+    // Use full pm2 path via %APPDATA% so it works in detached context
+    const pm2 = `${process.env.APPDATA}\\npm\\pm2.cmd`;
+    const cmd = `"${pm2}" restart isp-backend & timeout /t 3 /nobreak & "${pm2}" restart isp-frontend & "${pm2}" save`;
+    spawn('cmd.exe', ['/c', cmd], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    return { ok: true, message: 'PM2 restart triggered' };
   }
 
   // ── shared update logic ────────────────────────────────────────────

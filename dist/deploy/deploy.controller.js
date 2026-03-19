@@ -86,12 +86,10 @@ let DeployController = class DeployController {
         if (!secret || secret !== DEPLOY_SECRET) {
             throw new common_1.UnauthorizedException('Invalid deploy secret');
         }
-        const child = (0, child_process_1.spawn)('cmd.exe', ['/c', 'start', '', '/B', 'powershell.exe',
-            '-ExecutionPolicy', 'Bypass',
-            '-NonInteractive',
-            '-Command', 'pm2 restart isp-backend; pm2 restart isp-frontend; pm2 save'], { detached: true, stdio: 'ignore', windowsHide: true });
-        child.unref();
-        return { ok: true, message: 'PM2 reload triggered' };
+        const pm2 = `${process.env.APPDATA}\\npm\\pm2.cmd`;
+        const cmd = `"${pm2}" restart isp-backend & timeout /t 3 /nobreak & "${pm2}" restart isp-frontend & "${pm2}" save`;
+        (0, child_process_1.spawn)('cmd.exe', ['/c', cmd], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+        return { ok: true, message: 'PM2 restart triggered' };
     }
     runUpdate() {
         const scriptPath = path.join(process.cwd(), 'update.ps1');

@@ -101,14 +101,20 @@ if (-not $hasNewCommit) {
         Write-Host "  نسخ frontend\dist..." -ForegroundColor Yellow
         robocopy $frontDist "$pc2Share\frontend\dist" /MIR /NJH /NJS /NDL /R:1 /W:1 | Out-Null
 
-        Write-Host "  إعادة تشغيل PM2 على PC2..." -ForegroundColor Yellow
+        Write-Host "  إعادة تشغيل PM2 على PC2 عبر API..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 2
         try {
-            ssh 192.200.251.4 "pm2 restart isp-backend ; pm2 restart isp-frontend" 2>$null
-            Write-Host "  ✓ تم النسخ المباشر وإعادة تشغيل PM2" -ForegroundColor Green
+            Invoke-RestMethod -Uri "$PC2_URL/deploy/restart" `
+                -Method POST `
+                -Headers @{ "x-deploy-secret" = $DEPLOY_SECRET } `
+                -TimeoutSec 15 | Out-Null
+            Write-Host "  ✓ تم النسخ وإعادة تشغيل PM2 بنجاح" -ForegroundColor Green
             $pc2Updated = $true
         } catch {
-            Write-Host "  تم نسخ الملفات — يرجى تشغيل هذا على PC2:" -ForegroundColor Yellow
-            Write-Host "    pm2 restart isp-backend ; pm2 restart isp-frontend" -ForegroundColor Cyan
+            Write-Host "  تعذّر الاتصال بـ PC2 لإعادة التشغيل" -ForegroundColor Red
+            Write-Host "  شغّل هذا يدوياً على PC2:" -ForegroundColor Yellow
+            Write-Host "    pm2 restart isp-backend" -ForegroundColor Cyan
+            Write-Host "    pm2 restart isp-frontend" -ForegroundColor Cyan
             $pc2Updated = $true
         }
     } else {
