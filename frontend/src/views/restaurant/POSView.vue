@@ -165,6 +165,13 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '../../api';
 
+// Company / restaurant info loaded from DB
+const companyName    = ref('');
+const companyPhone   = ref('');
+const companyAddress = ref('');
+const logoBase64     = ref('');
+const currency       = ref('د.ع');
+
 const categories = ref<any[]>([]);
 const menuItems = ref<any[]>([]);
 const tables = ref<any[]>([]);
@@ -213,14 +220,21 @@ function setOrderType(type: string) {
 }
 
 async function load() {
-  const [cRes, mRes, tRes] = await Promise.all([
+  const [cRes, mRes, tRes, sRes] = await Promise.all([
     api.get('/restaurant/categories'),
     api.get('/restaurant/menu'),
     api.get('/restaurant/tables'),
+    api.get('/system-settings'),
   ]);
   categories.value = cRes.data;
   menuItems.value = mRes.data;
   tables.value = tRes.data;
+  const s = sRes.data;
+  companyName.value    = s.companyName    || '';
+  companyPhone.value   = s.companyPhone   || '';
+  companyAddress.value = s.companyAddress || '';
+  logoBase64.value     = s.logoBase64     || '';
+  currency.value       = s.currency       || 'د.ع';
 }
 
 function addToCart(item: any) {
@@ -240,64 +254,312 @@ function clearCart() {
 }
 
 function printReceipt() {
-  const dateStr = new Date().toLocaleString('ar-IQ');
-  const orderTypeName = orderTypes.find(t => t.value === orderType.value)?.label ?? orderType.value;
-  const pmName = paymentMethods.find(p => p.value === paymentMethod.value)?.label ?? paymentMethod.value;
+  const now        = new Date();
+  const dateStr    = now.toLocaleDateString('ar-IQ', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const timeStr    = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+  const orderNum   = 'ORD-' + Date.now().toString().slice(-6);
+  const cur        = currency.value || 'د.ع';
 
-  const itemsHtml = cart.value.map(ci => `
-    <tr>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;">${ci.name}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:center;">${ci.quantity}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:left;">${ci.price.toFixed(2)}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:left;font-weight:bold;">${(ci.price * ci.quantity).toFixed(2)}</td>
-    </tr>`).join('');
+  const typeLabels: Record<string,string> = { direct:'بيع مباشر', takeaway:'سفري', delivery:'توصيل', 'dine-in':'صالة' };
+  const typeIcons:  Record<string,string> = { direct:'⚡', takeaway:'🛍', delivery:'🏍', 'dine-in':'🪑' };
+  const pmLabels:   Record<string,string> = { cash:'نقداً', card:'بطاقة', credit:'آجل' };
+  const pmIcons:    Record<string,string> = { cash:'💵', card:'💳', credit:'📋' };
 
-  let extraHtml = '';
-  if (orderType.value !== 'direct') {
-    const rows = [];
-    if (customerName.value) rows.push(`<div><b>العميل:</b> ${customerName.value}</div>`);
-    if (customerPhone.value) rows.push(`<div><b>الهاتف:</b> ${customerPhone.value}</div>`);
-    if (customerAddress.value) rows.push(`<div><b>العنوان:</b> ${customerAddress.value}</div>`);
-    if (selectedTable.value) rows.push(`<div><b>الطاولة:</b> ${selectedTable.value}</div>`);
-    if (rows.length) extraHtml = `<div style="background:#f9f9f9;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;">${rows.join('')}</div>`;
-  }
+  const typeName = typeLabels[orderType.value] ?? orderType.value;
+  const typeIcon = typeIcons[orderType.value]  ?? '';
+  const pmName   = pmLabels[paymentMethod.value] ?? paymentMethod.value;
+  const pmIcon   = pmIcons[paymentMethod.value]  ?? '';
 
-  const discountRow = discount.value > 0
-    ? `<div style="display:flex;justify-content:space-between;color:#e67e22;"><span>خصم</span><span>− ${discount.value.toFixed(2)} د.ع</span></div>`
+  /* ── separator line ── */
+  const sep = `<div class="sep"></div>`;
+  const dashedSep = `<div class="sep-dash"></div>`;
+
+  /* ── logo ── */
+  const logoHtml = logoBase64.value
+    ? `<img src="${logoBase64.value}" class="logo" alt="logo" />`
     : '';
 
-  const win = window.open('', '_blank', 'width=420,height=640');
-  win?.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"><title>فاتورة</title>
-    <style>
-      body{font-family:Arial,sans-serif;direction:rtl;margin:0;padding:20px;font-size:13px;color:#222;}
-      h2{text-align:center;margin:0 0 2px;font-size:18px;}
-      .meta{text-align:center;color:#888;font-size:11px;margin-bottom:14px;}
-      table{width:100%;border-collapse:collapse;}
-      th{background:#f5f5f5;padding:5px 8px;text-align:right;font-size:12px;}
-      .totals div{display:flex;justify-content:space-between;margin:4px 0;}
-      .grand{font-size:16px;font-weight:900;color:#c0392b;padding-top:8px;margin-top:8px;border-top:2px solid #ddd;}
-      .footer{text-align:center;color:#aaa;font-size:11px;margin-top:18px;}
-    </style></head>
-    <body>
-    <h2>فاتورة طلب</h2>
-    <div class="meta">
-      <div>${dateStr}</div>
-      <div>نوع الطلب: <b>${orderTypeName}</b> &nbsp;|&nbsp; الدفع: <b>${pmName}</b></div>
+  /* ── order info block ── */
+  let orderInfoRows = '';
+  if (orderType.value === 'dine-in' && selectedTable.value) {
+    const tbl = tables.value.find(t => t.id === selectedTable.value);
+    orderInfoRows += `<tr><td class="lbl">الطاولة</td><td class="val">🪑 طاولة ${tbl?.number ?? selectedTable.value}</td></tr>`;
+  }
+  if (orderType.value !== 'direct') {
+    if (customerName.value)    orderInfoRows += `<tr><td class="lbl">العميل</td><td class="val">${customerName.value}</td></tr>`;
+    if (customerPhone.value)   orderInfoRows += `<tr><td class="lbl">الهاتف</td><td class="val" dir="ltr">${customerPhone.value}</td></tr>`;
+    if (customerAddress.value) orderInfoRows += `<tr><td class="lbl">العنوان</td><td class="val">${customerAddress.value}</td></tr>`;
+  }
+
+  /* ── items rows ── */
+  const itemsRows = cart.value.map((ci, i) => `
+    <tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}">
+      <td class="item-name">${ci.name}</td>
+      <td class="item-qty">${ci.quantity}</td>
+      <td class="item-price">${ci.price.toFixed(0)}</td>
+      <td class="item-total">${(ci.price * ci.quantity).toFixed(0)}</td>
+    </tr>`).join('');
+
+  /* ── totals ── */
+  const subtotalRow = discount.value > 0
+    ? `<tr><td colspan="2" class="tot-lbl">المجموع الفرعي</td><td colspan="2" class="tot-val">${subtotal.value.toFixed(0)} ${cur}</td></tr>`
+    : '';
+  const discountRow = discount.value > 0
+    ? `<tr class="discount-row"><td colspan="2" class="tot-lbl">الخصم</td><td colspan="2" class="tot-val">− ${Number(discount.value).toFixed(0)} ${cur}</td></tr>`
+    : '';
+
+  /* ── cash change ── */
+  const changeHtml = (paymentMethod.value === 'cash' && cashReceived.value >= grandTotal.value)
+    ? `${dashedSep}
+       <table class="tot-table">
+         <tr><td colspan="2" class="tot-lbl">المبلغ المستلم</td><td colspan="2" class="tot-val">${Number(cashReceived.value).toFixed(0)} ${cur}</td></tr>
+         <tr class="change-row"><td colspan="2" class="tot-lbl">الباقي</td><td colspan="2" class="tot-val">${(cashReceived.value - grandTotal.value).toFixed(0)} ${cur}</td></tr>
+       </table>`
+    : '';
+
+  const win = window.open('', '_blank', 'width=340,height=700,menubar=no,toolbar=no,location=no,status=no');
+  if (!win) return;
+
+  win.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8">
+  <title>فاتورة - ${companyName.value || 'مطعم'}</title>
+  <style>
+    /* ═══════════════════════════════════════
+       THERMAL PAPER RECEIPT — 58mm / 80mm
+       Page width: 58mm uses ~48mm printable
+                   80mm uses ~72mm printable
+       Font sizes kept ≤ 11pt for readability
+       ═══════════════════════════════════════ */
+    @page {
+      size: 80mm auto;          /* change to 58mm for 58mm rolls */
+      margin: 3mm 4mm;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 10pt;
+      color: #000;
+      background: #fff;
+      width: 72mm;              /* printable width for 80mm roll */
+      direction: rtl;
+    }
+
+    /* ── Header ── */
+    .header        { text-align: center; padding: 4px 0 2px; }
+    .logo          { max-width: 50mm; max-height: 22mm; object-fit: contain; display: block; margin: 0 auto 4px; }
+    .shop-name     { font-size: 13pt; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .shop-sub      { font-size: 8pt; color: #444; line-height: 1.5; }
+
+    /* ── Separators ── */
+    .sep      { border-top: 2px solid #000; margin: 5px 0; }
+    .sep-dash { border-top: 1px dashed #555; margin: 4px 0; }
+
+    /* ── Receipt title bar ── */
+    .receipt-title {
+      text-align: center;
+      font-size: 11pt;
+      font-weight: bold;
+      padding: 3px 0;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+      margin: 4px 0;
+      letter-spacing: 1px;
+    }
+
+    /* ── Meta info ── */
+    .meta-table    { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 2px; }
+    .meta-table td { padding: 1px 2px; vertical-align: top; }
+    .lbl           { color: #444; width: 28%; white-space: nowrap; }
+    .val           { font-weight: bold; }
+
+    /* ── Order type badge ── */
+    .type-badge {
+      display: inline-block;
+      border: 1px solid #000;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 9pt;
+      font-weight: bold;
+      margin: 3px auto;
+    }
+
+    /* ── Items table ── */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+      margin: 2px 0;
+    }
+    .items-table thead tr {
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
+    }
+    .items-table th {
+      padding: 2px 2px;
+      text-align: right;
+      font-size: 8.5pt;
+      font-weight: bold;
+    }
+    .items-table td { padding: 2px 2px; }
+    .row-even      { background: #f7f7f7; }
+    .row-odd       { background: #fff; }
+    .item-name     { text-align: right; max-width: 34mm; word-break: break-word; }
+    .item-qty      { text-align: center; width: 8mm; }
+    .item-price    { text-align: left;   width: 12mm; direction: ltr; }
+    .item-total    { text-align: left;   width: 14mm; direction: ltr; font-weight: bold; }
+
+    /* ── Totals table ── */
+    .tot-table     { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+    .tot-table td  { padding: 2px 2px; }
+    .tot-lbl       { color: #333; }
+    .tot-val       { text-align: left; font-weight: bold; direction: ltr; }
+    .discount-row  { color: #c0392b; }
+
+    /* ── Grand total ── */
+    .grand-row td {
+      font-size: 12pt;
+      font-weight: 900;
+      padding: 3px 2px;
+    }
+    .grand-label   { font-size: 11pt; }
+    .grand-amount  { text-align: left; direction: ltr; }
+
+    /* ── Cash change ── */
+    .change-row td { color: #27ae60; font-weight: bold; }
+
+    /* ── Payment ── */
+    .payment-line {
+      text-align: center;
+      font-size: 8.5pt;
+      padding: 2px 0;
+      border: 1px dashed #999;
+      border-radius: 3px;
+      margin: 3px 0;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      font-size: 8pt;
+      color: #555;
+      padding: 6px 0 2px;
+      line-height: 1.6;
+    }
+    .footer .thanks {
+      font-size: 10pt;
+      font-weight: bold;
+      color: #000;
+    }
+    .barcode-placeholder {
+      text-align: center;
+      letter-spacing: 3px;
+      font-size: 7pt;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* ── Print trigger ── */
+    @media print {
+      body { width: 72mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    ${logoHtml}
+    <div class="shop-name">${companyName.value || 'المطعم'}</div>
+    <div class="shop-sub">
+      ${companyAddress.value ? companyAddress.value + '<br>' : ''}
+      ${companyPhone.value   ? '📞 ' + companyPhone.value   : ''}
     </div>
-    ${extraHtml}
-    <table>
-      <thead><tr><th>الصنف</th><th style="text-align:center">الكمية</th><th style="text-align:left">السعر</th><th style="text-align:left">الإجمالي</th></tr></thead>
-      <tbody>${itemsHtml}</tbody>
-    </table>
-    <div class="totals" style="background:#f9f9f9;border-radius:8px;padding:10px 14px;margin-top:14px;">
-      ${discount.value > 0 ? `<div><span>المجموع الفرعي</span><span>${subtotal.value.toFixed(2)} د.ع</span></div>` : ''}
-      ${discountRow}
-      <div class="grand"><span>الإجمالي</span><span>${grandTotal.value.toFixed(2)} د.ع</span></div>
+  </div>
+
+  <!-- ══ RECEIPT TITLE ══ -->
+  <div class="receipt-title">★ فاتورة ★</div>
+
+  <!-- ══ META INFO ══ -->
+  <table class="meta-table">
+    <tr>
+      <td class="lbl">التاريخ</td>
+      <td class="val">${dateStr}</td>
+      <td class="lbl" style="text-align:center">الوقت</td>
+      <td class="val" dir="ltr">${timeStr}</td>
+    </tr>
+    <tr>
+      <td class="lbl">رقم الطلب</td>
+      <td class="val" colspan="3" dir="ltr">${orderNum}</td>
+    </tr>
+  </table>
+
+  ${dashedSep}
+
+  <!-- ══ ORDER TYPE ══ -->
+  <div style="text-align:center; margin: 3px 0;">
+    <span class="type-badge">${typeIcon} ${typeName}</span>
+    &nbsp;
+    <span class="payment-line" style="display:inline-block;padding:1px 8px;">${pmIcon} ${pmName}</span>
+  </div>
+
+  <!-- ══ ORDER DETAILS (customer/table) ══ -->
+  ${orderInfoRows ? `${dashedSep}<table class="meta-table">${orderInfoRows}</table>` : ''}
+
+  ${sep}
+
+  <!-- ══ ITEMS TABLE ══ -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th class="item-name">الصنف</th>
+        <th class="item-qty">كمية</th>
+        <th class="item-price">سعر</th>
+        <th class="item-total">إجمالي</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemsRows}
+    </tbody>
+  </table>
+
+  ${sep}
+
+  <!-- ══ TOTALS ══ -->
+  <table class="tot-table">
+    ${subtotalRow}
+    ${discountRow}
+    <tr style="border-top:1px solid #000;">
+      <td colspan="2" class="tot-lbl grand-label">▶ الإجمالي الكلي</td>
+      <td colspan="2" class="tot-val grand-amount">${grandTotal.value.toFixed(0)} ${cur}</td>
+    </tr>
+  </table>
+
+  <!-- ══ CASH CHANGE ══ -->
+  ${changeHtml}
+
+  ${sep}
+
+  <!-- ══ FOOTER ══ -->
+  <div class="footer">
+    <div class="thanks">شكراً لكم 🙏</div>
+    <div>نتمنى لكم تجربة طعام رائعة</div>
+    <div style="margin-top:4px; font-size:7.5pt; color:#aaa;">
+      ${new Date().getFullYear()} © ${companyName.value || 'نظام إدارة المطاعم'}
     </div>
-    <div class="footer">شكراً لزيارتكم ✦</div>
-    <script>window.onload=function(){window.print();setTimeout(()=>window.close(),800);}<\/script>
-    </body></html>`);
-  win?.document.close();
+    <div class="barcode-placeholder">|||||||||||||||||||||||||||||||</div>
+  </div>
+
+  <script>
+    window.onload = function () {
+      window.print();
+      setTimeout(function () { window.close(); }, 1200);
+    };
+  <\/script>
+</body>
+</html>`);
+  win.document.close();
 }
 
 async function submitOrder() {

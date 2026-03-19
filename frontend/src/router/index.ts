@@ -38,6 +38,7 @@ const routePermissions: Record<string, string> = {
   'RestaurantPOS': 'restaurant.orders',
   'RestaurantExpenses': 'restaurant.expenses',
   'RestaurantReports': 'restaurant.reports',
+  'RestaurantSettings': 'restaurant.settings',
 };
 
 const routes = [
@@ -134,6 +135,7 @@ const routes = [
       { path: 'pos', name: 'RestaurantPOS', component: () => import('../views/restaurant/POSView.vue') },
       { path: 'expenses', name: 'RestaurantExpenses', component: () => import('../views/restaurant/ExpensesView.vue') },
       { path: 'reports', name: 'RestaurantReports', component: () => import('../views/restaurant/ReportsView.vue') },
+      { path: 'settings', name: 'RestaurantSettings', component: () => import('../views/internet/SettingsView.vue') },
     ],
   },
   { path: '/', redirect: '/login' },

@@ -105,7 +105,6 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'المدراء', icon: 'fas fa-user-shield', route: '/internet/managers' },
     { label: 'سجل العمليات', icon: 'fas fa-history', route: '/internet/log' },
     { label: 'واتساب', icon: 'fab fa-whatsapp', route: '/internet/whatsapp' },
-    { label: 'الإعدادات', icon: 'fas fa-cog', route: '/internet/settings' },
   ],
   sales: [
     { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/sales' },
@@ -139,14 +138,14 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
   ],
   restaurant: [
     { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/restaurant' },
-    { label: 'قائمة الطعام', icon: 'fas fa-utensils', route: '/restaurant/menu' },
-    { label: 'الطاولات', icon: 'fas fa-chair', route: '/restaurant/tables' },
-    { label: 'الطلبات', icon: 'fas fa-clipboard-list', route: '/restaurant/orders' },
-    { label: 'المطبخ', icon: 'fas fa-fire', route: '/restaurant/kitchen' },
-    { label: 'الحجوزات', icon: 'fas fa-calendar-alt', route: '/restaurant/reservations' },
     { label: 'نقطة البيع', icon: 'fas fa-cash-register', route: '/restaurant/pos' },
     { label: 'المصروفات', icon: 'fas fa-hand-holding-usd', route: '/restaurant/expenses' },
+    { label: 'قائمة الطعام', icon: 'fas fa-utensils', route: '/restaurant/menu' },
     { label: 'التقارير', icon: 'fas fa-chart-bar', route: '/restaurant/reports' },
+    { label: 'المطبخ', icon: 'fas fa-fire', route: '/restaurant/kitchen' },
+    { label: 'الحجوزات', icon: 'fas fa-calendar-alt', route: '/restaurant/reservations' },
+    { label: 'الطلبات', icon: 'fas fa-clipboard-list', route: '/restaurant/orders' },
+    { label: 'الإعدادات', icon: 'fas fa-cog', route: '/restaurant/settings' },
   ],
 };
 
@@ -199,6 +198,7 @@ const routePermissions: Record<string, string> = {
   '/restaurant/pos': 'restaurant.orders',
   '/restaurant/expenses': 'restaurant.expenses',
   '/restaurant/reports': 'restaurant.reports',
+  '/restaurant/settings': 'restaurant.settings',
 };
 
 const menuItems = computed(() => {
