@@ -45,7 +45,7 @@
                 <button v-if="o.status !== 'paid' && o.status !== 'cancelled'" @click="updateStatus(o.id, 'cancelled')" class="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100" title="إلغاء"><i class="fas fa-times"></i></button>
                 <button @click="viewOrder(o)" class="text-xs px-2 py-1 bg-gray-50 text-gray-500 rounded-lg hover:bg-gray-100" title="عرض"><i class="fas fa-eye"></i></button>
                 <button @click="openEdit(o)" class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100" title="تعديل"><i class="fas fa-edit"></i></button>
-                <button @click="deleteOrder(o.id)" class="text-xs px-2 py-1 bg-red-50 text-red-500 rounded-lg hover:bg-red-100" title="حذف"><i class="fas fa-trash"></i></button>
+                <button @click="deleteOrder(o)" class="text-xs px-2 py-1 bg-red-50 text-red-500 rounded-lg hover:bg-red-100" title="حذف"><i class="fas fa-trash"></i></button>
               </div>
             </td>
           </tr>
@@ -147,6 +147,57 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <Transition name="modal">
+      <div v-if="deleteTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4" @click.self="deleteTarget = null">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+          <!-- Red top bar -->
+          <div class="bg-gradient-to-l from-red-600 to-red-500 px-6 py-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <i class="fas fa-trash text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-black text-base">تأكيد الحذف</h3>
+              <p class="text-red-100 text-xs mt-0.5">هذا الإجراء لا يمكن التراجع عنه</p>
+            </div>
+          </div>
+          <!-- Body -->
+          <div class="px-6 py-5">
+            <p class="text-gray-700 text-sm font-medium mb-1">هل تريد حذف الطلب:</p>
+            <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 my-3 flex items-center gap-3">
+              <i class="fas fa-receipt text-red-400 text-lg"></i>
+              <div>
+                <p class="font-black text-restaurant text-sm font-mono">{{ deleteTarget.orderNumber }}</p>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  {{ deleteTarget.customerName || 'بدون عميل' }}
+                  <span v-if="deleteTarget.table"> • طاولة {{ deleteTarget.table.number }}</span>
+                  • {{ Number(deleteTarget.totalAmount).toFixed(2) }} د.ع
+                </p>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 flex items-center gap-1.5">
+              <i class="fas fa-exclamation-triangle text-amber-400"></i>
+              سيتم تحرير الطاولة المرتبطة إن وجدت
+            </p>
+          </div>
+          <!-- Actions -->
+          <div class="flex gap-3 px-6 pb-5">
+            <button @click="confirmDelete"
+              :disabled="deleting"
+              class="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-black transition shadow-md shadow-red-200 flex items-center justify-center gap-2 disabled:opacity-60">
+              <i class="fas fa-spinner fa-spin" v-if="deleting"></i>
+              <i class="fas fa-trash" v-else></i>
+              {{ deleting ? 'جاري الحذف...' : 'نعم، احذف' }}
+            </button>
+            <button @click="deleteTarget = null"
+              class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition">
+              <i class="fas fa-times ml-1"></i> إلغاء
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- View Order Modal -->
     <div v-if="viewingOrder" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="viewingOrder = null">
       <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
@@ -186,6 +237,8 @@ const showModal = ref(false);
 const viewingOrder = ref<any>(null);
 const editingOrder = ref<any>(null);
 const editForm = ref<any>({ status: '', customerName: '', waiter: '', notes: '' });
+const deleteTarget = ref<any>(null);
+const deleting = ref(false);
 const form = ref<any>({ tableId: '', orderType: 'dine-in', customerName: '', waiter: '', notes: '', items: [{ menuItemId: '', quantity: 1 }] });
 
 const statusFilters = [
@@ -252,9 +305,16 @@ async function saveEdit() {
   await load();
 }
 
-async function deleteOrder(id: number) {
-  if (!confirm('هل تريد حذف هذا الطلب؟')) return;
-  await api.delete(`/restaurant/orders/${id}`);
+function deleteOrder(o: any) {
+  deleteTarget.value = o;
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return;
+  deleting.value = true;
+  await api.delete(`/restaurant/orders/${deleteTarget.value.id}`);
+  deleteTarget.value = null;
+  deleting.value = false;
   await load();
 }
 
@@ -280,3 +340,8 @@ function typeLabel(t: string) {
 
 onMounted(load);
 </script>
+
+<style scoped>
+.modal-enter-active, .modal-leave-active { transition: all 0.2s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(0.95); }
+</style>
