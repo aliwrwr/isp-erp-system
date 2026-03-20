@@ -14,7 +14,7 @@
           <i class="fas fa-print"></i>
           <span class="hidden sm:inline">طباعة</span>
         </button>
-        <button @click="load"
+        <button @click="load"   
           :disabled="loading"
           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-restaurant text-white shadow-md shadow-restaurant/25 hover:opacity-90 hover:scale-105 transition-all duration-200 focus:outline-none disabled:opacity-60">
           <i class="fas fa-sync-alt" :class="loading && 'fa-spin'"></i>

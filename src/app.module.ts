@@ -32,6 +32,7 @@ import { DeployModule } from './deploy/deploy.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { CashboxModule } from './cashbox/cashbox.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
+import { InstallmentsModule } from './installments/installments.module';
 import config from './config/config';
 
 @Module({
@@ -75,6 +76,7 @@ import config from './config/config';
     ExpensesModule,
     CashboxModule,
     SystemSettingsModule,
+    InstallmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

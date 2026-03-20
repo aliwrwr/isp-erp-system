@@ -148,6 +148,13 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'الطلبات', icon: 'fas fa-clipboard-list', route: '/restaurant/orders' },
     { label: 'الإعدادات', icon: 'fas fa-cog', route: '/restaurant/settings' },
   ],
+  installments: [
+    { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/installments' },
+    { label: 'العملاء', icon: 'fas fa-users', route: '/installments/customers' },
+    { label: 'العقود', icon: 'fas fa-file-contract', route: '/installments/contracts' },
+    { label: 'الدفعات', icon: 'fas fa-coins', route: '/installments/payments' },
+    { label: 'التقارير', icon: 'fas fa-chart-bar', route: '/installments/reports' },
+  ],
 };
 
 const systemMeta: Record<string, { name: string; icon: string; color: string }> = {
@@ -157,6 +164,7 @@ const systemMeta: Record<string, { name: string; icon: string; color: string }> 
   support: { name: 'الدعم الفني', icon: 'fas fa-headset', color: '#E67E22' },
   messaging: { name: 'نظام الرسائل', icon: 'fas fa-comment-dots', color: '#16A085' },
   restaurant: { name: 'نظام المطاعم', icon: 'fas fa-utensils', color: '#D35400' },
+  installments: { name: 'نظام الأقساط', icon: 'fas fa-hand-holding-usd', color: '#6366F1' },
 };
 
 const currentSystem = computed(() => (route.meta.system as string) || 'internet');
@@ -200,6 +208,10 @@ const routePermissions: Record<string, string> = {
   '/restaurant/expenses': 'restaurant.expenses',
   '/restaurant/reports': 'restaurant.reports',
   '/restaurant/settings': 'restaurant.settings',
+  '/installments/customers': 'installments.customers',
+  '/installments/contracts': 'installments.contracts',
+  '/installments/payments': 'installments.payments',
+  '/installments/reports': 'installments.reports',
 };
 
 const menuItems = computed(() => {

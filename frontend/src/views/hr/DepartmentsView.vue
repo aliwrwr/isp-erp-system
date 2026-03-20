@@ -396,6 +396,15 @@ const permissionGroups = [
       { key: 'reports',      label: 'التقارير'     },
     ],
   },
+  {
+    key: 'installments', label: 'نظام الأقساط', icon: 'fas fa-hand-holding-usd', color: '#6366F1',
+    items: [
+      { key: 'customers', label: 'العملاء'  },
+      { key: 'contracts', label: 'العقود'   },
+      { key: 'payments',  label: 'الدفعات'  },
+      { key: 'reports',   label: 'التقارير' },
+    ],
+  },
 ];
 
 const activeGroup = computed(() => permissionGroups.find(g => g.key === activePermTab.value));

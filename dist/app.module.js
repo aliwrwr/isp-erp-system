@@ -43,6 +43,7 @@ const deploy_module_1 = require("./deploy/deploy.module");
 const expenses_module_1 = require("./expenses/expenses.module");
 const cashbox_module_1 = require("./cashbox/cashbox.module");
 const system_settings_module_1 = require("./system-settings/system-settings.module");
+const installments_module_1 = require("./installments/installments.module");
 const config_2 = __importDefault(require("./config/config"));
 let AppModule = class AppModule {
 };
@@ -89,6 +90,7 @@ exports.AppModule = AppModule = __decorate([
             expenses_module_1.ExpensesModule,
             cashbox_module_1.CashboxModule,
             system_settings_module_1.SystemSettingsModule,
+            installments_module_1.InstallmentsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -250,6 +250,7 @@ const allSystems = [
   { id: 'support', nameAr: 'الدعم الفني', desc: 'تذاكر الدعم والصيانة', icon: 'fas fa-headset', color: '#E67E22', route: '/support' },
   { id: 'messaging', nameAr: 'نظام الرسائل', desc: 'إرسال رسائل وإشعارات للمشتركين', icon: 'fas fa-comment-dots', color: '#16A085', route: '/messaging' },
   { id: 'restaurant', nameAr: 'نظام المطاعم', desc: 'إدارة المطعم والطلبات والحجوزات', icon: 'fas fa-utensils', color: '#D35400', route: '/restaurant' },
+  { id: 'installments', nameAr: 'نظام الأقساط', desc: 'البيع بالتقسيط وإدارة العقود والدفعات', icon: 'fas fa-hand-holding-usd', color: '#6366F1', route: '/installments' },
 ];
 
 const systems = computed(() => {

@@ -39,6 +39,11 @@ const routePermissions: Record<string, string> = {
   'RestaurantExpenses': 'restaurant.expenses',
   'RestaurantReports': 'restaurant.reports',
   'RestaurantSettings': 'restaurant.settings',
+  'InstallmentsCustomers': 'installments.customers',
+  'InstallmentsContracts': 'installments.contracts',
+  'InstallmentsContractDetail': 'installments.contracts',
+  'InstallmentsPayments': 'installments.payments',
+  'InstallmentsReports': 'installments.reports',
 };
 
 const routes = [
@@ -136,6 +141,19 @@ const routes = [
       { path: 'expenses', name: 'RestaurantExpenses', component: () => import('../views/restaurant/ExpensesView.vue') },
       { path: 'reports', name: 'RestaurantReports', component: () => import('../views/restaurant/ReportsView.vue') },
       { path: 'settings', name: 'RestaurantSettings', component: () => import('../views/restaurant/RestaurantSettingsView.vue') },
+    ],
+  },
+  {
+    path: '/installments',
+    component: () => import('../layouts/SystemLayout.vue'),
+    meta: { requiresAuth: true, system: 'installments' },
+    children: [
+      { path: '', name: 'InstallmentsDashboard', component: () => import('../views/installments/DashboardView.vue') },
+      { path: 'customers', name: 'InstallmentsCustomers', component: () => import('../views/installments/CustomersView.vue') },
+      { path: 'contracts', name: 'InstallmentsContracts', component: () => import('../views/installments/ContractsView.vue') },
+      { path: 'contracts/:id', name: 'InstallmentsContractDetail', component: () => import('../views/installments/ContractDetailView.vue') },
+      { path: 'payments', name: 'InstallmentsPayments', component: () => import('../views/installments/PaymentsView.vue') },
+      { path: 'reports', name: 'InstallmentsReports', component: () => import('../views/installments/ReportsView.vue') },
     ],
   },
   { path: '/', redirect: '/login' },
