@@ -237,7 +237,7 @@
                   <div class="w-6 h-6 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
                     <i class="fas fa-user-shield text-violet-500 text-[10px]"></i>
                   </div>
-                  <span class="text-xs text-violet-700 font-medium">{{ sub.manager.position || sub.manager.name }}</span>
+                  <span class="text-xs text-violet-700 font-medium">{{ sub.manager.name || sub.manager.position }}</span>
                 </div>
                 <span v-else class="text-gray-300 text-xs">—</span>
               </td>
@@ -491,7 +491,7 @@
                   <label class="block text-xs font-semibold text-gray-600 mb-1.5">تابع إلى (المدير)</label>
                   <select v-model="form.managerId" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition cursor-pointer">
                     <option :value="null">— اختر المدير —</option>
-                    <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.position || m.name }}</option>
+                    <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name || m.position }}</option>
                   </select>
                 </div>
                 <div class="sm:col-span-2">
