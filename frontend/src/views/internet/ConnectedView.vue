@@ -329,29 +329,148 @@
       <Transition name="modal">
         <div v-if="detailsModal.visible" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
           <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="detailsModal.visible = false"></div>
-          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md" dir="rtl">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                <i class="fas fa-info-circle text-indigo-500"></i>
-                تفاصيل الاتصال
-              </h3>
-              <button @click="detailsModal.visible = false" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" dir="rtl">
+
+            <!-- Gradient Header -->
+            <div class="relative bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 px-5 pt-5 pb-8 overflow-hidden">
+              <!-- Decorative circles -->
+              <div class="absolute -top-6 -left-6 w-28 h-28 bg-white/10 rounded-full"></div>
+              <div class="absolute -bottom-8 -right-4 w-36 h-36 bg-white/10 rounded-full"></div>
+              <div class="absolute top-2 right-16 w-12 h-12 bg-white/5 rounded-full"></div>
+              <!-- Close button -->
+              <button @click="detailsModal.visible = false"
+                class="absolute top-3 left-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition z-10">
                 <i class="fas fa-times text-xs"></i>
               </button>
-            </div>
-            <div class="px-5 py-4 space-y-2.5 text-sm" v-if="detailsModal.conn">
-              <div v-for="row in detailsRows(detailsModal.conn)" :key="row.label" class="flex items-start justify-between gap-4">
-                <span class="text-gray-500 text-xs whitespace-nowrap">{{ row.label }}</span>
-                <span class="font-medium text-gray-800 text-xs text-left font-mono break-all">{{ row.value }}</span>
+              <!-- Avatar + Info -->
+              <div v-if="detailsModal.conn" class="relative flex items-center gap-4 z-10">
+                <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white text-2xl font-bold shadow-lg select-none">
+                  {{ (detailsModal.conn.subscriberName || detailsModal.conn.name || '?')[0].toUpperCase() }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-white font-bold text-base leading-tight truncate">{{ detailsModal.conn.subscriberName || detailsModal.conn.name }}</div>
+                  <div class="text-indigo-200 text-xs mt-0.5 font-mono">{{ detailsModal.conn.name }}</div>
+                  <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <!-- Status badge -->
+                    <span class="flex items-center gap-1 bg-white/20 rounded-full px-2 py-0.5 text-xs text-white">
+                      <span class="w-1.5 h-1.5 rounded-full animate-pulse"
+                        :class="detailsModal.conn.subscriberStatus === 'active' ? 'bg-green-300' : detailsModal.conn.subscriberStatus === 'disabled' ? 'bg-gray-300' : 'bg-yellow-300'">
+                      </span>
+                      {{ detailsModal.conn.subscriberStatus === 'active' ? 'متصل' : detailsModal.conn.subscriberStatus === 'disabled' ? 'معطّل' : 'غير معروف' }}
+                    </span>
+                    <!-- Package badge -->
+                    <span v-if="detailsModal.conn.packageName" class="bg-white/20 rounded-full px-2 py-0.5 text-xs text-indigo-100">
+                      <i class="fas fa-box text-indigo-200 ml-1"></i>{{ detailsModal.conn.packageName }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="px-5 py-3 border-t border-gray-100 flex gap-2 justify-end">
+
+            <!-- Body -->
+            <div v-if="detailsModal.conn" class="px-5 py-4 space-y-4 -mt-4">
+
+              <!-- Traffic Stats Cards -->
+              <div class="grid grid-cols-2 gap-3">
+                <!-- Download total -->
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border border-green-100">
+                  <div class="flex items-center gap-2 mb-1">
+                    <div class="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-arrow-down text-green-600 text-xs"></i>
+                    </div>
+                    <span class="text-xs text-green-700 font-medium">تحميل إجمالي</span>
+                  </div>
+                  <div class="text-green-800 font-bold text-sm font-mono">{{ fmtBytes(detailsModal.conn.bytesIn) }}</div>
+                </div>
+                <!-- Upload total -->
+                <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-100">
+                  <div class="flex items-center gap-2 mb-1">
+                    <div class="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-arrow-up text-orange-600 text-xs"></i>
+                    </div>
+                    <span class="text-xs text-orange-700 font-medium">رفع إجمالي</span>
+                  </div>
+                  <div class="text-orange-800 font-bold text-sm font-mono">{{ fmtBytes(detailsModal.conn.bytesOut) }}</div>
+                </div>
+                <!-- Download speed -->
+                <div class="bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl p-3 border border-blue-100">
+                  <div class="flex items-center gap-2 mb-1">
+                    <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-tachometer-alt text-blue-600 text-xs"></i>
+                    </div>
+                    <span class="text-xs text-blue-700 font-medium">سرعة تحميل</span>
+                  </div>
+                  <div class="text-blue-800 font-bold text-sm font-mono">
+                    {{ getSpeed(detailsModal.conn) ? fmtSpeed(getSpeed(detailsModal.conn)!.down) : '—' }}
+                  </div>
+                </div>
+                <!-- Upload speed -->
+                <div class="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-3 border border-purple-100">
+                  <div class="flex items-center gap-2 mb-1">
+                    <div class="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-upload text-purple-600 text-xs"></i>
+                    </div>
+                    <span class="text-xs text-purple-700 font-medium">سرعة رفع</span>
+                  </div>
+                  <div class="text-purple-800 font-bold text-sm font-mono">
+                    {{ getSpeed(detailsModal.conn) ? fmtSpeed(getSpeed(detailsModal.conn)!.up) : '—' }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Network Info -->
+              <div class="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                <div class="bg-gray-100 px-3 py-2 flex items-center gap-2">
+                  <i class="fas fa-network-wired text-gray-500 text-xs"></i>
+                  <span class="text-xs font-semibold text-gray-600">معلومات الشبكة</span>
+                </div>
+                <div class="divide-y divide-gray-100">
+                  <div class="flex items-center justify-between px-3 py-2">
+                    <span class="text-xs text-gray-500 flex items-center gap-1.5"><i class="fas fa-globe w-3 text-center text-gray-400"></i>عنوان IP</span>
+                    <span class="text-xs font-mono font-semibold text-gray-700">{{ detailsModal.conn.address || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between px-3 py-2">
+                    <span class="text-xs text-gray-500 flex items-center gap-1.5"><i class="fas fa-ethernet w-3 text-center text-gray-400"></i>عنوان MAC</span>
+                    <span class="text-xs font-mono font-semibold text-gray-700">{{ detailsModal.conn.macAddress || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between px-3 py-2">
+                    <span class="text-xs text-gray-500 flex items-center gap-1.5"><i class="fas fa-clock w-3 text-center text-gray-400"></i>مدة الاتصال</span>
+                    <span class="text-xs font-mono font-semibold text-indigo-700">{{ detailsModal.conn.uptime || '—' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Service Info -->
+              <div class="bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                <div class="bg-gray-100 px-3 py-2 flex items-center gap-2">
+                  <i class="fas fa-server text-gray-500 text-xs"></i>
+                  <span class="text-xs font-semibold text-gray-600">معلومات الخدمة</span>
+                </div>
+                <div class="divide-y divide-gray-100">
+                  <div class="flex items-center justify-between px-3 py-2">
+                    <span class="text-xs text-gray-500 flex items-center gap-1.5"><i class="fas fa-box w-3 text-center text-gray-400"></i>الباقة</span>
+                    <span class="text-xs font-semibold text-gray-700">{{ detailsModal.conn.packageName || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between px-3 py-2">
+                    <span class="text-xs text-gray-500 flex items-center gap-1.5"><i class="fas fa-router w-3 text-center text-gray-400"></i>الراوتر</span>
+                    <span class="text-xs font-semibold text-gray-700">{{ detailsModal.conn.routerName }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex gap-2 justify-end">
+              <button @click="openFlow(detailsModal.conn!); detailsModal.visible = false"
+                class="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-tachometer-alt"></i> تدفق البيانات
+              </button>
               <button @click="openPing(detailsModal.conn!); detailsModal.visible = false"
-                class="px-4 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs font-medium transition flex items-center gap-1.5">
+                class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
                 <i class="fas fa-satellite-dish"></i> Ping
               </button>
               <button @click="disconnectOne(detailsModal.conn!); detailsModal.visible = false"
-                class="px-4 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-medium transition flex items-center gap-1.5">
+                class="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
                 <i class="fas fa-sign-out-alt"></i> قطع الاتصال
               </button>
             </div>
