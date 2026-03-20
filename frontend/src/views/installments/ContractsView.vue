@@ -134,7 +134,10 @@
                 </div>
                 <div>
                   <label class="text-xs font-semibold text-gray-500 mb-1 block">عدد الأقساط <span class="text-red-400">*</span></label>
-                  <input v-model.number="form.installmentCount" required type="number" min="1" class="input-field" placeholder="12" />
+                  <div class="relative">
+                    <input v-model.number="form.installmentCount" required type="number" min="1" class="input-field" placeholder="0" />
+                    <span v-if="form.installmentCount > 0" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-indigo-500 font-semibold pointer-events-none">قسط</span>
+                  </div>
                 </div>
                 <div>
                   <label class="text-xs font-semibold text-gray-500 mb-1 block">دورية السداد</label>
@@ -215,7 +218,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import api from '../../api';
 
 const contracts    = ref<any[]>([]);
@@ -228,8 +231,19 @@ const deleteTarget = ref<any>(null);
 const search       = ref('');
 const filterStatus = ref('');
 
-const emptyForm = () => ({ customerId: '', productName: '', productDescription: '', totalPrice: 0, downPayment: 0, installmentAmount: 0, installmentCount: 12, frequency: 'monthly', startDate: new Date().toISOString().split('T')[0], guarantorName: '', guarantorPhone: '', notes: '' });
+const emptyForm = () => ({ customerId: '', productName: '', productDescription: '', totalPrice: 0, downPayment: 0, installmentAmount: 0, installmentCount: 0, frequency: 'monthly', startDate: new Date().toISOString().split('T')[0], guarantorName: '', guarantorPhone: '', notes: '' });
 const form = ref(emptyForm());
+
+// Auto-calculate installment count when amount, totalPrice, or downPayment changes
+watch(
+  () => [form.value.installmentAmount, form.value.totalPrice, form.value.downPayment],
+  ([amount, total, down]) => {
+    if (amount > 0 && total > 0) {
+      const remaining = Math.max(0, Number(total) - Number(down || 0));
+      form.value.installmentCount = Math.ceil(remaining / Number(amount));
+    }
+  }
+);
 
 const fmt = (v: number) => Number(v || 0).toLocaleString('ar-IQ') + ' د.ع';
 const statusLabel = (s: string) => ({ active: 'نشط', completed: 'مكتمل', late: 'متأخر', cancelled: 'ملغي' }[s] ?? s);
