@@ -485,6 +485,44 @@
       </Transition>
     </Teleport>
 
+    <!-- ── Confirm Disconnect Modal ── -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="confirmModal.visible" class="fixed inset-0 z-[400] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="confirmModal.visible = false"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" dir="rtl">
+            <!-- Red header -->
+            <div class="bg-gradient-to-br from-red-500 to-red-700 px-6 py-6 text-white text-center">
+              <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 ring-4 ring-white/10">
+                <i class="fas fa-sign-out-alt text-2xl"></i>
+              </div>
+              <h3 class="font-bold text-lg tracking-wide">{{ confirmModal.title }}</h3>
+            </div>
+            <!-- Body -->
+            <div class="px-6 py-5 text-center">
+              <p class="text-gray-700 font-semibold text-sm">{{ confirmModal.message }}</p>
+              <p v-if="confirmModal.submessage" class="text-gray-400 text-xs mt-1.5 font-mono">{{ confirmModal.submessage }}</p>
+              <div class="flex items-center gap-2 justify-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mt-4">
+                <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                <span>سيتم قطع الاتصال فوراً ولا يمكن التراجع</span>
+              </div>
+            </div>
+            <!-- Footer -->
+            <div class="px-6 pb-6 flex gap-3">
+              <button @click="confirmModal.visible = false"
+                class="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">
+                <i class="fas fa-times ml-1.5"></i> إلغاء
+              </button>
+              <button @click="confirmModal.onConfirm()"
+                class="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-bold transition flex items-center justify-center gap-2">
+                <i class="fas fa-sign-out-alt"></i> قطع الاتصال
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
   </div>
 </template>
 
@@ -533,6 +571,15 @@ const selectedIds = ref<Set<string>>(new Set());
 const autoRefresh = ref(false);
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 const lastFetch = ref('');
+
+// ── Confirm Modal ─────────────────────────────────────────────────────────────
+const confirmModal = ref<{
+  visible: boolean;
+  title: string;
+  message: string;
+  submessage: string;
+  onConfirm: () => void;
+}>({ visible: false, title: '', message: '', submessage: '', onConfirm: () => {} });
 
 // ── Speed tracking (delta between polls) ─────────────────────────────────────
 interface SpeedEntry { bytesIn: number; bytesOut: number; ts: number; }
@@ -814,8 +861,18 @@ async function loadConnections() {
   }
 }
 
-async function disconnectOne(conn: Connection) {
-  if (!confirm(`هل تريد قطع اتصال "${conn.name}" (${conn.address})؟`)) return;
+function disconnectOne(conn: Connection) {
+  confirmModal.value = {
+    visible: true,
+    title: 'قطع الاتصال',
+    message: `هل تريد قطع اتصال "${conn.name}"؟`,
+    submessage: `IP: ${conn.address}`,
+    onConfirm: () => doDisconnectOne(conn),
+  };
+}
+
+async function doDisconnectOne(conn: Connection) {
+  confirmModal.value.visible = false;
   const key = connKey(conn);
   disconnectingId.value = key;
   try {
@@ -832,10 +889,21 @@ async function disconnectOne(conn: Connection) {
   }
 }
 
-async function disconnectSelected() {
+function disconnectSelected() {
   if (!selectedIds.value.size) return;
   const count = selectedIds.value.size;
-  if (!confirm(`هل تريد قطع اتصال ${count} مشترك محدد؟`)) return;
+  confirmModal.value = {
+    visible: true,
+    title: 'قطع اتصال متعدد',
+    message: `هل تريد قطع اتصال ${count} مشترك محدد؟`,
+    submessage: `سيتم قطع ${count} اتصال في آنٍ واحد`,
+    onConfirm: () => doDisconnectSelected(),
+  };
+}
+
+async function doDisconnectSelected() {
+  confirmModal.value.visible = false;
+  const count = selectedIds.value.size;
   disconnecting.value = true;
   let success = 0;
   for (const key of Array.from(selectedIds.value)) {
