@@ -316,7 +316,13 @@ async function refresh() {
       api.get('/whatsapp/settings'),
     ]);
     Object.assign(status, stRes.data);
-    Object.assign(settings, cfgRes.data);
+    const d = cfgRes.data;
+    settings.ticketCreatedEnabled = d.ticketCreatedEnabled ?? false;
+    settings.ticketCreatedTemplate = d.ticketCreatedTemplate ?? '';
+    settings.ticketResolvedEnabled = d.ticketResolvedEnabled ?? false;
+    settings.ticketResolvedTemplate = d.ticketResolvedTemplate ?? '';
+    settings.techAssignedEnabled = d.techAssignedEnabled ?? false;
+    settings.techAssignedTemplate = d.techAssignedTemplate ?? '';
     autoConnect.value = mainCfgRes.data.autoConnect ?? false;
   } catch {
     showToast('فشل تحميل البيانات', 'error');
