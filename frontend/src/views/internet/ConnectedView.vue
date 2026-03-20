@@ -471,6 +471,9 @@ async function loadConnections() {
     const now = Date.now();
     const newConns: Connection[] = connRes.data;
 
+    // DEBUG: print raw fields of first connection
+    if (newConns.length > 0) console.log('RAW CONNECTION:', JSON.stringify((newConns[0] as any)._raw));
+
     // Compute delta-based speeds
     const newSpeedMap = new Map<string, { down: number; up: number }>();
     const newSnapshot = new Map<string, SpeedEntry>();
