@@ -73,48 +73,45 @@
       <div>
         <p class="text-xs font-bold text-gray-400 mb-2 text-center">معاينة رأس السند</p>
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 font-[Arial,sans-serif] text-sm" dir="rtl">
-          <!-- Header 2-col -->
-          <div class="flex items-start gap-3 pb-3 mb-3 border-b-2 border-dashed border-gray-300">
-            <div class="flex items-start gap-2 flex-1 min-w-0">
-              <template v-if="form.logo">
-                <img :src="form.logo" class="w-11 h-11 object-contain rounded-lg flex-shrink-0" />
-              </template>
-              <template v-else>
-                <div class="w-11 h-11 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                  <i class="fas fa-hand-holding-usd text-base text-indigo-600"></i>
-                </div>
-              </template>
-              <div class="min-w-0">
-                <p class="font-black text-gray-800 text-sm leading-tight">{{ form.shopName || 'اسم الشركة' }}</p>
-                <p class="text-indigo-600 font-bold text-xs mt-0.5">سند قبض</p>
-                <p class="text-gray-400 text-xs mt-0.5">20/3/2026 – 09:30</p>
+          <!-- Header centered -->
+          <div class="text-center mb-2">
+            <template v-if="form.logo">
+              <img :src="form.logo" class="w-12 h-12 object-contain mx-auto mb-1 rounded-lg" />
+            </template>
+            <template v-else>
+              <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-1">
+                <i class="fas fa-hand-holding-usd text-lg text-indigo-600"></i>
               </div>
-            </div>
-            <div class="text-left text-xs text-gray-400 flex-shrink-0 space-y-0.5">
-              <p v-if="form.address">{{ form.address }}</p>
-              <p v-if="form.phone" dir="ltr">{{ form.phone }}</p>
-            </div>
+            </template>
+            <p class="font-black text-gray-800">{{ form.shopName || 'اسم الشركة' }}</p>
+            <p v-if="form.address" class="text-xs text-gray-500 mt-0.5">{{ form.address }}</p>
+            <p v-if="form.phone" class="text-xs text-gray-400 mt-0.5" dir="ltr">{{ form.phone }}</p>
           </div>
-          <!-- Info cells -->
-          <div class="grid grid-cols-2 gap-1.5 mb-2.5 text-xs">
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">رقم السند</p><p class="font-black text-indigo-600 font-mono">#000001</p></div>
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">رقم العقد</p><p class="font-bold font-mono">INST-00001</p></div>
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">اسم العميل</p><p class="font-bold">محمد أحمد</p></div>
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">هاتف العميل</p><p class="font-bold font-mono" dir="ltr">07701234567</p></div>
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">المنتج</p><p class="font-bold">تلفاز سامسونج</p></div>
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">رقم القسط</p><p class="font-bold">3 / 12</p></div>
+          <!-- سند قبض row -->
+          <div class="flex items-center justify-between border-t-2 border-b-2 border-dashed border-gray-300 py-1 mb-2.5">
+            <span class="text-gray-400 text-xs">20/3/2026 – 09:30</span>
+            <span class="text-indigo-600 font-black text-sm">سند قبض</span>
+          </div>
+          <!-- 3-col grid -->
+          <div class="grid grid-cols-3 gap-1 mb-2 text-xs">
+            <div class="bg-gray-50 rounded px-1.5 py-1"><p class="text-gray-400">رقم السند</p><p class="font-black text-indigo-600 font-mono">#000001</p></div>
+            <div class="bg-gray-50 rounded px-1.5 py-1"><p class="text-gray-400">رقم العقد</p><p class="font-bold font-mono">INST-00001</p></div>
+            <div class="bg-gray-50 rounded px-1.5 py-1"><p class="text-gray-400">اسم العميل</p><p class="font-bold truncate">محمد أحمد</p></div>
+            <div class="bg-gray-50 rounded px-1.5 py-1"><p class="text-gray-400">هاتف العميل</p><p class="font-bold font-mono" dir="ltr">07701234567</p></div>
+            <div class="bg-red-50 rounded px-1.5 py-1"><p class="text-gray-400">المتبقي</p><p class="font-bold text-red-500">500,000 د.ع</p></div>
+            <div class="bg-gray-50 rounded px-1.5 py-1"><p class="text-gray-400">استلم بواسطة</p><p class="font-bold">علي</p></div>
+          </div>
+          <!-- Product + installment -->
+          <div class="grid grid-cols-2 gap-1 mb-2 text-xs">
+            <div class="bg-gray-50 rounded px-1.5 py-1"><p class="text-gray-400">المنتج</p><p class="font-bold">تلفاز سامسونج</p></div>
+            <div class="bg-gray-50 rounded px-1.5 py-1"><p class="text-gray-400">رقم القسط</p><p class="font-bold">3 / 12</p></div>
           </div>
           <!-- Amount -->
-          <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex justify-between items-center mb-2">
+          <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2 flex justify-between items-center">
             <span class="text-green-700 font-bold text-xs">المبلغ المدفوع</span>
-            <span class="font-black text-green-600 text-base">100,000 د.ع</span>
+            <span class="font-black text-green-600 text-sm">100,000 د.ع</span>
           </div>
-          <!-- Remaining + received -->
-          <div class="grid grid-cols-2 gap-1.5 mb-2 text-xs">
-            <div class="bg-red-50 rounded-md px-2 py-1.5"><p class="text-gray-400">المتبقي</p><p class="font-bold text-red-500">500,000 د.ع</p></div>
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">استلم بواسطة</p><p class="font-bold">علي محمد</p></div>
-          </div>
-          <p class="text-center text-xs text-gray-400 pt-2 border-t border-dashed border-gray-200">{{ form.footer || 'شكراً لتعاملكم' }}</p>
+          <p class="text-center text-xs text-gray-400 pt-2 mt-2 border-t border-dashed border-gray-200">{{ form.footer || 'شكراً لتعاملكم' }}</p>
         </div>
       </div>
     </div>

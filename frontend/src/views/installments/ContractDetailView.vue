@@ -239,75 +239,70 @@
             </div>
             <!-- Receipt content (printable) -->
             <div id="receipt-area" class="p-5 font-[Arial,sans-serif] text-sm" dir="rtl">
-              <!-- Header 2-col -->
-              <div class="flex items-start gap-3 pb-3 mb-3 border-b-2 border-dashed border-gray-300">
-                <!-- Right: logo + name + subtitle -->
-                <div class="flex items-start gap-2 flex-1 min-w-0">
-                  <template v-if="sysSettings.logo">
-                    <img :src="sysSettings.logo" class="w-12 h-12 object-contain rounded-lg flex-shrink-0" />
-                  </template>
-                  <template v-else>
-                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                      <i class="fas fa-hand-holding-usd text-lg text-indigo-600"></i>
-                    </div>
-                  </template>
-                  <div class="min-w-0">
-                    <p class="font-black text-gray-800 leading-tight">{{ sysSettings.shopName || 'نظام الأقساط' }}</p>
-                    <p class="text-indigo-600 font-bold text-xs mt-0.5">سند قبض</p>
-                    <p class="text-gray-400 text-xs mt-0.5">{{ receiptData.date }} – {{ receiptData.time }}</p>
+              <!-- Header: logo centered, then name/address/phone, then سند قبض row -->
+              <div class="text-center mb-2">
+                <template v-if="sysSettings.logo">
+                  <img :src="sysSettings.logo" class="w-14 h-14 object-contain mx-auto mb-1.5 rounded-lg" />
+                </template>
+                <template v-else>
+                  <div class="w-13 h-13 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-1.5">
+                    <i class="fas fa-hand-holding-usd text-xl text-indigo-600"></i>
                   </div>
+                </template>
+                <p class="font-black text-gray-800 text-base leading-tight">{{ sysSettings.shopName || 'نظام الأقساط' }}</p>
+                <p v-if="sysSettings.address" class="text-xs text-gray-500 mt-0.5">{{ sysSettings.address }}</p>
+                <p v-if="sysSettings.phone" class="text-xs text-gray-400 mt-0.5" dir="ltr">{{ sysSettings.phone }}</p>
+              </div>
+              <!-- سند قبض row -->
+              <div class="flex items-center justify-between border-t-2 border-b-2 border-dashed border-gray-300 py-1.5 mb-3">
+                <span class="text-gray-400 text-xs">{{ receiptData.date }} – {{ receiptData.time }}</span>
+                <span class="text-indigo-600 font-black text-base">سند قبض</span>
+              </div>
+
+              <!-- 3-col info grid -->
+              <div class="grid grid-cols-3 gap-1.5 mb-3">
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
+                  <p class="text-gray-400 text-xs">رقم السند</p>
+                  <p class="font-black text-indigo-600 font-mono text-xs">#{{ String(receiptData.paymentId).padStart(6,'0') }}</p>
                 </div>
-                <!-- Left: address + phone -->
-                <div class="text-xs text-gray-500 text-left flex-shrink-0 space-y-0.5">
-                  <p v-if="sysSettings.address" class="font-medium">{{ sysSettings.address }}</p>
-                  <p v-if="sysSettings.phone" dir="ltr" class="text-gray-400">{{ sysSettings.phone }}</p>
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
+                  <p class="text-gray-400 text-xs">رقم العقد</p>
+                  <p class="font-bold font-mono text-xs">{{ receiptData.contractNumber }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
+                  <p class="text-gray-400 text-xs">اسم العميل</p>
+                  <p class="font-bold text-xs truncate">{{ receiptData.customerName }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
+                  <p class="text-gray-400 text-xs">هاتف العميل</p>
+                  <p class="font-bold font-mono text-xs" dir="ltr">{{ receiptData.customerPhone }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
+                  <p class="text-gray-400 text-xs">المتبقي بعد الدفعة</p>
+                  <p class="font-bold text-xs text-red-500">{{ receiptData.remaining }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
+                  <p class="text-gray-400 text-xs">استلم بواسطة</p>
+                  <p class="font-bold text-xs">{{ receiptData.receivedBy || '—' }}</p>
                 </div>
               </div>
 
-              <!-- 2-col info cells -->
-              <div class="grid grid-cols-2 gap-2 mb-3">
-                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
-                  <p class="text-gray-400 text-xs">رقم السند</p>
-                  <p class="font-black text-indigo-600 font-mono text-sm">#{{ String(receiptData.paymentId).padStart(6,'0') }}</p>
-                </div>
-                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
-                  <p class="text-gray-400 text-xs">رقم العقد</p>
-                  <p class="font-bold font-mono text-sm">{{ receiptData.contractNumber }}</p>
-                </div>
-                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
-                  <p class="text-gray-400 text-xs">اسم العميل</p>
-                  <p class="font-bold text-sm truncate">{{ receiptData.customerName }}</p>
-                </div>
-                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
-                  <p class="text-gray-400 text-xs">رقم هاتف العميل</p>
-                  <p class="font-bold font-mono text-sm" dir="ltr">{{ receiptData.customerPhone }}</p>
-                </div>
-                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+              <!-- Product + installment no -->
+              <div class="grid grid-cols-2 gap-1.5 mb-3">
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
                   <p class="text-gray-400 text-xs">المنتج</p>
-                  <p class="font-bold text-sm truncate">{{ receiptData.productName }}</p>
+                  <p class="font-bold text-xs truncate">{{ receiptData.productName }}</p>
                 </div>
-                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                <div class="bg-gray-50 rounded-lg px-2 py-1.5">
                   <p class="text-gray-400 text-xs">رقم القسط</p>
-                  <p class="font-bold text-sm">{{ receiptData.installmentNo }} / {{ receiptData.installmentCount }}</p>
+                  <p class="font-bold text-xs">{{ receiptData.installmentNo }} / {{ receiptData.installmentCount }}</p>
                 </div>
               </div>
 
               <!-- Amount full-width -->
-              <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex justify-between items-center mb-3">
+              <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex justify-between items-center mb-2">
                 <span class="text-green-700 font-bold">المبلغ المدفوع</span>
                 <span class="text-xl font-black text-green-600">{{ receiptData.amount }}</span>
-              </div>
-
-              <!-- Remaining + received by -->
-              <div class="grid grid-cols-2 gap-2 mb-2">
-                <div class="bg-red-50 rounded-lg px-2.5 py-1.5">
-                  <p class="text-gray-400 text-xs">المتبقي بعد الدفعة</p>
-                  <p class="font-bold text-red-500 text-sm">{{ receiptData.remaining }}</p>
-                </div>
-                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
-                  <p class="text-gray-400 text-xs">استلم بواسطة</p>
-                  <p class="font-bold text-sm">{{ receiptData.receivedBy || '—' }}</p>
-                </div>
               </div>
 
               <p v-if="receiptData.notes" class="text-xs text-gray-400 px-1 mb-2">ملاحظات: {{ receiptData.notes }}</p>
@@ -450,15 +445,15 @@ function doPrint() {
   const ps = paperSize.value;
 
   const logoHTML = logo
-    ? `<img src="${logo}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;flex-shrink:0;" />`
-    : `<div style="width:44px;height:44px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    ? `<img src="${logo}" style="width:52px;height:52px;object-fit:contain;border-radius:6px;display:block;margin:0 auto 4px;" />`
+    : `<div style="width:48px;height:48px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;">
          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" width="20" height="20" fill="#4f46e5"><path d="M64 64C28.7 64 0 92.7 0 128v256c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H64zm64 96H192c17.7 0 32 14.3 32 32v32c0 17.7-14.3 32-32 32H128c-17.7 0-32-14.3-32-32V192c0-17.7 14.3-32 32-32zM72 320H504c13.3 0 24 10.7 24 24s-10.7 24-24 24H72c-13.3 0-24-10.7-24-24s10.7-24 24-24z"/></svg>
        </div>`;
 
   const cell = (lbl: string, val: string, cls = '') =>
-    `<div style="background:#f8fafc;border-radius:6px;padding:5px 8px;">
-      <div style="color:#94a3b8;font-size:.75em;margin-bottom:2px;">${lbl}</div>
-      <div style="font-weight:700;${cls}">${val}</div>
+    `<div style="background:#f8fafc;border-radius:5px;padding:4px 7px;">
+      <div style="color:#94a3b8;font-size:.7em;margin-bottom:1px;">${lbl}</div>
+      <div style="font-weight:700;font-size:.9em;${cls}">${val}</div>
     </div>`;
 
   const html = `<!DOCTYPE html>
@@ -468,36 +463,37 @@ function doPrint() {
 ${pageCSS[ps]}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Arial','Tahoma',sans-serif;font-size:${fz[ps]};color:#111;background:#fff;width:${bodyW[ps]};margin:0 auto;direction:rtl;}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
-.amt{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:7px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px;}
+.amt{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:7px 11px;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
 .amt-lbl{color:#15803d;font-weight:700;}
-.amt-val{font-size:1.3em;font-weight:900;color:#16a34a;}
-.footer{text-align:center;font-size:.7em;color:#9ca3af;margin-top:8px;padding-top:6px;border-top:1px dashed #e2e8f0;}
+.amt-val{font-size:1.25em;font-weight:900;color:#16a34a;}
+.footer{text-align:center;font-size:.7em;color:#9ca3af;margin-top:7px;padding-top:5px;border-top:1px dashed #e2e8f0;}
 </style></head>
 <body>
-<!-- HEADER -->
-<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:10px;margin-bottom:10px;border-bottom:2px dashed #cbd5e1;">
-  <!-- Right: logo + name -->
-  <div style="display:flex;align-items:flex-start;gap:8px;flex:1;">
-    ${logoHTML}
-    <div>
-      <div style="font-weight:900;font-size:1.05em;color:#1e293b;line-height:1.2;">${shopName}</div>
-      <div style="color:#6366f1;font-weight:700;font-size:.8em;margin-top:2px;">سند قبض</div>
-      <div style="color:#94a3b8;font-size:.72em;margin-top:1px;">${d.date} – ${d.time}</div>
-    </div>
-  </div>
-  <!-- Left: address + phone -->
-  <div style="text-align:left;font-size:.75em;color:#64748b;line-height:1.6;flex-shrink:0;">
-    ${address ? `<div>${address}</div>` : ''}
-    ${phone   ? `<div dir="ltr">${phone}</div>` : ''}
-  </div>
+<!-- HEADER: logo + name + address + phone centered -->
+<div style="text-align:center;margin-bottom:6px;">
+  ${logoHTML}
+  <div style="font-weight:900;font-size:1.1em;color:#1e293b;line-height:1.2;">${shopName}</div>
+  ${address ? `<div style="font-size:.75em;color:#64748b;margin-top:2px;">${address}</div>` : ''}
+  ${phone   ? `<div style="font-size:.73em;color:#94a3b8;margin-top:1px;" dir="ltr">${phone}</div>` : ''}
 </div>
-<!-- INFO GRID -->
-<div class="grid2">
+<!-- سند قبض row -->
+<div style="display:flex;justify-content:space-between;align-items:center;border-top:2px dashed #cbd5e1;border-bottom:2px dashed #cbd5e1;padding:5px 0;margin-bottom:8px;">
+  <div style="font-size:.75em;color:#94a3b8;">${d.date} – ${d.time}</div>
+  <div style="font-weight:900;font-size:1.05em;color:#4f46e5;">سند قبض</div>
+</div>
+<!-- 3-col info grid -->
+<div class="grid3">
   ${cell('رقم السند', `#${String(d.paymentId).padStart(6,'0')}`, 'color:#4f46e5;font-family:monospace;')}
   ${cell('رقم العقد', d.contractNumber, 'font-family:monospace;')}
   ${cell('اسم العميل', d.customerName || '')}
-  ${cell('هاتف العميل', d.customerPhone || '—', 'font-family:monospace;direction:ltr;text-align:left;')}
+  ${cell('هاتف العميل', d.customerPhone || '—', 'font-family:monospace;direction:ltr;text-align:left;font-size:.82em;')}
+  ${cell('المتبقي بعد الدفعة', d.remaining, 'color:#dc2626;')}
+  ${cell('استلم بواسطة', d.receivedBy || '—')}
+</div>
+<!-- Product + installment -->
+<div class="grid2">
   ${cell('المنتج', d.productName || '')}
   ${cell('رقم القسط', `${d.installmentNo} / ${d.installmentCount}`)}
 </div>
@@ -506,12 +502,7 @@ body{font-family:'Arial','Tahoma',sans-serif;font-size:${fz[ps]};color:#111;back
   <span class="amt-lbl">المبلغ المدفوع</span>
   <span class="amt-val">${d.amount}</span>
 </div>
-<!-- REMAINING + RECEIVED -->
-<div class="grid2">
-  ${cell('المتبقي بعد الدفعة', d.remaining, 'color:#dc2626;')}
-  ${cell('استلم بواسطة', d.receivedBy || '—')}
-</div>
-${d.notes ? `<div style="font-size:.75em;color:#94a3b8;margin-bottom:4px;padding:0 2px;">ملاحظات: ${d.notes}</div>` : ''}
+${d.notes ? `<div style="font-size:.72em;color:#94a3b8;margin-bottom:5px;">ملاحظات: ${d.notes}</div>` : ''}
 <div class="footer">${footer}</div>
 </body></html>`;
 
