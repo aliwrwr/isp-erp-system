@@ -241,11 +241,18 @@
             <div id="receipt-area" class="p-6 font-[Arial,sans-serif]" dir="rtl">
               <!-- Header -->
               <div class="text-center border-b-2 border-dashed border-gray-300 pb-4 mb-4">
-                <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-2">
-                  <i class="fas fa-hand-holding-usd text-2xl text-indigo-600"></i>
-                </div>
-                <h2 class="text-lg font-black text-gray-800">نظام الأقساط</h2>
-                <p class="text-xs text-gray-500 mt-0.5">سند قبض</p>
+                <template v-if="sysSettings.logo">
+                  <img :src="sysSettings.logo" class="w-16 h-16 object-contain mx-auto mb-2 rounded-lg" />
+                </template>
+                <template v-else>
+                  <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-hand-holding-usd text-2xl text-indigo-600"></i>
+                  </div>
+                </template>
+                <h2 class="text-lg font-black text-gray-800">{{ sysSettings.shopName || 'نظام الأقساط' }}</h2>
+                <p class="text-xs text-gray-500 mt-0.5">{{ sysSettings.subtitle || 'سند قبض' }}</p>
+                <p v-if="sysSettings.phone" class="text-xs text-gray-400 mt-0.5" dir="ltr">{{ sysSettings.phone }}</p>
+                <p v-if="sysSettings.address" class="text-xs text-gray-400">{{ sysSettings.address }}</p>
               </div>
               <!-- Details -->
               <div class="space-y-2.5 text-sm">
@@ -306,7 +313,7 @@
                   <p class="text-xs text-gray-400">توقيع العميل</p>
                 </div>
               </div>
-              <p class="text-center text-xs text-gray-400 mt-4">شكراً لتعاملكم — نظام الأقساط</p>
+              <p class="text-center text-xs text-gray-400 mt-4">{{ sysSettings.footer || 'شكراً لتعاملكم' }}</p>
             </div>
           </div>
         </div>
@@ -357,6 +364,7 @@ const deletePaymentTarget = ref<any>(null);
 const deletingPay        = ref(false);
 const receiptData        = ref<any>(null);
 const paperSize          = ref<'A5' | '80mm' | '58mm'>('A5');
+const sysSettings        = ref<any>({});
 
 const emptyPay = () => ({ amount: 0, date: new Date().toISOString().split('T')[0], notes: '', receivedBy: '' });
 const payForm  = ref(emptyPay());
@@ -417,7 +425,15 @@ function printReceipt(p: any, idx: number) {
 
 function doPrint() {
   if (!receiptData.value) return;
-  const d = receiptData.value;
+  const d   = receiptData.value;
+  const cfg = sysSettings.value;
+
+  const shopName = cfg.shopName || 'نظام الأقساط';
+  const subtitle = cfg.subtitle || 'سند قبض';
+  const phone    = cfg.phone    || '';
+  const address  = cfg.address  || '';
+  const footer   = cfg.footer   || 'شكراً لتعاملكم';
+  const logo     = cfg.logo     || '';
 
   const pageCSS: Record<string, string> = {
     'A5':   '@page { size: A5 portrait; margin: 12mm 15mm; }',
@@ -435,12 +451,16 @@ function doPrint() {
   const maybeRow = (label: string, val: string | undefined, cls = '') =>
     val ? `<div class="row"><span class="lbl">${label}</span><span class="val ${cls}">${val}</span></div>` : '';
 
+  // Build header: logo img or icon fallback
+  const hdrLogo = logo
+    ? `<img src="${logo}" style="width:56px;height:56px;object-fit:contain;border-radius:8px;margin:0 auto 6px;display:block;" />`
+    : `<div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" width="22" height="22" fill="#4f46e5"><path d="M96 64c0-17.7 14.3-32 32-32H448h64c70.7 0 128 57.3 128 128s-57.3 128-128 128H480c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64H96zm416 160h32c35.3 0 64-28.7 64-64s-28.7-64-64-64H512v128zM0 416c0-17.7 14.3-32 32-32H576c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32z"/></svg></div>`;
+
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8">
 <title>سند قبض - ${d.contractNumber}</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 ${pageCSS[ps]}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -453,9 +473,10 @@ body{
 .hdr{text-align:center;border-bottom:2px dashed #cbd5e1;padding-bottom:10px;margin-bottom:10px}
 .ico{width:46px;height:46px;border-radius:50%;background:#e0e7ff;
   display:flex;align-items:center;justify-content:center;
-  margin:0 auto 6px;font-size:20px;color:#4f46e5}
+  margin:0 auto 6px}
 .hdr-title{font-size:1.1em;font-weight:900;color:#1e293b}
-.hdr-sub{font-size:.75em;color:#94a3b8;margin-top:2px}
+.hdr-sub{font-size:.75em;color:#64748b;margin-top:2px}
+.hdr-meta{font-size:.7em;color:#94a3b8;margin-top:1px}
 .row{display:flex;justify-content:space-between;align-items:center;
   padding:5px 0;border-bottom:1px solid #f1f5f9}
 .lbl{color:#64748b}
@@ -478,9 +499,11 @@ body{
 </head>
 <body>
 <div class="hdr">
-  <div class="ico"><i class="fas fa-hand-holding-usd"></i></div>
-  <div class="hdr-title">نظام الأقساط</div>
-  <div class="hdr-sub">سند قبض</div>
+  ${hdrLogo}
+  <div class="hdr-title">${shopName}</div>
+  <div class="hdr-sub">${subtitle}</div>
+  ${phone   ? `<div class="hdr-meta" dir="ltr">${phone}</div>`   : ''}
+  ${address ? `<div class="hdr-meta">${address}</div>` : ''}
 </div>
 <div class="row"><span class="lbl">رقم السند</span><span class="val mono indigo">#${String(d.paymentId).padStart(6,'0')}</span></div>
 <div class="row"><span class="lbl">رقم العقد</span><span class="val mono">${d.contractNumber}</span></div>
@@ -500,7 +523,7 @@ ${maybeRow('ملاحظات', d.notes, 'sm')}
   <div><div class="sig-line"></div><div class="sig-lbl">توقيع المستلم</div></div>
   <div><div class="sig-line"></div><div class="sig-lbl">توقيع العميل</div></div>
 </div>
-<div class="footer">شكراً لتعاملكم — نظام الأقساط</div>
+<div class="footer">${footer}</div>
 </body></html>`;
 
   const win = window.open('', '_blank', 'width=520,height=720');
@@ -508,8 +531,7 @@ ${maybeRow('ملاحظات', d.notes, 'sm')}
   win.document.write(html);
   win.document.close();
   win.focus();
-  // wait for FA font to load then print
-  setTimeout(() => { win.print(); }, 900);
+  setTimeout(() => { win.print(); }, 400);
 }
 
 async function confirmDeletePayment() {
@@ -528,7 +550,11 @@ async function load() {
     contract.value = r.data;
   } finally { loading.value = false; }
 }
-onMounted(load);
+onMounted(() => { load(); loadSettings(); });
+
+function loadSettings() {
+  try { sysSettings.value = JSON.parse(localStorage.getItem('inst_settings') || '{}'); } catch { sysSettings.value = {}; }
+}
 </script>
 
 <style scoped>

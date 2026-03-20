@@ -154,6 +154,7 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'العقود', icon: 'fas fa-file-contract', route: '/installments/contracts' },
     { label: 'الدفعات', icon: 'fas fa-coins', route: '/installments/payments' },
     { label: 'التقارير', icon: 'fas fa-chart-bar', route: '/installments/reports' },
+    { label: 'الإعدادات', icon: 'fas fa-cog', route: '/installments/settings' },
   ],
 };
 

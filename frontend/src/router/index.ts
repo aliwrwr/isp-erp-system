@@ -154,6 +154,7 @@ const routes = [
       { path: 'contracts/:id', name: 'InstallmentsContractDetail', component: () => import('../views/installments/ContractDetailView.vue') },
       { path: 'payments', name: 'InstallmentsPayments', component: () => import('../views/installments/PaymentsView.vue') },
       { path: 'reports', name: 'InstallmentsReports', component: () => import('../views/installments/ReportsView.vue') },
+      { path: 'settings', name: 'InstallmentsSettings', component: () => import('../views/installments/SettingsView.vue') },
     ],
   },
   { path: '/', redirect: '/login' },
