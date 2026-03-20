@@ -163,6 +163,7 @@ let RestaurantService = class RestaurantService {
         if (order?.table) {
             await this.tablesRepo.update(order.table.id, { status: 'available' });
         }
+        await this.orderItemsRepo.delete({ order: { id } });
         await this.ordersRepo.delete(id);
     }
     createReservation(dto) {

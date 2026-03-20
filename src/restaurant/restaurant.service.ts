@@ -160,6 +160,8 @@ export class RestaurantService {
     if (order?.table) {
       await this.tablesRepo.update(order.table.id, { status: 'available' });
     }
+    // Delete order items first to avoid FK constraint on SQLite
+    await this.orderItemsRepo.delete({ order: { id } });
     await this.ordersRepo.delete(id);
   }
 
