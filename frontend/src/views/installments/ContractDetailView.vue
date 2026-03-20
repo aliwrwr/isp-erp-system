@@ -150,10 +150,16 @@
                   </span>
                 </td>
                 <td class="px-5 py-3 text-center">
-                  <button @click="deletePaymentTarget = p"
-                    class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition opacity-40 group-hover:opacity-100 mx-auto">
-                    <i class="fas fa-trash text-xs"></i>
-                  </button>
+                  <div class="flex items-center justify-center gap-1 opacity-40 group-hover:opacity-100 transition">
+                    <button @click="printReceipt(p, i + 1)"
+                      class="w-7 h-7 rounded-lg hover:bg-indigo-50 text-indigo-500 flex items-center justify-center transition" title="سند قبض">
+                      <i class="fas fa-print text-xs"></i>
+                    </button>
+                    <button @click="deletePaymentTarget = p"
+                      class="w-7 h-7 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition" title="حذف">
+                      <i class="fas fa-trash text-xs"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -208,6 +214,97 @@
       </Transition>
     </Teleport>
 
+    <!-- Receipt Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="receiptData" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm no-print" @click.self="receiptData = null">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <!-- Modal header -->
+            <div class="bg-gradient-to-l from-indigo-600 to-blue-500 px-5 py-4 flex items-center justify-between no-print">
+              <h3 class="text-white font-bold flex items-center gap-2"><i class="fas fa-receipt"></i> سند قبض</h3>
+              <div class="flex items-center gap-2">
+                <button @click="doPrint" class="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition">
+                  <i class="fas fa-print"></i> طباعة
+                </button>
+                <button @click="receiptData = null" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+            <!-- Receipt content (printable) -->
+            <div id="receipt-area" class="p-6 font-[Arial,sans-serif]" dir="rtl">
+              <!-- Header -->
+              <div class="text-center border-b-2 border-dashed border-gray-300 pb-4 mb-4">
+                <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-2">
+                  <i class="fas fa-hand-holding-usd text-2xl text-indigo-600"></i>
+                </div>
+                <h2 class="text-lg font-black text-gray-800">نظام الأقساط</h2>
+                <p class="text-xs text-gray-500 mt-0.5">سند قبض</p>
+              </div>
+              <!-- Details -->
+              <div class="space-y-2.5 text-sm">
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">رقم السند</span>
+                  <span class="font-black text-indigo-600 font-mono">#{{ String(receiptData.paymentId).padStart(6,'0') }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">رقم العقد</span>
+                  <span class="font-bold font-mono">{{ receiptData.contractNumber }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">التاريخ</span>
+                  <span class="font-bold">{{ receiptData.date }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">اسم العميل</span>
+                  <span class="font-bold">{{ receiptData.customerName }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">الهاتف</span>
+                  <span class="font-bold font-mono" dir="ltr">{{ receiptData.customerPhone }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">المنتج</span>
+                  <span class="font-bold">{{ receiptData.productName }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">رقم القسط</span>
+                  <span class="font-bold">{{ receiptData.installmentNo }} / {{ receiptData.installmentCount }}</span>
+                </div>
+                <!-- Amount highlight -->
+                <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex justify-between items-center">
+                  <span class="text-green-700 font-bold">المبلغ المدفوع</span>
+                  <span class="text-xl font-black text-green-600">{{ receiptData.amount }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">المتبقي بعد الدفعة</span>
+                  <span class="font-bold text-red-500">{{ receiptData.remaining }}</span>
+                </div>
+                <div v-if="receiptData.receivedBy" class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">استلم بواسطة</span>
+                  <span class="font-bold">{{ receiptData.receivedBy }}</span>
+                </div>
+                <div v-if="receiptData.notes" class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                  <span class="text-gray-500">ملاحظات</span>
+                  <span class="font-bold text-gray-600 text-xs">{{ receiptData.notes }}</span>
+                </div>
+              </div>
+              <!-- Signature -->
+              <div class="mt-5 pt-4 border-t border-dashed border-gray-300 grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div class="h-10 border-b border-gray-300 mb-1"></div>
+                  <p class="text-xs text-gray-400">توقيع المستلم</p>
+                </div>
+                <div>
+                  <div class="h-10 border-b border-gray-300 mb-1"></div>
+                  <p class="text-xs text-gray-400">توقيع العميل</p>
+                </div>
+              </div>
+              <p class="text-center text-xs text-gray-400 mt-4">شكراً لتعاملكم — نظام الأقساط</p>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- Delete Payment Modal -->
     <Teleport to="body">
       <Transition name="modal">
@@ -250,6 +347,7 @@ const showPaymentModal   = ref(false);
 const savingPay          = ref(false);
 const deletePaymentTarget = ref<any>(null);
 const deletingPay        = ref(false);
+const receiptData        = ref<any>(null);
 
 const emptyPay = () => ({ amount: 0, date: new Date().toISOString().split('T')[0], notes: '', receivedBy: '' });
 const payForm  = ref(emptyPay());
@@ -267,11 +365,49 @@ function openPayment() { payForm.value = { ...emptyPay(), amount: contract.value
 async function savePayment() {
   savingPay.value = true;
   try {
-    await api.post(`/installments/contracts/${route.params.id}/payments`, payForm.value);
+    const res = await api.post(`/installments/contracts/${route.params.id}/payments`, payForm.value);
     showPaymentModal.value = false;
     await load();
+    // Build receipt data
+    const newPaidCount = contract.value?.paidCount || 0;
+    const newRemaining = contract.value?.remainingAmount ?? 0;
+    receiptData.value = {
+      paymentId:        res.data?.id || Date.now(),
+      contractNumber:   contract.value?.contractNumber,
+      date:             formatDate(payForm.value.date),
+      customerName:     contract.value?.customer?.name,
+      customerPhone:    contract.value?.customer?.phone,
+      productName:      contract.value?.productName,
+      installmentNo:    newPaidCount,
+      installmentCount: contract.value?.installmentCount,
+      amount:           fmt(payForm.value.amount),
+      remaining:        fmt(newRemaining),
+      receivedBy:       payForm.value.receivedBy,
+      notes:            payForm.value.notes,
+    };
   } catch (e: any) { alert(e.response?.data?.message || 'حدث خطأ'); }
   finally { savingPay.value = false; }
+}
+
+function printReceipt(p: any, idx: number) {
+  receiptData.value = {
+    paymentId:        p.id,
+    contractNumber:   contract.value?.contractNumber,
+    date:             formatDate(p.date),
+    customerName:     contract.value?.customer?.name,
+    customerPhone:    contract.value?.customer?.phone,
+    productName:      contract.value?.productName,
+    installmentNo:    idx,
+    installmentCount: contract.value?.installmentCount,
+    amount:           fmt(p.amount),
+    remaining:        fmt(contract.value?.remainingAmount ?? 0),
+    receivedBy:       p.receivedBy,
+    notes:            p.notes,
+  };
+}
+
+function doPrint() {
+  window.print();
 }
 
 async function confirmDeletePayment() {
@@ -300,4 +436,18 @@ onMounted(load);
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 .modal-enter-active, .modal-leave-active { transition: all .2s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.95); }
+
+@media print {
+  body > *:not(#receipt-print-root) { display: none !important; }
+  .no-print { display: none !important; }
+  #receipt-area {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 80mm;
+    margin: auto;
+    padding: 10mm;
+    font-size: 12px;
+    color: #000;
+  }
+}
 </style>
