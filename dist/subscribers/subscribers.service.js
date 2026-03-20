@@ -66,6 +66,7 @@ let SubscribersService = class SubscribersService {
             }
             else if (action === 'disable') {
                 await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, false);
+                await this.mikrotikService.disconnectByUsername(router, sub.username).catch(() => { });
             }
             else if (action === 'delete') {
                 await this.mikrotikService.deletePppoeSecret(router, sub.username);

@@ -17,12 +17,18 @@ const whatsapp_service_1 = require("./whatsapp.service");
 const whatsapp_controller_1 = require("./whatsapp.controller");
 const notification_scheduler_service_1 = require("./notification-scheduler.service");
 const subscription_entity_1 = require("../subscriptions/entities/subscription.entity");
+const subscriber_entity_1 = require("../subscribers/entities/subscriber.entity");
+const router_entity_1 = require("../routers/entities/router.entity");
+const routers_module_1 = require("../routers/routers.module");
 let WhatsappModule = class WhatsappModule {
 };
 exports.WhatsappModule = WhatsappModule;
 exports.WhatsappModule = WhatsappModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([whatsapp_settings_entity_1.WhatsappSettings, whatsapp_log_entity_1.WhatsappLog, whatsapp_installments_settings_entity_1.WhatsappInstallmentsSettings, whatsapp_support_settings_entity_1.WhatsappSupportSettings, subscription_entity_1.Subscription])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([whatsapp_settings_entity_1.WhatsappSettings, whatsapp_log_entity_1.WhatsappLog, whatsapp_installments_settings_entity_1.WhatsappInstallmentsSettings, whatsapp_support_settings_entity_1.WhatsappSupportSettings, subscription_entity_1.Subscription, subscriber_entity_1.Subscriber, router_entity_1.Router]),
+            routers_module_1.RoutersModule,
+        ],
         controllers: [whatsapp_controller_1.WhatsappController],
         providers: [whatsapp_service_1.WhatsappService, notification_scheduler_service_1.NotificationSchedulerService],
         exports: [whatsapp_service_1.WhatsappService],

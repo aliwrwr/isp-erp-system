@@ -8,9 +8,15 @@ import { WhatsappService } from './whatsapp.service';
 import { WhatsappController } from './whatsapp.controller';
 import { NotificationSchedulerService } from './notification-scheduler.service';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Subscriber } from '../subscribers/entities/subscriber.entity';
+import { Router } from '../routers/entities/router.entity';
+import { RoutersModule } from '../routers/routers.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([WhatsappSettings, WhatsappLog, WhatsappInstallmentsSettings, WhatsappSupportSettings, Subscription])],
+  imports: [
+    TypeOrmModule.forFeature([WhatsappSettings, WhatsappLog, WhatsappInstallmentsSettings, WhatsappSupportSettings, Subscription, Subscriber, Router]),
+    RoutersModule,
+  ],
   controllers: [WhatsappController],
   providers: [WhatsappService, NotificationSchedulerService],
   exports: [WhatsappService],

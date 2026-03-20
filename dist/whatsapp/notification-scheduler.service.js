@@ -19,14 +19,23 @@ const schedule_1 = require("@nestjs/schedule");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const subscription_entity_1 = require("../subscriptions/entities/subscription.entity");
+const subscriber_entity_1 = require("../subscribers/entities/subscriber.entity");
+const router_entity_1 = require("../routers/entities/router.entity");
 const whatsapp_service_1 = require("./whatsapp.service");
+const mikrotik_service_1 = require("../routers/mikrotik.service");
 let NotificationSchedulerService = NotificationSchedulerService_1 = class NotificationSchedulerService {
     subscriptionsRepository;
+    subscriberRepository;
+    routerRepository;
     whatsappService;
+    mikrotikService;
     logger = new common_1.Logger(NotificationSchedulerService_1.name);
-    constructor(subscriptionsRepository, whatsappService) {
+    constructor(subscriptionsRepository, subscriberRepository, routerRepository, whatsappService, mikrotikService) {
         this.subscriptionsRepository = subscriptionsRepository;
+        this.subscriberRepository = subscriberRepository;
+        this.routerRepository = routerRepository;
         this.whatsappService = whatsappService;
+        this.mikrotikService = mikrotikService;
     }
     async sendDailyNotifications() {
         this.logger.log('Running daily WhatsApp notification check...');
@@ -170,6 +179,37 @@ let NotificationSchedulerService = NotificationSchedulerService_1 = class Notifi
             daysLeft: Math.ceil((new Date(s.endDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)),
         }));
     }
+    async autoExpireSubscriptions() {
+        this.logger.log('Running auto-expire check for subscriptions...');
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const expired = await this.subscriptionsRepository.find({
+            where: { endDate: (0, typeorm_2.LessThan)(now), status: 'active' },
+            relations: ['subscriber', 'subscriber.router'],
+        });
+        if (expired.length === 0) {
+            this.logger.log('No expired subscriptions found.');
+            return;
+        }
+        this.logger.log(`Found ${expired.length} expired subscription(s). Processing...`);
+        const processedSubscribers = new Set();
+        for (const sub of expired) {
+            await this.subscriptionsRepository.update(sub.id, { status: 'expired' }).catch(() => { });
+            const subscriber = sub.subscriber;
+            if (!subscriber?.id || processedSubscribers.has(subscriber.id))
+                continue;
+            processedSubscribers.add(subscriber.id);
+            await this.subscriberRepository.update(subscriber.id, { isEnabled: false }).catch(() => { });
+            this.logger.log(`Disabled subscriber: ${subscriber.name} (id=${subscriber.id})`);
+            if (this.mikrotikService && subscriber.router) {
+                const router = subscriber.router;
+                await this.mikrotikService.setPppoeSecretEnabled(router, subscriber.username, false).catch(() => { });
+                await this.mikrotikService.disconnectByUsername(router, subscriber.username).catch(() => { });
+                this.logger.log(`MikroTik: disabled+disconnected ${subscriber.username} on ${router.ipAddress}`);
+            }
+        }
+        this.logger.log(`Auto-expire complete. Processed ${processedSubscribers.size} subscriber(s).`);
+    }
     formatDate(date) {
         const d = new Date(date);
         return d.toLocaleDateString('ar-IQ', {
@@ -186,10 +226,22 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], NotificationSchedulerService.prototype, "sendDailyNotifications", null);
+__decorate([
+    (0, schedule_1.Cron)('1 0 * * *'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], NotificationSchedulerService.prototype, "autoExpireSubscriptions", null);
 exports.NotificationSchedulerService = NotificationSchedulerService = NotificationSchedulerService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(subscription_entity_1.Subscription)),
+    __param(1, (0, typeorm_1.InjectRepository)(subscriber_entity_1.Subscriber)),
+    __param(2, (0, typeorm_1.InjectRepository)(router_entity_1.Router)),
+    __param(4, (0, common_1.Optional)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        whatsapp_service_1.WhatsappService])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        whatsapp_service_1.WhatsappService,
+        mikrotik_service_1.MikrotikService])
 ], NotificationSchedulerService);
 //# sourceMappingURL=notification-scheduler.service.js.map

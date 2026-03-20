@@ -301,6 +301,25 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
             return false;
         }
     }
+    async disconnectByUsername(router, username) {
+        try {
+            const connections = await this.getActiveConnections(router);
+            const matching = connections.filter(c => c.name === username);
+            let count = 0;
+            for (const session of matching) {
+                const ok = await this.disconnectPppSession(router, session.id);
+                if (ok)
+                    count++;
+            }
+            if (count > 0)
+                this.logger.log(`Disconnected ${count} active session(s) for: ${username}`);
+            return count;
+        }
+        catch (err) {
+            this.logger.warn(`disconnectByUsername failed for ${username}: ${err.message}`);
+            return 0;
+        }
+    }
 };
 exports.MikrotikService = MikrotikService;
 exports.MikrotikService = MikrotikService = MikrotikService_1 = __decorate([

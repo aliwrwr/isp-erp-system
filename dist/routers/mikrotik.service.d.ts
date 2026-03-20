@@ -131,4 +131,11 @@ export declare class MikrotikService {
         port?: number;
         connectionType?: string;
     }, name: string): Promise<boolean>;
+    disconnectByUsername(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, username: string): Promise<number>;
 }

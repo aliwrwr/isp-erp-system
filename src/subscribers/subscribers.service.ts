@@ -57,6 +57,8 @@ export class SubscribersService {
         }
       } else if (action === 'disable') {
         await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, false);
+        // Kick active sessions so the subscriber is disconnected immediately
+        await this.mikrotikService.disconnectByUsername(router, sub.username).catch(() => {});
       } else if (action === 'delete') {
         await this.mikrotikService.deletePppoeSecret(router, sub.username);
       }

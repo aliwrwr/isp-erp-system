@@ -1,9 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, LessThan } from 'typeorm';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
+import { Subscriber } from '../subscribers/entities/subscriber.entity';
+import { Router } from '../routers/entities/router.entity';
 import { WhatsappService } from './whatsapp.service';
+import { MikrotikService } from '../routers/mikrotik.service';
 
 @Injectable()
 export class NotificationSchedulerService {
@@ -12,7 +15,12 @@ export class NotificationSchedulerService {
   constructor(
     @InjectRepository(Subscription)
     private subscriptionsRepository: Repository<Subscription>,
+    @InjectRepository(Subscriber)
+    private subscriberRepository: Repository<Subscriber>,
+    @InjectRepository(Router)
+    private routerRepository: Repository<Router>,
     private whatsappService: WhatsappService,
+    @Optional() private readonly mikrotikService: MikrotikService,
   ) {}
 
   // Runs every day at 08:00 AM
@@ -206,6 +214,56 @@ export class NotificationSchedulerService {
         (new Date(s.endDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       ),
     }));
+  }
+
+  /**
+   * Runs every day at 00:01 AM.
+   * Finds all active subscriptions whose endDate has passed, marks them expired,
+   * then disables the subscriber on MikroTik and kicks active sessions.
+   */
+  @Cron('1 0 * * *')
+  async autoExpireSubscriptions(): Promise<void> {
+    this.logger.log('Running auto-expire check for subscriptions...');
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    // Find all subscriptions that ended before today and are still 'active'
+    const expired = await this.subscriptionsRepository.find({
+      where: { endDate: LessThan(now as any) as any, status: 'active' },
+      relations: ['subscriber', 'subscriber.router'],
+    });
+
+    if (expired.length === 0) {
+      this.logger.log('No expired subscriptions found.');
+      return;
+    }
+
+    this.logger.log(`Found ${expired.length} expired subscription(s). Processing...`);
+
+    const processedSubscribers = new Set<number>();
+
+    for (const sub of expired) {
+      // Mark subscription as expired
+      await this.subscriptionsRepository.update(sub.id, { status: 'expired' }).catch(() => {});
+
+      const subscriber = sub.subscriber as any;
+      if (!subscriber?.id || processedSubscribers.has(subscriber.id)) continue;
+      processedSubscribers.add(subscriber.id);
+
+      // Disable subscriber in DB
+      await this.subscriberRepository.update(subscriber.id, { isEnabled: false } as any).catch(() => {});
+      this.logger.log(`Disabled subscriber: ${subscriber.name} (id=${subscriber.id})`);
+
+      // Disable on MikroTik + kick active session
+      if (this.mikrotikService && subscriber.router) {
+        const router = subscriber.router;
+        await this.mikrotikService.setPppoeSecretEnabled(router, subscriber.username, false).catch(() => {});
+        await this.mikrotikService.disconnectByUsername(router, subscriber.username).catch(() => {});
+        this.logger.log(`MikroTik: disabled+disconnected ${subscriber.username} on ${router.ipAddress}`);
+      }
+    }
+
+    this.logger.log(`Auto-expire complete. Processed ${processedSubscribers.size} subscriber(s).`);
   }
 
   private formatDate(date: Date | string): string {

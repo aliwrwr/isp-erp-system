@@ -595,11 +595,11 @@
               <i class="fas fa-pause-circle w-4 text-center"></i>
               <span>إلغاء / إيقاف</span>
             </button>
-            <!-- تشغيل / إيقاف الراوتر -->
+            <!-- تعطيل / إلغاء التعطيل -->
             <button @click="toggleEnabled" class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
               :class="contextMenuSub?.isEnabled !== false ? 'text-red-600 hover:bg-red-50' : 'text-teal-600 hover:bg-teal-50'">
-              <i class="w-4 text-center" :class="contextMenuSub?.isEnabled !== false ? 'fas fa-stop-circle' : 'fas fa-play-circle'"></i>
-              <span>{{ contextMenuSub?.isEnabled !== false ? 'إيقاف الراوتر' : 'تشغيل الراوتر' }}</span>
+              <i class="w-4 text-center" :class="contextMenuSub?.isEnabled !== false ? 'fas fa-ban' : 'fas fa-check-circle'"></i>
+              <span>{{ contextMenuSub?.isEnabled !== false ? 'تعطيل' : 'إلغاء التعطيل' }}</span>
             </button>
             <!-- مزامنة مع الراوتر -->
             <button @click="syncToRouter" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -1544,8 +1544,8 @@ async function confirmSuspend() {
   if (!sub) return;
   showSuspendConfirmModal.value = false;
   try {
-    // 1. Set subscriber status to suspended
-    await api.patch(`/subscribers/${sub.id}`, { status: 'suspended' });
+    // 1. Set subscriber status to suspended + disable on router (triggers disable+disconnect on MikroTik)
+    await api.patch(`/subscribers/${sub.id}`, { status: 'suspended', isEnabled: false });
     // 2. Delete all subscriptions for this subscriber
     if (sub.subscriptions && sub.subscriptions.length > 0) {
       await Promise.all(
@@ -1582,7 +1582,7 @@ async function toggleEnabled() {
     sub.isEnabled = newVal;
     const idx = subscribers.value.findIndex((s: any) => s.id === sub.id);
     if (idx !== -1) subscribers.value[idx].isEnabled = newVal;
-    showToast(newVal ? 'تم تشغيل الراوتر للمشترك' : 'تم إيقاف الراوتر للمشترك', newVal ? 'success' : 'error');
+    showToast(newVal ? 'تم إلغاء التعطيل — المشترك متصل الآن' : 'تم تعطيل المشترك وقطع اتصاله', newVal ? 'success' : 'warning');
   } catch {
     showToast('فشل تغيير حالة الراوتر', 'error');
   }

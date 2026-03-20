@@ -381,4 +381,29 @@ export class MikrotikService {
       return false;
     }
   }
+
+  /**
+   * Disconnect all active PPPoE sessions for a given username.
+   * Used after disabling a secret to force-kick the subscriber.
+   * Returns the number of sessions that were disconnected.
+   */
+  async disconnectByUsername(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    username: string,
+  ): Promise<number> {
+    try {
+      const connections = await this.getActiveConnections(router);
+      const matching = connections.filter(c => c.name === username);
+      let count = 0;
+      for (const session of matching) {
+        const ok = await this.disconnectPppSession(router, session.id);
+        if (ok) count++;
+      }
+      if (count > 0) this.logger.log(`Disconnected ${count} active session(s) for: ${username}`);
+      return count;
+    } catch (err: any) {
+      this.logger.warn(`disconnectByUsername failed for ${username}: ${err.message}`);
+      return 0;
+    }
+  }
 }
