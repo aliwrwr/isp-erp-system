@@ -83,6 +83,11 @@
               </td>
               <td class="px-4 py-3.5">
                 <div class="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition">
+                  <button v-if="c.status === 'active' || c.status === 'late'"
+                    @click.stop="openPay(c)"
+                    class="w-8 h-8 rounded-lg hover:bg-green-50 text-green-500 flex items-center justify-center transition" title="تسديد قسط">
+                    <i class="fas fa-coins text-xs"></i>
+                  </button>
                   <router-link :to="`/installments/contracts/${c.id}`"
                     class="w-8 h-8 rounded-lg hover:bg-indigo-50 text-indigo-500 flex items-center justify-center transition" title="تفاصيل">
                     <i class="fas fa-eye text-xs"></i>
@@ -183,6 +188,66 @@
       </Transition>
     </Teleport>
 
+    <!-- Quick Pay Modal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="payTarget" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="payTarget = null">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="bg-gradient-to-l from-green-600 to-emerald-500 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 class="text-white font-bold flex items-center gap-2"><i class="fas fa-coins"></i> تسديد قسط</h3>
+                <p class="text-green-100 text-xs mt-0.5">{{ payTarget.contractNumber }} — {{ payTarget.customer?.name }}</p>
+              </div>
+              <button @click="payTarget = null" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <form @submit.prevent="savePay" class="p-5 space-y-3">
+              <!-- Summary bar -->
+              <div class="grid grid-cols-3 gap-2 bg-gray-50 rounded-xl p-3 text-center">
+                <div>
+                  <p class="text-xs text-gray-400 mb-0.5">مبلغ القسط</p>
+                  <p class="font-black text-indigo-600 text-sm">{{ fmt(payTarget.installmentAmount) }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-0.5">المتبقي</p>
+                  <p class="font-black text-red-500 text-sm">{{ fmt(payTarget.remainingAmount) }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400 mb-0.5">الأقساط</p>
+                  <p class="font-black text-gray-600 text-sm">{{ payTarget.paidCount }}/{{ payTarget.installmentCount }}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-semibold text-gray-500 mb-1 block">المبلغ المدفوع <span class="text-red-400">*</span></label>
+                  <input v-model.number="payForm.amount" required type="number" min="1" class="input-field" />
+                </div>
+                <div>
+                  <label class="text-xs font-semibold text-gray-500 mb-1 block">تاريخ التسديد <span class="text-red-400">*</span></label>
+                  <input v-model="payForm.date" required type="date" class="input-field" />
+                </div>
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-500 mb-1 block">استلم بواسطة</label>
+                <input v-model="payForm.receivedBy" class="input-field" placeholder="اسم الموظف" />
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-500 mb-1 block">ملاحظات</label>
+                <input v-model="payForm.notes" class="input-field" placeholder="..." />
+              </div>
+              <div class="flex gap-3 pt-1">
+                <button type="submit" :disabled="savingPay"
+                  class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl text-sm font-black transition flex items-center justify-center gap-2 disabled:opacity-60">
+                  <i :class="savingPay ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+                  {{ savingPay ? 'جاري الحفظ...' : 'تسجيل الدفعة' }}
+                </button>
+                <button type="button" @click="payTarget = null" class="px-5 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50">إلغاء</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- Delete Modal -->
     <Teleport to="body">
       <Transition name="modal">
@@ -228,8 +293,13 @@ const saving       = ref(false);
 const deleting     = ref(false);
 const showModal    = ref(false);
 const deleteTarget = ref<any>(null);
+const payTarget    = ref<any>(null);
+const savingPay    = ref(false);
 const search       = ref('');
 const filterStatus = ref('');
+
+const emptyPayForm = () => ({ amount: 0, date: new Date().toISOString().split('T')[0], receivedBy: '', notes: '' });
+const payForm = ref(emptyPayForm());
 
 const emptyForm = () => ({ customerId: '', productName: '', productDescription: '', totalPrice: 0, downPayment: 0, installmentAmount: 0, installmentCount: 0, frequency: 'monthly', startDate: new Date().toISOString().split('T')[0], guarantorName: '', guarantorPhone: '', notes: '' });
 const form = ref(emptyForm());
@@ -264,6 +334,22 @@ const stats = computed(() => [
 ]);
 
 function openAdd() { form.value = emptyForm(); showModal.value = true; }
+
+function openPay(c: any) {
+  payTarget.value = c;
+  payForm.value = { ...emptyPayForm(), amount: c.installmentAmount };
+}
+
+async function savePay() {
+  if (!payTarget.value) return;
+  savingPay.value = true;
+  try {
+    await api.post(`/installments/contracts/${payTarget.value.id}/payments`, payForm.value);
+    payTarget.value = null;
+    await load();
+  } catch (e: any) { alert(e.response?.data?.message || 'حدث خطأ'); }
+  finally { savingPay.value = false; }
+}
 
 async function save() {
   saving.value = true;
