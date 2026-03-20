@@ -160,8 +160,9 @@ export class MikrotikService {
     try {
       await conn.connect();
 
-      // Get all fields so RouterOS returns bytes-in/bytes-out regardless of version
-      const pppoe = await conn.write('/ppp/active/print').catch(() => []);
+      // Get all fields including stats (bytes-in/bytes-out) — requires =stats= flag in RouterOS API
+      const pppoe = await conn.write('/ppp/active/print', ['=stats='])
+        .catch(() => conn.write('/ppp/active/print').catch(() => []));
 
       conn.close();
 
@@ -172,10 +173,11 @@ export class MikrotikService {
         address: s.address || '',
         macAddress: s['caller-id'] || '',
         uptime: s.uptime || '',
-        bytesIn: parseInt(s['bytes-out']) || 0,
-        bytesOut: parseInt(s['bytes-in']) || 0,
+        bytesIn: parseInt(s['bytes-out']) || parseInt(s['tx-byte']) || 0,
+        bytesOut: parseInt(s['bytes-in']) || parseInt(s['rx-byte']) || 0,
         encoding: s.encoding || '',
         comment: s.comment || '',
+        _raw: s,  // keep for debug
       }));
     } catch (err: any) {
       this.logger.warn(`getActiveConnections failed for ${router.ipAddress}: ${err.message}`);

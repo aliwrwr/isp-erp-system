@@ -109,7 +109,8 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
         const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
         try {
             await conn.connect();
-            const pppoe = await conn.write('/ppp/active/print').catch(() => []);
+            const pppoe = await conn.write('/ppp/active/print', ['=stats='])
+                .catch(() => conn.write('/ppp/active/print').catch(() => []));
             conn.close();
             return pppoe.map((s) => ({
                 id: s['.id'] || '',
@@ -118,10 +119,11 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
                 address: s.address || '',
                 macAddress: s['caller-id'] || '',
                 uptime: s.uptime || '',
-                bytesIn: parseInt(s['bytes-out']) || 0,
-                bytesOut: parseInt(s['bytes-in']) || 0,
+                bytesIn: parseInt(s['bytes-out']) || parseInt(s['tx-byte']) || 0,
+                bytesOut: parseInt(s['bytes-in']) || parseInt(s['rx-byte']) || 0,
                 encoding: s.encoding || '',
                 comment: s.comment || '',
+                _raw: s,
             }));
         }
         catch (err) {

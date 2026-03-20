@@ -9,6 +9,15 @@ export declare class RoutersController {
     private readonly mikrotikService;
     private subscriberRepo;
     constructor(routersService: RoutersService, mikrotikService: MikrotikService, subscriberRepo: Repository<Subscriber>);
+    debugConnections(): Promise<{
+        error: string;
+        first?: undefined;
+        count?: undefined;
+    } | {
+        first: import("./mikrotik.service").ActiveConnection;
+        count: number;
+        error?: undefined;
+    }>;
     getAllConnections(): Promise<any[]>;
     disconnectSession(id: string, body: {
         sessionId: string;

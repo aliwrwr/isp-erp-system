@@ -23,6 +23,17 @@ export class RoutersController {
     @InjectRepository(Subscriber) private subscriberRepo: Repository<Subscriber>,
   ) {}
 
+  // ── Debug: raw PPPoE active fields from first router ───────────────────────
+  @Get('debug-connections')
+  @Roles('Super Admin', 'Network Admin')
+  async debugConnections() {
+    const routers = await this.routersService.findAll();
+    if (!routers.length) return { error: 'no routers' };
+    const router = routers[0];
+    const conns = await this.mikrotikService.getActiveConnections(router);
+    return { first: conns[0] ?? null, count: conns.length };
+  }
+
   // ── All active connections (aggregated from all routers) ─────────────────────
   @Get('connections')
   @Roles('Super Admin', 'Network Admin')

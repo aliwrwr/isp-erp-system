@@ -35,6 +35,14 @@ let RoutersController = class RoutersController {
         this.mikrotikService = mikrotikService;
         this.subscriberRepo = subscriberRepo;
     }
+    async debugConnections() {
+        const routers = await this.routersService.findAll();
+        if (!routers.length)
+            return { error: 'no routers' };
+        const router = routers[0];
+        const conns = await this.mikrotikService.getActiveConnections(router);
+        return { first: conns[0] ?? null, count: conns.length };
+    }
     async getAllConnections() {
         const routers = await this.routersService.findAll();
         const subscribers = await this.subscriberRepo.find({ relations: ['package'] });
@@ -116,6 +124,13 @@ let RoutersController = class RoutersController {
     }
 };
 exports.RoutersController = RoutersController;
+__decorate([
+    (0, common_1.Get)('debug-connections'),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "debugConnections", null);
 __decorate([
     (0, common_1.Get)('connections'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
