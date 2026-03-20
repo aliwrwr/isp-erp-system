@@ -52,7 +52,13 @@
           <tbody class="divide-y divide-gray-50">
             <tr v-if="loading"><td colspan="8" class="text-center py-12 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl text-indigo-400 mb-2 block"></i>جاري التحميل...</td></tr>
             <tr v-else-if="filtered.length === 0"><td colspan="8" class="text-center py-12 text-gray-400"><i class="fas fa-file-contract text-3xl mb-2 block"></i>لا توجد عقود</td></tr>
-            <tr v-for="c in filtered" :key="c.id" class="hover:bg-indigo-50/30 group transition cursor-pointer" @click.stop>
+            <tr v-for="c in filtered" :key="c.id"
+              class="hover:bg-indigo-50/30 group transition cursor-pointer select-none"
+              @contextmenu.prevent="openCtx($event, c)"
+              @touchstart="onTouchStart($event, c)"
+              @touchend="onTouchEnd"
+              @touchmove="onTouchEnd"
+              @click.stop>
               <td class="px-4 py-3.5">
                 <span class="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">{{ c.contractNumber }}</span>
               </td>
@@ -109,7 +115,7 @@
         <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" @click.self="showModal = false">
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-gradient-to-l from-indigo-600 to-blue-500 px-6 py-4 flex items-center justify-between shrink-0">
-              <h3 class="text-white font-bold text-base flex items-center gap-2"><i class="fas fa-file-contract"></i> إنشاء عقد جديد</h3>
+              <h3 class="text-white font-bold text-base flex items-center gap-2"><i class="fas fa-file-contract"></i> {{ editingContract ? 'تعديل العقد' : 'إنشاء عقد جديد' }}</h3>
               <button @click="showModal = false" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
             <form @submit.prevent="save" class="p-6 space-y-4 overflow-y-auto">
@@ -178,7 +184,7 @@
                 <button type="submit" :disabled="saving"
                   class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 disabled:opacity-60">
                   <i :class="saving ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
-                  {{ saving ? 'جاري الحفظ...' : 'إنشاء العقد' }}
+                  {{ saving ? 'جاري الحفظ...' : (editingContract ? 'حفظ التعديلات' : 'إنشاء العقد') }}
                 </button>
                 <button type="button" @click="showModal = false" class="px-5 py-2.5 border border-gray-200 text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50">إلغاء</button>
               </div>
@@ -279,11 +285,44 @@
         </div>
       </Transition>
     </Teleport>
+
+    <!-- Context Menu -->
+    <Teleport to="body">
+      <Transition name="ctx-fade">
+        <div v-if="ctx.show" class="fixed inset-0 z-[200]" @click="closeCtx" @contextmenu.prevent="closeCtx">
+          <div class="absolute bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-52 py-1" :style="ctxStyle" @click.stop>
+            <button @click="ctxAction('detail')" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 transition">
+              <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0"><i class="fas fa-eye text-indigo-600 text-xs"></i></div>
+              <span class="font-medium">عرض التفاصيل</span>
+            </button>
+            <button @click="ctxAction('edit')" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 transition">
+              <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center shrink-0"><i class="fas fa-pen text-blue-600 text-xs"></i></div>
+              <span class="font-medium">تعديل</span>
+            </button>
+            <button @click="ctxAction('pay')" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 transition"
+              :class="(ctx.target?.status !== 'active' && ctx.target?.status !== 'late') ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''">
+              <div class="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center shrink-0"><i class="fas fa-coins text-green-600 text-xs"></i></div>
+              <span class="font-medium">تسجيل دفعة</span>
+            </button>
+            <button @click="ctxAction('print')" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+              <div class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"><i class="fas fa-print text-gray-500 text-xs"></i></div>
+              <span class="font-medium">طباعة سند قبض</span>
+            </button>
+            <div class="mx-3 my-1 border-t border-gray-100"></div>
+            <button @click="ctxAction('delete')" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition">
+              <div class="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-trash-alt text-red-500 text-xs"></i></div>
+              <span class="font-medium">حذف</span>
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../../api';
 
 const contracts    = ref<any[]>([]);
@@ -292,6 +331,7 @@ const loading      = ref(true);
 const saving       = ref(false);
 const deleting     = ref(false);
 const showModal    = ref(false);
+const editingContract = ref<any>(null);
 const deleteTarget = ref<any>(null);
 const payTarget    = ref<any>(null);
 const savingPay    = ref(false);
@@ -308,7 +348,7 @@ const form = ref(emptyForm());
 watch(
   () => [form.value.installmentAmount, form.value.totalPrice, form.value.downPayment],
   ([amount, total, down]) => {
-    if (amount > 0 && total > 0) {
+    if (!editingContract.value && amount > 0 && total > 0) {
       const remaining = Math.max(0, Number(total) - Number(down || 0));
       form.value.installmentCount = Math.ceil(remaining / Number(amount));
     }
@@ -333,7 +373,25 @@ const stats = computed(() => [
   { label: 'العقود المكتملة', value: contracts.value.filter(c => c.status === 'completed').length, icon: 'fas fa-flag-checkered', bg: '#3B82F6' },
 ]);
 
-function openAdd() { form.value = emptyForm(); showModal.value = true; }
+function openAdd() { editingContract.value = null; form.value = emptyForm(); showModal.value = true; }
+function openEdit(c: any) {
+  editingContract.value = c;
+  form.value = {
+    customerId: c.customer?.id || '',
+    productName: c.productName || '',
+    productDescription: c.productDescription || '',
+    totalPrice: c.totalPrice || 0,
+    downPayment: c.downPayment || 0,
+    installmentAmount: c.installmentAmount || 0,
+    installmentCount: c.installmentCount || 0,
+    frequency: c.frequency || 'monthly',
+    startDate: c.startDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+    guarantorName: c.guarantorName || '',
+    guarantorPhone: c.guarantorPhone || '',
+    notes: c.notes || '',
+  };
+  showModal.value = true;
+}
 
 function openPay(c: any) {
   payTarget.value = c;
@@ -354,7 +412,11 @@ async function savePay() {
 async function save() {
   saving.value = true;
   try {
-    await api.post('/installments/contracts', form.value);
+    if (editingContract.value) {
+      await api.patch(`/installments/contracts/${editingContract.value.id}`, form.value);
+    } else {
+      await api.post('/installments/contracts', form.value);
+    }
     showModal.value = false;
     await load();
   } catch (e: any) { alert(e.response?.data?.message || 'حدث خطأ'); }
@@ -378,6 +440,34 @@ async function load() {
     customers.value = cu.data;
   } finally { loading.value = false; }
 }
+// ─── Context Menu ─────────────────────────────────────────────────
+const router = useRouter();
+const ctx = reactive({ show: false, x: 0, y: 0, target: null as any });
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+const ctxStyle = computed(() => {
+  const W = 210, H = 245;
+  const x = ctx.x + W > window.innerWidth ? ctx.x - W : ctx.x;
+  const y = ctx.y + H > window.innerHeight ? ctx.y - H : ctx.y;
+  return { left: `${x}px`, top: `${y}px` };
+});
+function openCtx(event: MouseEvent, item: any) { ctx.x = event.clientX; ctx.y = event.clientY; ctx.target = item; ctx.show = true; }
+function closeCtx() { ctx.show = false; }
+function onTouchStart(event: TouchEvent, item: any) {
+  longPressTimer = setTimeout(() => {
+    const t = event.touches[0];
+    openCtx({ clientX: t.clientX, clientY: t.clientY } as MouseEvent, item);
+  }, 600);
+}
+function onTouchEnd() { if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; } }
+function ctxAction(action: string) {
+  const c = ctx.target; closeCtx(); if (!c) return;
+  if (action === 'detail') router.push(`/installments/contracts/${c.id}`);
+  else if (action === 'edit')   openEdit(c);
+  else if (action === 'pay')    openPay(c);
+  else if (action === 'print')  router.push(`/installments/contracts/${c.id}`);
+  else if (action === 'delete') deleteTarget.value = c;
+}
+
 onMounted(load);
 </script>
 
@@ -388,4 +478,6 @@ onMounted(load);
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 .modal-enter-active, .modal-leave-active { transition: all .2s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.95); }
+.ctx-fade-enter-active, .ctx-fade-leave-active { transition: opacity .12s, transform .12s; }
+.ctx-fade-enter-from, .ctx-fade-leave-to { opacity: 0; transform: scale(.96); }
 </style>
