@@ -1511,6 +1511,7 @@ async function saveActivate() {
   try {
     const payload: any = {
       status: 'active',
+      isEnabled: true,
       subStartDate: activateForm.value.startDate,
       paymentMethod: activateForm.value.paymentMethod,
     };
