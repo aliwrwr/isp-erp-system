@@ -85,14 +85,20 @@
             <div class="flex items-center gap-1.5 mb-2">
               <i class="fas fa-shield-alt text-xs text-hr"></i>
               <span class="text-[11px] text-gray-500 font-semibold">الصلاحيات:</span>
+              <span class="text-[10px] text-hr font-bold mr-auto">{{ dept.permissions.length }} صلاحية</span>
             </div>
-            <div class="flex flex-wrap gap-1.5">
-              <span v-for="perm in dept.permissions" :key="perm"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium"
-                :class="getPermColor(perm)">
-                <i :class="getPermIcon(perm)" class="text-[8px]"></i>
-                {{ getPermLabel(perm) }}
-              </span>
+            <div class="space-y-1">
+              <div v-for="g in getDeptGroupSummary(dept)" :key="g.key"
+                class="flex items-center gap-2 bg-gray-50 rounded-lg px-2.5 py-1.5">
+                <i :class="g.icon" class="text-[10px] shrink-0" :style="{ color: g.color }"></i>
+                <span class="text-[11px] text-gray-600 font-medium flex-1 truncate">{{ g.label }}</span>
+                <div class="flex items-center gap-0.5">
+                  <span v-if="g.hasView"   title="اطلاع"  class="w-5 h-5 rounded flex items-center justify-center bg-blue-100"><i class="fas fa-eye text-blue-500 text-[8px]"></i></span>
+                  <span v-if="g.hasAdd"    title="إضافة"  class="w-5 h-5 rounded flex items-center justify-center bg-green-100"><i class="fas fa-plus text-green-500 text-[8px]"></i></span>
+                  <span v-if="g.hasEdit"   title="تعديل"  class="w-5 h-5 rounded flex items-center justify-center bg-amber-100"><i class="fas fa-pen text-amber-500 text-[8px]"></i></span>
+                  <span v-if="g.hasDelete" title="حذف"    class="w-5 h-5 rounded flex items-center justify-center bg-red-100"><i class="fas fa-trash text-red-400 text-[8px]"></i></span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -125,7 +131,7 @@
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showModal = false">
         <div class="fixed inset-0 bg-black/40 backdrop-blur-sm"></div>
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative z-10 overflow-hidden max-h-[90vh] flex flex-col" @click.stop>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl relative z-10 overflow-hidden max-h-[90vh] flex flex-col" @click.stop>
           <div class="bg-gradient-to-l from-hr to-purple-600 px-6 py-4 flex items-center justify-between">
             <h3 class="text-white font-bold text-base">{{ editingDept ? 'تعديل القسم' : 'إضافة قسم جديد' }}</h3>
             <button @click="showModal = false" class="text-white/70 hover:text-white transition"><i class="fas fa-times"></i></button>
@@ -144,29 +150,109 @@
               <textarea v-model="form.description" rows="2" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-hr/30 focus:border-hr resize-none" placeholder="وصف مختصر عن القسم ومهامه..."></textarea>
             </div>
 
-            <!-- Permissions Section -->
+            <!-- Permissions Section - Professional Matrix -->
             <div>
-              <label class="block text-xs font-semibold text-gray-500 mb-3">
-                <i class="fas fa-shield-alt text-hr ml-1"></i> صلاحيات القسم
-              </label>
-              <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-                <div v-for="group in permissionGroups" :key="group.key" class="space-y-2">
-                  <div class="flex items-center gap-2 mb-1">
-                    <i :class="group.icon" class="text-xs" :style="{ color: group.color }"></i>
-                    <span class="text-xs font-bold text-secondary">{{ group.label }}</span>
-                    <button type="button" @click="toggleGroup(group.key)" class="text-[10px] text-hr hover:underline mr-auto">{{ isGroupAllSelected(group.key) ? 'إلغاء الكل' : 'تحديد الكل' }}</button>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-semibold text-gray-600">
+                  <i class="fas fa-shield-alt text-hr ml-1"></i> صلاحيات القسم
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] text-gray-400 flex items-center gap-1">
+                    <i class="fas fa-check-circle text-hr"></i>
+                    {{ totalSelectedPerms }} صلاحية محددة
+                  </span>
+                  <button type="button" @click="selectAllPermissions"
+                    class="text-[10px] bg-hr/10 text-hr hover:bg-hr hover:text-white px-2 py-1 rounded-lg font-bold transition">
+                    تحديد الكل
+                  </button>
+                  <button type="button" @click="clearAllPermissions"
+                    class="text-[10px] bg-red-50 text-red-400 hover:bg-red-100 px-2 py-1 rounded-lg font-bold transition">
+                    مسح الكل
+                  </button>
+                </div>
+              </div>
+
+              <!-- System Tabs + Matrix -->
+              <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-100 bg-gray-50 overflow-x-auto">
+                  <button v-for="group in permissionGroups" :key="group.key" type="button"
+                    @click="activePermTab = group.key"
+                    :class="activePermTab === group.key
+                      ? 'bg-white border-b-2 border-hr text-hr font-bold'
+                      : 'text-gray-400 hover:text-secondary hover:bg-gray-100'"
+                    class="px-3 py-2.5 text-[11px] whitespace-nowrap transition flex items-center gap-1.5 relative -mb-px">
+                    <i :class="group.icon" class="text-[10px]"></i>
+                    {{ group.label }}
+                    <span v-if="getGroupPermCount(group.key)"
+                      class="bg-hr text-white rounded-full px-1.5 text-[9px] leading-4 font-bold">
+                      {{ getGroupPermCount(group.key) }}
+                    </span>
+                  </button>
+                </div>
+
+                <!-- Matrix -->
+                <div class="p-3 bg-white" v-if="activeGroup">
+                  <!-- Column Headers -->
+                  <div class="grid gap-1 mb-1" style="grid-template-columns: 1fr repeat(4, 58px)">
+                    <div class="text-[10px] font-bold text-gray-400 pr-2">الصفحة / الوحدة</div>
+                    <div v-for="action in actions" :key="action.key" class="text-center">
+                      <button type="button" @click="toggleAllAction(activeGroup.key, action.key)"
+                        class="flex flex-col items-center gap-0.5 w-full py-1.5 rounded-lg hover:bg-gray-50 transition group/col"
+                        :class="isAllActionSelected(activeGroup.key, action.key) ? 'bg-hr/5' : ''">
+                        <i :class="[action.icon, action.color,
+                          isAllActionSelected(activeGroup.key, action.key) ? 'opacity-100' : 'opacity-35 group-hover/col:opacity-60']"
+                          class="text-sm transition"></i>
+                        <span :class="isAllActionSelected(activeGroup.key, action.key) ? 'text-secondary font-bold' : 'text-gray-400'"
+                          class="text-[9px] leading-none transition">{{ action.label }}</span>
+                      </button>
+                    </div>
                   </div>
-                  <div class="grid grid-cols-2 gap-2 pr-5">
-                    <label v-for="perm in group.items" :key="perm.value"
-                      class="flex items-center gap-2 cursor-pointer group/perm">
-                      <input type="checkbox" :value="perm.value" v-model="form.permissions"
+                  <div class="h-px bg-gray-100 mb-1"></div>
+
+                  <!-- Page Rows -->
+                  <div v-for="item in activeGroup.items" :key="item.key"
+                    class="grid gap-1 py-1.5 px-1 rounded-lg hover:bg-gray-50/80 transition items-center"
+                    :class="isRowAllSelected(activeGroup.key, item.key) ? 'bg-hr/5 hover:bg-hr/5' : ''"
+                    style="grid-template-columns: 1fr repeat(4, 58px)">
+                    <!-- Row label = click to toggle all -->
+                    <button type="button" @click="toggleAllRow(activeGroup.key, item.key)"
+                      class="text-xs font-medium pr-1 text-right hover:text-hr transition flex items-center gap-1.5"
+                      :class="isRowAllSelected(activeGroup.key, item.key) ? 'text-hr font-bold' : 'text-gray-600'">
+                      <i :class="isRowAllSelected(activeGroup.key, item.key)
+                        ? 'fas fa-check-circle text-hr'
+                        : 'far fa-circle text-gray-200'"
+                        class="text-xs shrink-0 transition"></i>
+                      {{ item.label }}
+                    </button>
+                    <!-- Action checkboxes -->
+                    <div v-for="action in actions" :key="action.key" class="flex justify-center">
+                      <input type="checkbox"
+                        :value="permKey(activeGroup.key, item.key, action.key)"
+                        v-model="form.permissions"
                         class="w-4 h-4 rounded border-gray-300 text-hr focus:ring-hr/30 cursor-pointer" />
-                      <span class="text-xs text-gray-600 group-hover/perm:text-secondary transition">{{ perm.label }}</span>
-                    </label>
+                    </div>
+                  </div>
+
+                  <!-- System Footer -->
+                  <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                    <button type="button" @click="selectAllSystem(activeGroup.key)"
+                      class="text-[11px] text-hr hover:underline font-bold flex items-center gap-1">
+                      <i class="fas fa-check-double text-[10px]"></i>
+                      تحديد كل {{ activeGroup.label }}
+                    </button>
+                    <button type="button" @click="clearSystem(activeGroup.key)"
+                      class="text-[11px] text-red-400 hover:underline font-bold flex items-center gap-1">
+                      <i class="fas fa-times text-[10px]"></i>
+                      إلغاء الكل
+                    </button>
                   </div>
                 </div>
               </div>
-              <p class="text-[10px] text-gray-400 mt-1.5"><i class="fas fa-info-circle"></i> حدد ما يمكن لموظفي هذا القسم الوصول إليه</p>
+              <p class="text-[10px] text-gray-400 mt-1.5">
+                <i class="fas fa-info-circle ml-1"></i>
+                اضغط اسم الصفحة لتحديد كل صلاحياتها • اضغط العمود لتحديد جميع الصفحات
+              </p>
             </div>
             <div class="flex gap-3 pt-2">
               <button type="submit" :disabled="saving" class="flex-1 bg-hr hover:bg-purple-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60">
@@ -215,200 +301,215 @@ import { useAuthStore } from '../../stores/auth';
 
 const auth = useAuthStore();
 
-interface Employee {
-  id: number;
-  name: string;
-}
-
+interface Employee { id: number; name: string; }
 interface Department {
-  id: number;
-  name: string;
-  description: string;
-  manager: string;
-  permissions: string[];
-  employees: Employee[];
+  id: number; name: string; description: string;
+  manager: string; permissions: string[]; employees: Employee[];
 }
 
-const departments = ref<Department[]>([]);
-const loading = ref(true);
-const saving = ref(false);
-const showModal = ref(false);
+const departments    = ref<Department[]>([]);
+const loading        = ref(true);
+const saving         = ref(false);
+const showModal      = ref(false);
 const showDeleteConfirm = ref(false);
-const editingDept = ref<Department | null>(null);
-const deletingDept = ref<Department | null>(null);
+const editingDept    = ref<Department | null>(null);
+const deletingDept   = ref<Department | null>(null);
+const activePermTab  = ref('internet');
 
-const form = ref<{ name: string; description: string; manager: string; permissions: string[] }>({ name: '', description: '', manager: '', permissions: [] });
+const form = ref<{ name: string; description: string; manager: string; permissions: string[] }>({
+  name: '', description: '', manager: '', permissions: [],
+});
 
-// Permission definitions
+// ─── Action Types ───────────────────────────────────────────────
+const actions = [
+  { key: 'view',   label: 'اطلاع',  icon: 'fas fa-eye',   color: 'text-blue-500'  },
+  { key: 'add',    label: 'إضافة',  icon: 'fas fa-plus',  color: 'text-green-500' },
+  { key: 'edit',   label: 'تعديل',  icon: 'fas fa-pen',   color: 'text-amber-500' },
+  { key: 'delete', label: 'حذف',    icon: 'fas fa-trash', color: 'text-red-500'   },
+];
+
+// ─── Permission Groups ──────────────────────────────────────────
 const permissionGroups = [
   {
-    key: 'internet',
-    label: 'نظام الإنترنت',
-    icon: 'fas fa-wifi',
-    color: '#2980B9',
+    key: 'internet', label: 'نظام الإنترنت', icon: 'fas fa-wifi', color: '#2980B9',
     items: [
-      { value: 'internet.subscribers', label: 'المشتركين' },
-      { value: 'internet.connected', label: 'المتصلين' },
-      { value: 'internet.packages', label: 'الباقات' },
-      { value: 'internet.subscriptions', label: 'الاشتراكات' },
-      { value: 'internet.routers', label: 'الراوترات' },
-      { value: 'internet.payments', label: 'المدفوعات' },
-      { value: 'internet.reports', label: 'التقارير' },
-      { value: 'internet.managers', label: 'المدراء' },
-      { value: 'internet.log', label: 'سجل العمليات' },
-      { value: 'internet.whatsapp', label: 'واتساب' },
-      { value: 'internet.settings', label: 'الإعدادات' },
+      { key: 'subscribers',   label: 'المشتركين'     },
+      { key: 'connected',     label: 'المتصلين'      },
+      { key: 'packages',      label: 'الباقات'       },
+      { key: 'subscriptions', label: 'الاشتراكات'    },
+      { key: 'routers',       label: 'الراوترات'     },
+      { key: 'payments',      label: 'المدفوعات'     },
+      { key: 'reports',       label: 'التقارير'      },
+      { key: 'managers',      label: 'المدراء'       },
+      { key: 'log',           label: 'سجل العمليات'  },
+      { key: 'whatsapp',      label: 'واتساب'        },
+      { key: 'settings',      label: 'الإعدادات'     },
     ],
   },
   {
-    key: 'sales',
-    label: 'نظام المبيعات',
-    icon: 'fas fa-cash-register',
-    color: '#27AE60',
+    key: 'sales', label: 'نظام المبيعات', icon: 'fas fa-cash-register', color: '#27AE60',
     items: [
-      { value: 'sales.pos', label: 'نقطة البيع' },
-      { value: 'sales.products', label: 'المنتجات' },
-      { value: 'sales.customers', label: 'العملاء' },
-      { value: 'sales.categories', label: 'التصنيفات' },
-      { value: 'sales.invoices', label: 'الفواتير' },
-      { value: 'sales.expenses', label: 'المصروفات' },
-      { value: 'sales.inventory', label: 'المخزون' },
-      { value: 'sales.suppliers', label: 'الموردين' },
+      { key: 'pos',        label: 'نقطة البيع'  },
+      { key: 'products',   label: 'المنتجات'   },
+      { key: 'customers',  label: 'العملاء'    },
+      { key: 'categories', label: 'التصنيفات'  },
+      { key: 'invoices',   label: 'الفواتير'   },
+      { key: 'expenses',   label: 'المصروفات'  },
+      { key: 'inventory',  label: 'المخزون'    },
+      { key: 'suppliers',  label: 'الموردين'   },
     ],
   },
   {
-    key: 'hr',
-    label: 'شؤون الموظفين',
-    icon: 'fas fa-users',
-    color: '#8E44AD',
+    key: 'hr', label: 'شؤون الموظفين', icon: 'fas fa-users', color: '#8E44AD',
     items: [
-      { value: 'hr.employees', label: 'الموظفين' },
-      { value: 'hr.departments', label: 'الأقسام' },
-      { value: 'hr.attendance', label: 'الحضور' },
-      { value: 'hr.salaries', label: 'الرواتب' },
+      { key: 'employees',   label: 'الموظفين' },
+      { key: 'departments', label: 'الأقسام'  },
+      { key: 'attendance',  label: 'الحضور'   },
+      { key: 'salaries',    label: 'الرواتب'  },
     ],
   },
   {
-    key: 'support',
-    label: 'الدعم الفني',
-    icon: 'fas fa-headset',
-    color: '#E67E22',
+    key: 'support', label: 'الدعم الفني', icon: 'fas fa-headset', color: '#E67E22',
     items: [
-      { value: 'support.tickets', label: 'التذاكر' },
-      { value: 'support.technicians', label: 'الفنيين' },
+      { key: 'tickets',     label: 'التذاكر' },
+      { key: 'technicians', label: 'الفنيين' },
     ],
   },
   {
-    key: 'messaging',
-    label: 'الرسائل',
-    icon: 'fas fa-envelope',
-    color: '#16A085',
+    key: 'messaging', label: 'الرسائل', icon: 'fas fa-envelope', color: '#16A085',
     items: [
-      { value: 'messaging.send', label: 'إرسال رسائل' },
-      { value: 'messaging.templates', label: 'القوالب' },
-      { value: 'messaging.history', label: 'السجل' },
+      { key: 'send',      label: 'إرسال رسائل' },
+      { key: 'templates', label: 'القوالب'     },
+      { key: 'history',   label: 'السجل'       },
     ],
   },
   {
-    key: 'restaurant',
-    label: 'نظام المطاعم',
-    icon: 'fas fa-utensils',
-    color: '#D35400',
+    key: 'restaurant', label: 'نظام المطاعم', icon: 'fas fa-utensils', color: '#D35400',
     items: [
-      { value: 'restaurant.menu', label: 'قائمة الطعام' },
-      { value: 'restaurant.tables', label: 'الطاولات' },
-      { value: 'restaurant.orders', label: 'الطلبات' },
-      { value: 'restaurant.kitchen', label: 'المطبخ' },
-      { value: 'restaurant.reservations', label: 'الحجوزات' },
-      { value: 'restaurant.expenses', label: 'المصروفات' },
-      { value: 'restaurant.reports', label: 'التقارير' },
+      { key: 'menu',         label: 'قائمة الطعام' },
+      { key: 'tables',       label: 'الطاولات'     },
+      { key: 'orders',       label: 'الطلبات'      },
+      { key: 'kitchen',      label: 'المطبخ'       },
+      { key: 'reservations', label: 'الحجوزات'     },
+      { key: 'expenses',     label: 'المصروفات'    },
+      { key: 'reports',      label: 'التقارير'     },
     ],
   },
 ];
 
-const allPermItems = permissionGroups.flatMap(g => g.items);
+const activeGroup = computed(() => permissionGroups.find(g => g.key === activePermTab.value));
+const totalSelectedPerms = computed(() => form.value.permissions.length);
 
-function toggleGroup(groupKey: string) {
-  const group = permissionGroups.find(g => g.key === groupKey);
-  if (!group) return;
-  const groupValues = group.items.map(i => i.value);
-  const allSelected = groupValues.every(v => form.value.permissions.includes(v));
-  if (allSelected) {
-    form.value.permissions = form.value.permissions.filter(p => !groupValues.includes(p));
+// ─── Permission Key Builder ────────────────────────────────────
+function permKey(sys: string, page: string, action: string) {
+  return `${sys}.${page}.${action}`;
+}
+
+// ─── Group permission count (for tab badge) ───────────────────
+function getGroupPermCount(groupKey: string) {
+  return form.value.permissions.filter(p => p.startsWith(groupKey + '.')).length;
+}
+
+// ─── Row (page) toggle ────────────────────────────────────────
+function toggleAllRow(sys: string, page: string) {
+  const all = actions.map(a => permKey(sys, page, a.key));
+  const allSel = all.every(p => form.value.permissions.includes(p));
+  if (allSel) {
+    form.value.permissions = form.value.permissions.filter(p => !all.includes(p));
   } else {
-    const newPerms = new Set([...form.value.permissions, ...groupValues]);
-    form.value.permissions = [...newPerms];
+    form.value.permissions = [...new Set([...form.value.permissions, ...all])];
   }
 }
+function isRowAllSelected(sys: string, page: string) {
+  return actions.every(a => form.value.permissions.includes(permKey(sys, page, a.key)));
+}
 
-function isGroupAllSelected(groupKey: string) {
-  const group = permissionGroups.find(g => g.key === groupKey);
+// ─── Column (action) toggle ───────────────────────────────────
+function toggleAllAction(sys: string, action: string) {
+  const group = permissionGroups.find(g => g.key === sys);
+  if (!group) return;
+  const all = group.items.map(i => permKey(sys, i.key, action));
+  const allSel = all.every(p => form.value.permissions.includes(p));
+  if (allSel) {
+    form.value.permissions = form.value.permissions.filter(p => !all.includes(p));
+  } else {
+    form.value.permissions = [...new Set([...form.value.permissions, ...all])];
+  }
+}
+function isAllActionSelected(sys: string, action: string) {
+  const group = permissionGroups.find(g => g.key === sys);
   if (!group) return false;
-  return group.items.every(i => form.value.permissions.includes(i.value));
+  return group.items.every(i => form.value.permissions.includes(permKey(sys, i.key, action)));
 }
 
-function getPermLabel(perm: string) {
-  return allPermItems.find(i => i.value === perm)?.label || perm;
+// ─── System-level select/clear ────────────────────────────────
+function selectAllSystem(sys: string) {
+  const group = permissionGroups.find(g => g.key === sys);
+  if (!group) return;
+  const all = group.items.flatMap(i => actions.map(a => permKey(sys, i.key, a.key)));
+  form.value.permissions = [...new Set([...form.value.permissions, ...all])];
+}
+function clearSystem(sys: string) {
+  form.value.permissions = form.value.permissions.filter(p => !p.startsWith(sys + '.'));
 }
 
-function getPermIcon(perm: string) {
-  const groupKey = perm.split('.')[0];
-  return permissionGroups.find(g => g.key === groupKey)?.icon || 'fas fa-check';
+// ─── Global select/clear ─────────────────────────────────────
+function selectAllPermissions() {
+  const all = permissionGroups.flatMap(g =>
+    g.items.flatMap(i => actions.map(a => permKey(g.key, i.key, a.key)))
+  );
+  form.value.permissions = [...new Set(all)];
+}
+function clearAllPermissions() {
+  form.value.permissions = [];
 }
 
-function getPermColor(perm: string) {
-  const groupKey = perm.split('.')[0];
-  const colors: Record<string, string> = {
-    internet: 'bg-blue-50 text-blue-700',
-    sales: 'bg-green-50 text-green-700',
-    hr: 'bg-purple-50 text-purple-700',
-    support: 'bg-orange-50 text-orange-700',
-    messaging: 'bg-teal-50 text-teal-700',
-    restaurant: 'bg-orange-50 text-orange-700',
-  };
-  return colors[groupKey] || 'bg-gray-50 text-gray-700';
+// ─── Card summary per department ─────────────────────────────
+function getDeptGroupSummary(dept: Department) {
+  return permissionGroups
+    .filter(g => dept.permissions?.some(p => p.startsWith(g.key + '.')))
+    .map(g => ({
+      ...g,
+      hasView:   dept.permissions.some(p => p.startsWith(g.key + '.') && p.endsWith('.view')),
+      hasAdd:    dept.permissions.some(p => p.startsWith(g.key + '.') && p.endsWith('.add')),
+      hasEdit:   dept.permissions.some(p => p.startsWith(g.key + '.') && p.endsWith('.edit')),
+      hasDelete: dept.permissions.some(p => p.startsWith(g.key + '.') && p.endsWith('.delete')),
+    }));
 }
 
-const totalEmployees = computed(() => departments.value.reduce((sum, d) => sum + (d.employees?.length || 0), 0));
+// ─── Stats ────────────────────────────────────────────────────
+const totalEmployees = computed(() => departments.value.reduce((s, d) => s + (d.employees?.length || 0), 0));
 const largestDept = computed(() => {
   if (!departments.value.length) return '—';
-  const max = departments.value.reduce((a, b) => (a.employees?.length || 0) >= (b.employees?.length || 0) ? a : b);
-  return max.name;
+  return departments.value.reduce((a, b) => (a.employees?.length || 0) >= (b.employees?.length || 0) ? a : b).name;
 });
 const avgPerDept = computed(() => {
   if (!departments.value.length) return '0';
   return Math.round(totalEmployees.value / departments.value.length);
 });
-
 function getBarWidth(count: number) {
   const max = Math.max(...departments.value.map(d => d.employees?.length || 0), 1);
   return Math.round((count / max) * 100);
 }
 
 const deptIcons: Record<string, string> = {
-  'الشبكات': 'fas fa-network-wired',
-  'المبيعات': 'fas fa-cash-register',
-  'المحاسبة': 'fas fa-calculator',
-  'الدعم الفني': 'fas fa-headset',
-  'الإدارة': 'fas fa-landmark',
-  'الموارد البشرية': 'fas fa-users-cog',
-  'التسويق': 'fas fa-bullhorn',
-  'التطوير': 'fas fa-code',
+  'الشبكات': 'fas fa-network-wired', 'المبيعات': 'fas fa-cash-register',
+  'المحاسبة': 'fas fa-calculator',   'الدعم الفني': 'fas fa-headset',
+  'الإدارة': 'fas fa-landmark',      'الموارد البشرية': 'fas fa-users-cog',
+  'التسويق': 'fas fa-bullhorn',       'التطوير': 'fas fa-code',
 };
-function getDeptIcon(name: string) {
-  return deptIcons[name] || 'fas fa-building';
-}
+function getDeptIcon(name: string) { return deptIcons[name] || 'fas fa-building'; }
 
+// ─── Modal helpers ────────────────────────────────────────────
 function resetForm() {
   form.value = { name: '', description: '', manager: '', permissions: [] };
+  activePermTab.value = 'internet';
 }
-
 function openAddModal() {
   editingDept.value = null;
   resetForm();
   showModal.value = true;
 }
-
 function openEditModal(dept: Department) {
   editingDept.value = dept;
   form.value = {
@@ -417,14 +518,15 @@ function openEditModal(dept: Department) {
     manager: dept.manager || '',
     permissions: dept.permissions ? [...dept.permissions] : [],
   };
+  activePermTab.value = 'internet';
   showModal.value = true;
 }
-
 function confirmDelete(dept: Department) {
   deletingDept.value = dept;
   showDeleteConfirm.value = true;
 }
 
+// ─── API calls ────────────────────────────────────────────────
 async function saveDept() {
   saving.value = true;
   try {
@@ -447,7 +549,6 @@ async function saveDept() {
     saving.value = false;
   }
 }
-
 async function deleteDept() {
   if (!deletingDept.value) return;
   saving.value = true;
@@ -461,7 +562,6 @@ async function deleteDept() {
     saving.value = false;
   }
 }
-
 async function fetchDepartments() {
   try {
     const res = await api.get('/departments');
@@ -473,7 +573,5 @@ async function fetchDepartments() {
   }
 }
 
-onMounted(() => {
-  fetchDepartments();
-});
+onMounted(fetchDepartments);
 </script>
