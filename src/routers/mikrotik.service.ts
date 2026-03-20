@@ -160,28 +160,40 @@ export class MikrotikService {
     try {
       await conn.connect();
 
-      const pppoe = await conn.write('/ppp/active/print').catch(() => []);
+      // Get active PPPoE sessions + interface stats in parallel
+      const [pppoe, ifaceStats] = await Promise.all([
+        conn.write('/ppp/active/print').catch(() => []),
+        conn.write('/interface/print', ['=stats=']).catch(() => []),
+      ]);
 
       conn.close();
+
+      // Map interface name → stats  (PPPoE interfaces are named <pppoe-username>)
+      const ifaceMap: Record<string, any> = {};
+      (ifaceStats as any[]).forEach((i: any) => { if (i.name) ifaceMap[i.name] = i; });
 
       // Log raw first entry so we can see actual field names in PM2 logs
       if ((pppoe as any[]).length > 0) {
         this.logger.log('PPPoE RAW FIELDS: ' + JSON.stringify((pppoe as any[])[0]));
       }
 
-      return (pppoe as any[]).map((s: any) => ({
-        id: s['.id'] || '',
-        name: s.name || '',
-        service: s.service || 'pppoe',
-        address: s.address || '',
-        macAddress: s['caller-id'] || '',
-        uptime: s.uptime || '',
-        bytesIn: parseInt(s['bytes-out'] ?? s['tx-byte'] ?? s['tx-bytes'] ?? '0') || 0,
-        bytesOut: parseInt(s['bytes-in'] ?? s['rx-byte'] ?? s['rx-bytes'] ?? '0') || 0,
-        encoding: s.encoding || '',
-        comment: s.comment || '',
-        _raw: s,
-      }));
+      return (pppoe as any[]).map((s: any) => {
+        const ifaceName = `<pppoe-${s.name}>`;
+        const iface = ifaceMap[ifaceName] || {};
+        return {
+          id: s['.id'] || '',
+          name: s.name || '',
+          service: s.service || 'pppoe',
+          address: s.address || '',
+          macAddress: s['caller-id'] || '',
+          uptime: s.uptime || '',
+          bytesIn: parseInt(iface['tx-byte']) || 0,   // tx = router→client = download
+          bytesOut: parseInt(iface['rx-byte']) || 0,  // rx = client→router = upload
+          encoding: s.encoding || '',
+          comment: s.comment || '',
+          _raw: { session: s, iface },
+        };
+      });
     } catch (err: any) {
       this.logger.warn(`getActiveConnections failed for ${router.ipAddress}: ${err.message}`);
       return [];

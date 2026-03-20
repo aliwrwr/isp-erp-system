@@ -109,24 +109,34 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
         const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
         try {
             await conn.connect();
-            const pppoe = await conn.write('/ppp/active/print').catch(() => []);
+            const [pppoe, ifaceStats] = await Promise.all([
+                conn.write('/ppp/active/print').catch(() => []),
+                conn.write('/interface/print', ['=stats=']).catch(() => []),
+            ]);
             conn.close();
+            const ifaceMap = {};
+            ifaceStats.forEach((i) => { if (i.name)
+                ifaceMap[i.name] = i; });
             if (pppoe.length > 0) {
                 this.logger.log('PPPoE RAW FIELDS: ' + JSON.stringify(pppoe[0]));
             }
-            return pppoe.map((s) => ({
-                id: s['.id'] || '',
-                name: s.name || '',
-                service: s.service || 'pppoe',
-                address: s.address || '',
-                macAddress: s['caller-id'] || '',
-                uptime: s.uptime || '',
-                bytesIn: parseInt(s['bytes-out'] ?? s['tx-byte'] ?? s['tx-bytes'] ?? '0') || 0,
-                bytesOut: parseInt(s['bytes-in'] ?? s['rx-byte'] ?? s['rx-bytes'] ?? '0') || 0,
-                encoding: s.encoding || '',
-                comment: s.comment || '',
-                _raw: s,
-            }));
+            return pppoe.map((s) => {
+                const ifaceName = `<pppoe-${s.name}>`;
+                const iface = ifaceMap[ifaceName] || {};
+                return {
+                    id: s['.id'] || '',
+                    name: s.name || '',
+                    service: s.service || 'pppoe',
+                    address: s.address || '',
+                    macAddress: s['caller-id'] || '',
+                    uptime: s.uptime || '',
+                    bytesIn: parseInt(iface['tx-byte']) || 0,
+                    bytesOut: parseInt(iface['rx-byte']) || 0,
+                    encoding: s.encoding || '',
+                    comment: s.comment || '',
+                    _raw: { session: s, iface },
+                };
+            });
         }
         catch (err) {
             this.logger.warn(`getActiveConnections failed for ${router.ipAddress}: ${err.message}`);
