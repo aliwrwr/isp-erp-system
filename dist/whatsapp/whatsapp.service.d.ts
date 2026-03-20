@@ -2,17 +2,23 @@ import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { WhatsappSettings } from './entities/whatsapp-settings.entity';
 import { WhatsappLog } from './entities/whatsapp-log.entity';
+import { WhatsappInstallmentsSettings } from './entities/whatsapp-installments-settings.entity';
+import { WhatsappSupportSettings } from './entities/whatsapp-support-settings.entity';
 import { UpdateWhatsappSettingsDto } from './dto/update-settings.dto';
+import { UpdateInstallmentsSettingsDto } from './dto/update-installments-settings.dto';
+import { UpdateSupportSettingsDto } from './dto/update-support-settings.dto';
 export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private settingsRepository;
     private logRepository;
+    private installmentsSettingsRepository;
+    private supportSettingsRepository;
     private readonly logger;
     private client;
     private qrDataUrl;
     private isConnected;
     private phoneNumber;
     private isInitializing;
-    constructor(settingsRepository: Repository<WhatsappSettings>, logRepository: Repository<WhatsappLog>);
+    constructor(settingsRepository: Repository<WhatsappSettings>, logRepository: Repository<WhatsappLog>, installmentsSettingsRepository: Repository<WhatsappInstallmentsSettings>, supportSettingsRepository: Repository<WhatsappSupportSettings>);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
     initializeClient(): Promise<void>;
@@ -38,4 +44,12 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
         hasQR: boolean;
         qr: string | null;
     };
+    getInstallmentsSettings(): Promise<WhatsappInstallmentsSettings>;
+    updateInstallmentsSettings(dto: UpdateInstallmentsSettingsDto): Promise<WhatsappInstallmentsSettings>;
+    sendInstallmentPaymentReceivedNotification(customerPhone: string, customerName: string, amount: number, contractNumber: string, installmentNo: number, remaining: number): Promise<void>;
+    getSupportSettings(): Promise<WhatsappSupportSettings>;
+    updateSupportSettings(dto: UpdateSupportSettingsDto): Promise<WhatsappSupportSettings>;
+    sendTicketCreatedNotification(customerPhone: string, customerName: string, ticketId: number | string, description: string): Promise<void>;
+    sendTicketResolvedNotification(customerPhone: string, customerName: string, ticketId: number | string): Promise<void>;
+    sendTechAssignedNotification(customerPhone: string, customerName: string, ticketId: number | string, techName: string): Promise<void>;
 }

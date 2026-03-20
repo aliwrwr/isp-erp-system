@@ -1,6 +1,8 @@
 import { WhatsappService } from './whatsapp.service';
 import { NotificationSchedulerService } from './notification-scheduler.service';
 import { UpdateWhatsappSettingsDto } from './dto/update-settings.dto';
+import { UpdateInstallmentsSettingsDto } from './dto/update-installments-settings.dto';
+import { UpdateSupportSettingsDto } from './dto/update-support-settings.dto';
 import { SendTestMessageDto } from './dto/send-test.dto';
 export declare class WhatsappController {
     private readonly whatsappService;
@@ -41,4 +43,8 @@ export declare class WhatsappController {
         data: import("./entities/whatsapp-log.entity").WhatsappLog[];
         total: number;
     }>;
+    getInstallmentsSettings(): Promise<import("./entities/whatsapp-installments-settings.entity").WhatsappInstallmentsSettings>;
+    updateInstallmentsSettings(dto: UpdateInstallmentsSettingsDto): Promise<import("./entities/whatsapp-installments-settings.entity").WhatsappInstallmentsSettings>;
+    getSupportSettings(): Promise<import("./entities/whatsapp-support-settings.entity").WhatsappSupportSettings>;
+    updateSupportSettings(dto: UpdateSupportSettingsDto): Promise<import("./entities/whatsapp-support-settings.entity").WhatsappSupportSettings>;
 }

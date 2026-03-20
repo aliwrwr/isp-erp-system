@@ -54,18 +54,24 @@ const whatsapp_web_js_1 = require("whatsapp-web.js");
 const QRCode = __importStar(require("qrcode"));
 const whatsapp_settings_entity_1 = require("./entities/whatsapp-settings.entity");
 const whatsapp_log_entity_1 = require("./entities/whatsapp-log.entity");
+const whatsapp_installments_settings_entity_1 = require("./entities/whatsapp-installments-settings.entity");
+const whatsapp_support_settings_entity_1 = require("./entities/whatsapp-support-settings.entity");
 let WhatsappService = WhatsappService_1 = class WhatsappService {
     settingsRepository;
     logRepository;
+    installmentsSettingsRepository;
+    supportSettingsRepository;
     logger = new common_1.Logger(WhatsappService_1.name);
     client = null;
     qrDataUrl = null;
     isConnected = false;
     phoneNumber = null;
     isInitializing = false;
-    constructor(settingsRepository, logRepository) {
+    constructor(settingsRepository, logRepository, installmentsSettingsRepository, supportSettingsRepository) {
         this.settingsRepository = settingsRepository;
         this.logRepository = logRepository;
+        this.installmentsSettingsRepository = installmentsSettingsRepository;
+        this.supportSettingsRepository = supportSettingsRepository;
     }
     async onModuleInit() {
         const count = await this.settingsRepository.count();
@@ -323,13 +329,106 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             qr: this.qrDataUrl,
         };
     }
+    async getInstallmentsSettings() {
+        let settings = await this.installmentsSettingsRepository.findOne({ where: { id: 1 } });
+        if (!settings) {
+            settings = await this.installmentsSettingsRepository.save(this.installmentsSettingsRepository.create({}));
+        }
+        return settings;
+    }
+    async updateInstallmentsSettings(dto) {
+        const existing = await this.getInstallmentsSettings();
+        await this.installmentsSettingsRepository.update(existing.id, dto);
+        return this.getInstallmentsSettings();
+    }
+    async sendInstallmentPaymentReceivedNotification(customerPhone, customerName, amount, contractNumber, installmentNo, remaining) {
+        try {
+            const settings = await this.getInstallmentsSettings();
+            if (!settings.paymentReceivedEnabled)
+                return;
+            const message = this.renderTemplate(settings.paymentReceivedTemplate, {
+                name: customerName,
+                amount: amount.toLocaleString('ar-IQ'),
+                contract: contractNumber,
+                installmentNo: String(installmentNo),
+                remaining: remaining.toLocaleString('ar-IQ'),
+            });
+            await this.sendMessage(customerPhone, message, 'installment_received', customerName);
+        }
+        catch (err) {
+            this.logger.error('Failed to send installment payment received notification', err);
+        }
+    }
+    async getSupportSettings() {
+        let settings = await this.supportSettingsRepository.findOne({ where: { id: 1 } });
+        if (!settings) {
+            settings = await this.supportSettingsRepository.save(this.supportSettingsRepository.create({}));
+        }
+        return settings;
+    }
+    async updateSupportSettings(dto) {
+        const existing = await this.getSupportSettings();
+        await this.supportSettingsRepository.update(existing.id, dto);
+        return this.getSupportSettings();
+    }
+    async sendTicketCreatedNotification(customerPhone, customerName, ticketId, description) {
+        try {
+            const settings = await this.getSupportSettings();
+            if (!settings.ticketCreatedEnabled)
+                return;
+            const message = this.renderTemplate(settings.ticketCreatedTemplate, {
+                name: customerName,
+                ticketId: String(ticketId),
+                description,
+            });
+            await this.sendMessage(customerPhone, message, 'ticket_created', customerName);
+        }
+        catch (err) {
+            this.logger.error('Failed to send ticket created notification', err);
+        }
+    }
+    async sendTicketResolvedNotification(customerPhone, customerName, ticketId) {
+        try {
+            const settings = await this.getSupportSettings();
+            if (!settings.ticketResolvedEnabled)
+                return;
+            const message = this.renderTemplate(settings.ticketResolvedTemplate, {
+                name: customerName,
+                ticketId: String(ticketId),
+            });
+            await this.sendMessage(customerPhone, message, 'ticket_resolved', customerName);
+        }
+        catch (err) {
+            this.logger.error('Failed to send ticket resolved notification', err);
+        }
+    }
+    async sendTechAssignedNotification(customerPhone, customerName, ticketId, techName) {
+        try {
+            const settings = await this.getSupportSettings();
+            if (!settings.techAssignedEnabled)
+                return;
+            const message = this.renderTemplate(settings.techAssignedTemplate, {
+                name: customerName,
+                ticketId: String(ticketId),
+                techName,
+            });
+            await this.sendMessage(customerPhone, message, 'tech_assigned', customerName);
+        }
+        catch (err) {
+            this.logger.error('Failed to send tech assigned notification', err);
+        }
+    }
 };
 exports.WhatsappService = WhatsappService;
 exports.WhatsappService = WhatsappService = WhatsappService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(whatsapp_settings_entity_1.WhatsappSettings)),
     __param(1, (0, typeorm_1.InjectRepository)(whatsapp_log_entity_1.WhatsappLog)),
+    __param(2, (0, typeorm_1.InjectRepository)(whatsapp_installments_settings_entity_1.WhatsappInstallmentsSettings)),
+    __param(3, (0, typeorm_1.InjectRepository)(whatsapp_support_settings_entity_1.WhatsappSupportSettings)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], WhatsappService);
 //# sourceMappingURL=whatsapp.service.js.map

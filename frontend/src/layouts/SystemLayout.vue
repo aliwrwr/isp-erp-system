@@ -104,7 +104,6 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'التقارير', icon: 'fas fa-chart-bar', route: '/internet/reports' },
     { label: 'المدراء', icon: 'fas fa-user-shield', route: '/internet/managers' },
     { label: 'سجل العمليات', icon: 'fas fa-history', route: '/internet/log' },
-    { label: 'واتساب', icon: 'fab fa-whatsapp', route: '/internet/whatsapp' },
     { label: 'الإعدادات', icon: 'fas fa-cog', route: '/internet/settings' },
   ],
   sales: [
@@ -136,6 +135,9 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'إرسال رسالة', icon: 'fas fa-paper-plane', route: '/messaging/send' },
     { label: 'القوالب', icon: 'fas fa-file-alt', route: '/messaging/templates' },
     { label: 'السجل', icon: 'fas fa-history', route: '/messaging/history' },
+    { label: 'واتساب الاشتراكات', icon: 'fab fa-whatsapp', route: '/messaging/whatsapp-internet' },
+    { label: 'واتساب الأقساط', icon: 'fab fa-whatsapp', route: '/messaging/whatsapp-installments' },
+    { label: 'واتساب الدعم الفني', icon: 'fab fa-whatsapp', route: '/messaging/whatsapp-support' },
   ],
   restaurant: [
     { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/restaurant' },
@@ -200,6 +202,9 @@ const routePermissions: Record<string, string> = {
   '/messaging/send': 'messaging.send',
   '/messaging/templates': 'messaging.templates',
   '/messaging/history': 'messaging.history',
+  '/messaging/whatsapp-internet': 'messaging.whatsapp_internet',
+  '/messaging/whatsapp-installments': 'messaging.whatsapp_installments',
+  '/messaging/whatsapp-support': 'messaging.whatsapp_support',
   '/restaurant/menu': 'restaurant.menu',
   '/restaurant/tables': 'restaurant.tables',
   '/restaurant/orders': 'restaurant.orders',

@@ -19,6 +19,8 @@ const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const whatsapp_service_1 = require("./whatsapp.service");
 const notification_scheduler_service_1 = require("./notification-scheduler.service");
 const update_settings_dto_1 = require("./dto/update-settings.dto");
+const update_installments_settings_dto_1 = require("./dto/update-installments-settings.dto");
+const update_support_settings_dto_1 = require("./dto/update-support-settings.dto");
 const send_test_dto_1 = require("./dto/send-test.dto");
 let WhatsappController = class WhatsappController {
     whatsappService;
@@ -70,6 +72,18 @@ let WhatsappController = class WhatsappController {
     }
     getLogs(page, limit) {
         return this.whatsappService.getLogs(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 10);
+    }
+    getInstallmentsSettings() {
+        return this.whatsappService.getInstallmentsSettings();
+    }
+    updateInstallmentsSettings(dto) {
+        return this.whatsappService.updateInstallmentsSettings(dto);
+    }
+    getSupportSettings() {
+        return this.whatsappService.getSupportSettings();
+    }
+    updateSupportSettings(dto) {
+        return this.whatsappService.updateSupportSettings(dto);
     }
 };
 exports.WhatsappController = WhatsappController;
@@ -145,6 +159,32 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], WhatsappController.prototype, "getLogs", null);
+__decorate([
+    (0, common_1.Get)('settings-installments'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], WhatsappController.prototype, "getInstallmentsSettings", null);
+__decorate([
+    (0, common_1.Patch)('settings-installments'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [update_installments_settings_dto_1.UpdateInstallmentsSettingsDto]),
+    __metadata("design:returntype", void 0)
+], WhatsappController.prototype, "updateInstallmentsSettings", null);
+__decorate([
+    (0, common_1.Get)('settings-support'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], WhatsappController.prototype, "getSupportSettings", null);
+__decorate([
+    (0, common_1.Patch)('settings-support'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [update_support_settings_dto_1.UpdateSupportSettingsDto]),
+    __metadata("design:returntype", void 0)
+], WhatsappController.prototype, "updateSupportSettings", null);
 exports.WhatsappController = WhatsappController = __decorate([
     (0, swagger_1.ApiTags)('WhatsApp'),
     (0, swagger_1.ApiBearerAuth)(),

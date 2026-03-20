@@ -12,6 +12,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { WhatsappService } from './whatsapp.service';
 import { NotificationSchedulerService } from './notification-scheduler.service';
 import { UpdateWhatsappSettingsDto } from './dto/update-settings.dto';
+import { UpdateInstallmentsSettingsDto } from './dto/update-installments-settings.dto';
+import { UpdateSupportSettingsDto } from './dto/update-support-settings.dto';
 import { SendTestMessageDto } from './dto/send-test.dto';
 
 @ApiTags('WhatsApp')
@@ -102,5 +104,29 @@ export class WhatsappController {
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 10,
     );
+  }
+
+  // ── Installments Settings ─────────────────────────────────────────────────
+
+  @Get('settings-installments')
+  getInstallmentsSettings() {
+    return this.whatsappService.getInstallmentsSettings();
+  }
+
+  @Patch('settings-installments')
+  updateInstallmentsSettings(@Body() dto: UpdateInstallmentsSettingsDto) {
+    return this.whatsappService.updateInstallmentsSettings(dto);
+  }
+
+  // ── Support Settings ──────────────────────────────────────────────────────
+
+  @Get('settings-support')
+  getSupportSettings() {
+    return this.whatsappService.getSupportSettings();
+  }
+
+  @Patch('settings-support')
+  updateSupportSettings(@Body() dto: UpdateSupportSettingsDto) {
+    return this.whatsappService.updateSupportSettings(dto);
   }
 }

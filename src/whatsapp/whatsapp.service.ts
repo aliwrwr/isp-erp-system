@@ -10,7 +10,11 @@ import { Client, LocalAuth } from 'whatsapp-web.js';
 import * as QRCode from 'qrcode';
 import { WhatsappSettings } from './entities/whatsapp-settings.entity';
 import { WhatsappLog } from './entities/whatsapp-log.entity';
+import { WhatsappInstallmentsSettings } from './entities/whatsapp-installments-settings.entity';
+import { WhatsappSupportSettings } from './entities/whatsapp-support-settings.entity';
 import { UpdateWhatsappSettingsDto } from './dto/update-settings.dto';
+import { UpdateInstallmentsSettingsDto } from './dto/update-installments-settings.dto';
+import { UpdateSupportSettingsDto } from './dto/update-support-settings.dto';
 
 @Injectable()
 export class WhatsappService implements OnModuleInit, OnModuleDestroy {
@@ -26,6 +30,10 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private settingsRepository: Repository<WhatsappSettings>,
     @InjectRepository(WhatsappLog)
     private logRepository: Repository<WhatsappLog>,
+    @InjectRepository(WhatsappInstallmentsSettings)
+    private installmentsSettingsRepository: Repository<WhatsappInstallmentsSettings>,
+    @InjectRepository(WhatsappSupportSettings)
+    private supportSettingsRepository: Repository<WhatsappSupportSettings>,
   ) {}
 
   async onModuleInit() {
@@ -356,5 +364,123 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       hasQR: !!this.qrDataUrl,
       qr: this.qrDataUrl,
     };
+  }
+
+  // ─── Installments Settings ────────────────────────────────────────────────────
+
+  async getInstallmentsSettings(): Promise<WhatsappInstallmentsSettings> {
+    let settings = await this.installmentsSettingsRepository.findOne({ where: { id: 1 } });
+    if (!settings) {
+      settings = await this.installmentsSettingsRepository.save(
+        this.installmentsSettingsRepository.create({}),
+      );
+    }
+    return settings;
+  }
+
+  async updateInstallmentsSettings(dto: UpdateInstallmentsSettingsDto): Promise<WhatsappInstallmentsSettings> {
+    const existing = await this.getInstallmentsSettings();
+    await this.installmentsSettingsRepository.update(existing.id, dto as any);
+    return this.getInstallmentsSettings();
+  }
+
+  async sendInstallmentPaymentReceivedNotification(
+    customerPhone: string,
+    customerName: string,
+    amount: number,
+    contractNumber: string,
+    installmentNo: number,
+    remaining: number,
+  ): Promise<void> {
+    try {
+      const settings = await this.getInstallmentsSettings();
+      if (!settings.paymentReceivedEnabled) return;
+      const message = this.renderTemplate(settings.paymentReceivedTemplate, {
+        name: customerName,
+        amount: amount.toLocaleString('ar-IQ'),
+        contract: contractNumber,
+        installmentNo: String(installmentNo),
+        remaining: remaining.toLocaleString('ar-IQ'),
+      });
+      await this.sendMessage(customerPhone, message, 'installment_received', customerName);
+    } catch (err) {
+      this.logger.error('Failed to send installment payment received notification', err);
+    }
+  }
+
+  // ─── Support Settings ─────────────────────────────────────────────────────────
+
+  async getSupportSettings(): Promise<WhatsappSupportSettings> {
+    let settings = await this.supportSettingsRepository.findOne({ where: { id: 1 } });
+    if (!settings) {
+      settings = await this.supportSettingsRepository.save(
+        this.supportSettingsRepository.create({}),
+      );
+    }
+    return settings;
+  }
+
+  async updateSupportSettings(dto: UpdateSupportSettingsDto): Promise<WhatsappSupportSettings> {
+    const existing = await this.getSupportSettings();
+    await this.supportSettingsRepository.update(existing.id, dto as any);
+    return this.getSupportSettings();
+  }
+
+  async sendTicketCreatedNotification(
+    customerPhone: string,
+    customerName: string,
+    ticketId: number | string,
+    description: string,
+  ): Promise<void> {
+    try {
+      const settings = await this.getSupportSettings();
+      if (!settings.ticketCreatedEnabled) return;
+      const message = this.renderTemplate(settings.ticketCreatedTemplate, {
+        name: customerName,
+        ticketId: String(ticketId),
+        description,
+      });
+      await this.sendMessage(customerPhone, message, 'ticket_created', customerName);
+    } catch (err) {
+      this.logger.error('Failed to send ticket created notification', err);
+    }
+  }
+
+  async sendTicketResolvedNotification(
+    customerPhone: string,
+    customerName: string,
+    ticketId: number | string,
+  ): Promise<void> {
+    try {
+      const settings = await this.getSupportSettings();
+      if (!settings.ticketResolvedEnabled) return;
+      const message = this.renderTemplate(settings.ticketResolvedTemplate, {
+        name: customerName,
+        ticketId: String(ticketId),
+      });
+      await this.sendMessage(customerPhone, message, 'ticket_resolved', customerName);
+    } catch (err) {
+      this.logger.error('Failed to send ticket resolved notification', err);
+    }
+  }
+
+  async sendTechAssignedNotification(
+    customerPhone: string,
+    customerName: string,
+    ticketId: number | string,
+    techName: string,
+  ): Promise<void> {
+    try {
+      const settings = await this.getSupportSettings();
+      if (!settings.techAssignedEnabled) return;
+      const message = this.renderTemplate(settings.techAssignedTemplate, {
+        name: customerName,
+        ticketId: String(ticketId),
+        techName,
+      });
+      await this.sendMessage(customerPhone, message, 'tech_assigned', customerName);
+    } catch (err) {
+      this.logger.error('Failed to send tech assigned notification', err);
+    }
   }
 }
