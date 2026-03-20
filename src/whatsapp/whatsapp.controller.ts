@@ -106,6 +106,12 @@ export class WhatsappController {
     );
   }
 
+  /** Get WhatsApp message stats */
+  @Get('stats')
+  getStats() {
+    return this.whatsappService.getStats();
+  }
+
   // ── Installments Settings ─────────────────────────────────────────────────
 
   @Get('settings-installments')

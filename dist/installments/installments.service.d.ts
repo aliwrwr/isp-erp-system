@@ -2,11 +2,13 @@ import { Repository } from 'typeorm';
 import { InstallmentCustomer } from './entities/installment-customer.entity';
 import { InstallmentContract } from './entities/installment-contract.entity';
 import { InstallmentPayment } from './entities/installment-payment.entity';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 export declare class InstallmentsService {
     private customersRepo;
     private contractsRepo;
     private paymentsRepo;
-    constructor(customersRepo: Repository<InstallmentCustomer>, contractsRepo: Repository<InstallmentContract>, paymentsRepo: Repository<InstallmentPayment>);
+    private readonly whatsappService;
+    constructor(customersRepo: Repository<InstallmentCustomer>, contractsRepo: Repository<InstallmentContract>, paymentsRepo: Repository<InstallmentPayment>, whatsappService: WhatsappService);
     getDashboard(): Promise<{
         totalCustomers: number;
         totalContracts: number;

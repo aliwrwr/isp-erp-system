@@ -35,6 +35,11 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
         data: WhatsappLog[];
         total: number;
     }>;
+    getStats(): Promise<{
+        total: number;
+        success: number;
+        failed: number;
+    }>;
     getSettings(): Promise<WhatsappSettings>;
     updateSettings(dto: UpdateWhatsappSettingsDto): Promise<WhatsappSettings>;
     getStatus(): {

@@ -4,6 +4,7 @@ import { Repository, Like, Between, MoreThanOrEqual, LessThanOrEqual } from 'typ
 import { InstallmentCustomer } from './entities/installment-customer.entity';
 import { InstallmentContract } from './entities/installment-contract.entity';
 import { InstallmentPayment } from './entities/installment-payment.entity';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class InstallmentsService {
@@ -11,6 +12,7 @@ export class InstallmentsService {
     @InjectRepository(InstallmentCustomer) private customersRepo: Repository<InstallmentCustomer>,
     @InjectRepository(InstallmentContract) private contractsRepo: Repository<InstallmentContract>,
     @InjectRepository(InstallmentPayment)  private paymentsRepo:  Repository<InstallmentPayment>,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   // ─── Dashboard ────────────────────────────────────────────────────
@@ -188,6 +190,18 @@ export class InstallmentsService {
       status: newStatus,
       nextDueDate: nextDue,
     });
+
+    // Send WhatsApp notification if customer has a phone number
+    if (contract.customer?.phone) {
+      this.whatsappService.sendInstallmentPaymentReceivedNotification(
+        contract.customer.phone,
+        contract.customer.name,
+        Number(dto.amount),
+        contract.contractNumber,
+        newPaid,
+        newRemaining,
+      );
+    }
 
     return saved;
   }

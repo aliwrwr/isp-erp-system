@@ -19,14 +19,17 @@ const typeorm_2 = require("typeorm");
 const installment_customer_entity_1 = require("./entities/installment-customer.entity");
 const installment_contract_entity_1 = require("./entities/installment-contract.entity");
 const installment_payment_entity_1 = require("./entities/installment-payment.entity");
+const whatsapp_service_1 = require("../whatsapp/whatsapp.service");
 let InstallmentsService = class InstallmentsService {
     customersRepo;
     contractsRepo;
     paymentsRepo;
-    constructor(customersRepo, contractsRepo, paymentsRepo) {
+    whatsappService;
+    constructor(customersRepo, contractsRepo, paymentsRepo, whatsappService) {
         this.customersRepo = customersRepo;
         this.contractsRepo = contractsRepo;
         this.paymentsRepo = paymentsRepo;
+        this.whatsappService = whatsappService;
     }
     async getDashboard() {
         const [totalCustomers, totalContracts, activeContracts, lateContracts] = await Promise.all([
@@ -184,6 +187,9 @@ let InstallmentsService = class InstallmentsService {
             status: newStatus,
             nextDueDate: nextDue,
         });
+        if (contract.customer?.phone) {
+            this.whatsappService.sendInstallmentPaymentReceivedNotification(contract.customer.phone, contract.customer.name, Number(dto.amount), contract.contractNumber, newPaid, newRemaining);
+        }
         return saved;
     }
     async removePayment(id) {
@@ -233,6 +239,7 @@ exports.InstallmentsService = InstallmentsService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(installment_payment_entity_1.InstallmentPayment)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        whatsapp_service_1.WhatsappService])
 ], InstallmentsService);
 //# sourceMappingURL=installments.service.js.map

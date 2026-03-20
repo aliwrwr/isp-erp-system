@@ -12,12 +12,13 @@ const typeorm_1 = require("@nestjs/typeorm");
 const ticket_entity_1 = require("./entities/ticket.entity");
 const tickets_service_1 = require("./tickets.service");
 const tickets_controller_1 = require("./tickets.controller");
+const whatsapp_module_1 = require("../whatsapp/whatsapp.module");
 let SupportModule = class SupportModule {
 };
 exports.SupportModule = SupportModule;
 exports.SupportModule = SupportModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([ticket_entity_1.Ticket])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([ticket_entity_1.Ticket]), whatsapp_module_1.WhatsappModule],
         controllers: [tickets_controller_1.TicketsController],
         providers: [tickets_service_1.TicketsService],
         exports: [tickets_service_1.TicketsService, typeorm_1.TypeOrmModule],

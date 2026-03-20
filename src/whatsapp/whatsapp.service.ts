@@ -337,6 +337,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     return { data, total };
   }
 
+  async getStats(): Promise<{ total: number; success: number; failed: number }> {
+    const [total, success] = await Promise.all([
+      this.logRepository.count(),
+      this.logRepository.count({ where: { success: true } }),
+    ]);
+    return { total, success, failed: total - success };
+  }
+
   async getSettings(): Promise<WhatsappSettings> {
     let settings = await this.settingsRepository.findOne({ where: { id: 1 } });
     if (!settings) {

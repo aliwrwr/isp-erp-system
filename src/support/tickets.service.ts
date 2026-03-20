@@ -4,17 +4,35 @@ import { Repository } from 'typeorm';
 import { Ticket, TicketStatus } from './entities/ticket.entity';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class TicketsService {
   constructor(
     @InjectRepository(Ticket)
     private ticketsRepository: Repository<Ticket>,
+    private readonly whatsappService: WhatsappService,
   ) {}
 
-  create(createTicketDto: CreateTicketDto): Promise<Ticket> {
+  async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
     const ticket = this.ticketsRepository.create(createTicketDto);
-    return this.ticketsRepository.save(ticket);
+    const saved = await this.ticketsRepository.save(ticket);
+
+    // Send WhatsApp notification if subscriber has a phone
+    if (createTicketDto.subscriberId) {
+      try {
+        const withRelations = await this.findOne(saved.id);
+        const phone = withRelations.subscriber?.phone;
+        const name = withRelations.subscriber?.name ?? '';
+        if (phone) {
+          this.whatsappService.sendTicketCreatedNotification(
+            phone, name, saved.id, createTicketDto.description,
+          );
+        }
+      } catch (_) {}
+    }
+
+    return saved;
   }
 
   findAll(status?: string, priority?: string): Promise<Ticket[]> {
@@ -41,6 +59,11 @@ export class TicketsService {
   async update(id: number, updateTicketDto: UpdateTicketDto): Promise<Ticket> {
     const ticket = await this.findOne(id);
 
+    const wasResolved = ticket.status === TicketStatus.RESOLVED;
+    const oldAssignedToId = ticket.assignedToId;
+    const subscriberPhone = ticket.subscriber?.phone;
+    const subscriberName = ticket.subscriber?.name ?? '';
+
     // Set resolvedAt when status changes to resolved
     if (
       updateTicketDto.status === TicketStatus.RESOLVED &&
@@ -51,7 +74,27 @@ export class TicketsService {
     } else {
       Object.assign(ticket, updateTicketDto);
     }
-    return this.ticketsRepository.save(ticket);
+    const saved = await this.ticketsRepository.save(ticket);
+
+    // Send ticket resolved notification
+    if (!wasResolved && saved.status === TicketStatus.RESOLVED && subscriberPhone) {
+      this.whatsappService.sendTicketResolvedNotification(subscriberPhone, subscriberName, saved.id);
+    }
+
+    // Send tech assigned notification (new or changed assignment)
+    if (
+      updateTicketDto.assignedToId &&
+      updateTicketDto.assignedToId !== oldAssignedToId &&
+      subscriberPhone
+    ) {
+      try {
+        const reloaded = await this.findOne(saved.id);
+        const techName = reloaded.assignedTo?.name ?? '';
+        this.whatsappService.sendTechAssignedNotification(subscriberPhone, subscriberName, saved.id, techName);
+      } catch (_) {}
+    }
+
+    return saved;
   }
 
   async remove(id: number): Promise<void> {

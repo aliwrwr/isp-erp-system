@@ -14,12 +14,13 @@ const installment_contract_entity_1 = require("./entities/installment-contract.e
 const installment_payment_entity_1 = require("./entities/installment-payment.entity");
 const installments_service_1 = require("./installments.service");
 const installments_controller_1 = require("./installments.controller");
+const whatsapp_module_1 = require("../whatsapp/whatsapp.module");
 let InstallmentsModule = class InstallmentsModule {
 };
 exports.InstallmentsModule = InstallmentsModule;
 exports.InstallmentsModule = InstallmentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([installment_customer_entity_1.InstallmentCustomer, installment_contract_entity_1.InstallmentContract, installment_payment_entity_1.InstallmentPayment])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([installment_customer_entity_1.InstallmentCustomer, installment_contract_entity_1.InstallmentContract, installment_payment_entity_1.InstallmentPayment]), whatsapp_module_1.WhatsappModule],
         controllers: [installments_controller_1.InstallmentsController],
         providers: [installments_service_1.InstallmentsService],
     })

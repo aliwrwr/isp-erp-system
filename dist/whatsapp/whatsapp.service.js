@@ -309,6 +309,13 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         });
         return { data, total };
     }
+    async getStats() {
+        const [total, success] = await Promise.all([
+            this.logRepository.count(),
+            this.logRepository.count({ where: { success: true } }),
+        ]);
+        return { total, success, failed: total - success };
+    }
     async getSettings() {
         let settings = await this.settingsRepository.findOne({ where: { id: 1 } });
         if (!settings) {

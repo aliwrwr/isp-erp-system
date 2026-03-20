@@ -43,6 +43,11 @@ export declare class WhatsappController {
         data: import("./entities/whatsapp-log.entity").WhatsappLog[];
         total: number;
     }>;
+    getStats(): Promise<{
+        total: number;
+        success: number;
+        failed: number;
+    }>;
     getInstallmentsSettings(): Promise<import("./entities/whatsapp-installments-settings.entity").WhatsappInstallmentsSettings>;
     updateInstallmentsSettings(dto: UpdateInstallmentsSettingsDto): Promise<import("./entities/whatsapp-installments-settings.entity").WhatsappInstallmentsSettings>;
     getSupportSettings(): Promise<import("./entities/whatsapp-support-settings.entity").WhatsappSupportSettings>;

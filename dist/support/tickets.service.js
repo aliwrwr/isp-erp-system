@@ -17,14 +17,29 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const ticket_entity_1 = require("./entities/ticket.entity");
+const whatsapp_service_1 = require("../whatsapp/whatsapp.service");
 let TicketsService = class TicketsService {
     ticketsRepository;
-    constructor(ticketsRepository) {
+    whatsappService;
+    constructor(ticketsRepository, whatsappService) {
         this.ticketsRepository = ticketsRepository;
+        this.whatsappService = whatsappService;
     }
-    create(createTicketDto) {
+    async create(createTicketDto) {
         const ticket = this.ticketsRepository.create(createTicketDto);
-        return this.ticketsRepository.save(ticket);
+        const saved = await this.ticketsRepository.save(ticket);
+        if (createTicketDto.subscriberId) {
+            try {
+                const withRelations = await this.findOne(saved.id);
+                const phone = withRelations.subscriber?.phone;
+                const name = withRelations.subscriber?.name ?? '';
+                if (phone) {
+                    this.whatsappService.sendTicketCreatedNotification(phone, name, saved.id, createTicketDto.description);
+                }
+            }
+            catch (_) { }
+        }
+        return saved;
     }
     findAll(status, priority) {
         const query = this.ticketsRepository.createQueryBuilder('ticket')
@@ -48,6 +63,10 @@ let TicketsService = class TicketsService {
     }
     async update(id, updateTicketDto) {
         const ticket = await this.findOne(id);
+        const wasResolved = ticket.status === ticket_entity_1.TicketStatus.RESOLVED;
+        const oldAssignedToId = ticket.assignedToId;
+        const subscriberPhone = ticket.subscriber?.phone;
+        const subscriberName = ticket.subscriber?.name ?? '';
         if (updateTicketDto.status === ticket_entity_1.TicketStatus.RESOLVED &&
             ticket.status !== ticket_entity_1.TicketStatus.RESOLVED) {
             Object.assign(ticket, updateTicketDto);
@@ -56,7 +75,21 @@ let TicketsService = class TicketsService {
         else {
             Object.assign(ticket, updateTicketDto);
         }
-        return this.ticketsRepository.save(ticket);
+        const saved = await this.ticketsRepository.save(ticket);
+        if (!wasResolved && saved.status === ticket_entity_1.TicketStatus.RESOLVED && subscriberPhone) {
+            this.whatsappService.sendTicketResolvedNotification(subscriberPhone, subscriberName, saved.id);
+        }
+        if (updateTicketDto.assignedToId &&
+            updateTicketDto.assignedToId !== oldAssignedToId &&
+            subscriberPhone) {
+            try {
+                const reloaded = await this.findOne(saved.id);
+                const techName = reloaded.assignedTo?.name ?? '';
+                this.whatsappService.sendTechAssignedNotification(subscriberPhone, subscriberName, saved.id, techName);
+            }
+            catch (_) { }
+        }
+        return saved;
     }
     async remove(id) {
         const ticket = await this.findOne(id);
@@ -77,6 +110,7 @@ exports.TicketsService = TicketsService;
 exports.TicketsService = TicketsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(ticket_entity_1.Ticket)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        whatsapp_service_1.WhatsappService])
 ], TicketsService);
 //# sourceMappingURL=tickets.service.js.map

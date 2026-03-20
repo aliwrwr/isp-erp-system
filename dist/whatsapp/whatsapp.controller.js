@@ -73,6 +73,9 @@ let WhatsappController = class WhatsappController {
     getLogs(page, limit) {
         return this.whatsappService.getLogs(page ? parseInt(page, 10) : 1, limit ? parseInt(limit, 10) : 10);
     }
+    getStats() {
+        return this.whatsappService.getStats();
+    }
     getInstallmentsSettings() {
         return this.whatsappService.getInstallmentsSettings();
     }
@@ -159,6 +162,12 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], WhatsappController.prototype, "getLogs", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], WhatsappController.prototype, "getStats", null);
 __decorate([
     (0, common_1.Get)('settings-installments'),
     __metadata("design:type", Function),
