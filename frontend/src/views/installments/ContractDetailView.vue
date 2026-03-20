@@ -223,6 +223,14 @@
             <div class="bg-gradient-to-l from-indigo-600 to-blue-500 px-5 py-4 flex items-center justify-between no-print">
               <h3 class="text-white font-bold flex items-center gap-2"><i class="fas fa-receipt"></i> سند قبض</h3>
               <div class="flex items-center gap-2">
+                <!-- Paper size selector -->
+                <select v-model="paperSize"
+                  class="bg-white/20 border-0 text-white text-xs font-bold rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-white/50 appearance-none cursor-pointer"
+                  title="حجم الورق">
+                  <option value="A5" class="text-gray-800">A5</option>
+                  <option value="80mm" class="text-gray-800">حراري 80mm</option>
+                  <option value="58mm" class="text-gray-800">حراري 58mm</option>
+                </select>
                 <button @click="doPrint" class="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition">
                   <i class="fas fa-print"></i> طباعة
                 </button>
@@ -348,6 +356,7 @@ const savingPay          = ref(false);
 const deletePaymentTarget = ref<any>(null);
 const deletingPay        = ref(false);
 const receiptData        = ref<any>(null);
+const paperSize          = ref<'A5' | '80mm' | '58mm'>('A5');
 
 const emptyPay = () => ({ amount: 0, date: new Date().toISOString().split('T')[0], notes: '', receivedBy: '' });
 const payForm  = ref(emptyPay());
@@ -407,7 +416,100 @@ function printReceipt(p: any, idx: number) {
 }
 
 function doPrint() {
-  window.print();
+  if (!receiptData.value) return;
+  const d = receiptData.value;
+
+  const pageCSS: Record<string, string> = {
+    'A5':   '@page { size: A5 portrait; margin: 12mm 15mm; }',
+    '80mm': '@page { size: 80mm auto;  margin: 4mm 5mm; }',
+    '58mm': '@page { size: 58mm auto;  margin: 3mm 4mm; }',
+  };
+  const bodyW: Record<string, string> = {
+    'A5': '100%', '80mm': '70mm', '58mm': '50mm',
+  };
+  const fz: Record<string, string> = {
+    'A5': '13px', '80mm': '11.5px', '58mm': '10px',
+  };
+  const ps = paperSize.value;
+
+  const maybeRow = (label: string, val: string | undefined, cls = '') =>
+    val ? `<div class="row"><span class="lbl">${label}</span><span class="val ${cls}">${val}</span></div>` : '';
+
+  const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>سند قبض - ${d.contractNumber}</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+${pageCSS[ps]}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Arial','Tahoma',sans-serif;
+  font-size:${fz[ps]};
+  color:#111;background:#fff;
+  width:${bodyW[ps]};margin:0 auto;direction:rtl;
+}
+.hdr{text-align:center;border-bottom:2px dashed #cbd5e1;padding-bottom:10px;margin-bottom:10px}
+.ico{width:46px;height:46px;border-radius:50%;background:#e0e7ff;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 6px;font-size:20px;color:#4f46e5}
+.hdr-title{font-size:1.1em;font-weight:900;color:#1e293b}
+.hdr-sub{font-size:.75em;color:#94a3b8;margin-top:2px}
+.row{display:flex;justify-content:space-between;align-items:center;
+  padding:5px 0;border-bottom:1px solid #f1f5f9}
+.lbl{color:#64748b}
+.val{font-weight:700}
+.val.mono{font-family:monospace}
+.val.indigo{color:#4f46e5}
+.val.red{color:#dc2626}
+.val.sm{font-size:.85em}
+.amt{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;
+  padding:8px 12px;display:flex;justify-content:space-between;
+  align-items:center;margin:8px 0}
+.amt-lbl{color:#15803d;font-weight:700}
+.amt-val{font-size:1.25em;font-weight:900;color:#16a34a}
+.sig{border-top:1px dashed #cbd5e1;margin-top:12px;padding-top:10px;
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:center}
+.sig-line{height:28px;border-bottom:1px solid #d1d5db;margin-bottom:3px}
+.sig-lbl{font-size:.7em;color:#9ca3af}
+.footer{text-align:center;font-size:.7em;color:#9ca3af;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="ico"><i class="fas fa-hand-holding-usd"></i></div>
+  <div class="hdr-title">نظام الأقساط</div>
+  <div class="hdr-sub">سند قبض</div>
+</div>
+<div class="row"><span class="lbl">رقم السند</span><span class="val mono indigo">#${String(d.paymentId).padStart(6,'0')}</span></div>
+<div class="row"><span class="lbl">رقم العقد</span><span class="val mono">${d.contractNumber}</span></div>
+<div class="row"><span class="lbl">التاريخ</span><span class="val">${d.date}</span></div>
+<div class="row"><span class="lbl">اسم العميل</span><span class="val">${d.customerName||''}</span></div>
+${maybeRow('الهاتف', d.customerPhone ? `<span dir="ltr">${d.customerPhone}</span>` : undefined)}
+<div class="row"><span class="lbl">المنتج</span><span class="val">${d.productName||''}</span></div>
+<div class="row"><span class="lbl">رقم القسط</span><span class="val">${d.installmentNo} / ${d.installmentCount}</span></div>
+<div class="amt">
+  <span class="amt-lbl">المبلغ المدفوع</span>
+  <span class="amt-val">${d.amount}</span>
+</div>
+<div class="row"><span class="lbl">المتبقي بعد الدفعة</span><span class="val red">${d.remaining}</span></div>
+${maybeRow('استلم بواسطة', d.receivedBy)}
+${maybeRow('ملاحظات', d.notes, 'sm')}
+<div class="sig">
+  <div><div class="sig-line"></div><div class="sig-lbl">توقيع المستلم</div></div>
+  <div><div class="sig-line"></div><div class="sig-lbl">توقيع العميل</div></div>
+</div>
+<div class="footer">شكراً لتعاملكم — نظام الأقساط</div>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=520,height=720');
+  if (!win) { alert('يرجى السماح بالنوافذ المنبثقة'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  // wait for FA font to load then print
+  setTimeout(() => { win.print(); }, 900);
 }
 
 async function confirmDeletePayment() {
@@ -436,18 +538,5 @@ onMounted(load);
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 .modal-enter-active, .modal-leave-active { transition: all .2s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.95); }
-
-@media print {
-  body > *:not(#receipt-print-root) { display: none !important; }
-  .no-print { display: none !important; }
-  #receipt-area {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 80mm;
-    margin: auto;
-    padding: 10mm;
-    font-size: 12px;
-    color: #000;
-  }
-}
+select option { background: #fff; color: #1e293b; }
 </style>
