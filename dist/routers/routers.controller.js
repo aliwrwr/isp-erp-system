@@ -122,6 +122,13 @@ let RoutersController = class RoutersController {
         const online = await this.mikrotikService.ping(router);
         return { online };
     }
+    async pingHost(id, body) {
+        const router = await this.routersService.findOne(+id);
+        if (!router)
+            return { success: false, results: [] };
+        const results = await this.mikrotikService.pingHost(router, body.host);
+        return { success: true, results };
+    }
 };
 exports.RoutersController = RoutersController;
 __decorate([
@@ -241,6 +248,17 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], RoutersController.prototype, "ping", null);
+__decorate([
+    (0, common_1.Post)(':id/ping-host'),
+    (0, common_1.HttpCode)(200),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.connected'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "pingHost", null);
 exports.RoutersController = RoutersController = __decorate([
     (0, swagger_1.ApiTags)('Routers'),
     (0, swagger_1.ApiBearerAuth)(),

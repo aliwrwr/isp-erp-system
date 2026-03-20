@@ -165,4 +165,15 @@ export class RoutersController {
     const online = await this.mikrotikService.ping(router);
     return { online };
   }
+
+  @Post(':id/ping-host')
+  @HttpCode(200)
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.connected')
+  async pingHost(@Param('id') id: string, @Body() body: { host: string }) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return { success: false, results: [] };
+    const results = await this.mikrotikService.pingHost(router, body.host);
+    return { success: true, results };
+  }
 }

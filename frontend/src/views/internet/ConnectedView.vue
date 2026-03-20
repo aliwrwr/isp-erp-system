@@ -147,8 +147,12 @@
           </thead>
           <tbody>
             <tr v-for="(conn, i) in pagedConnections" :key="conn.id + conn.routerId"
-              class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-              :class="selectedIds.has(conn.id + '_' + conn.routerId) ? 'bg-blue-50' : ''">
+              class="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer select-none"
+              :class="selectedIds.has(conn.id + '_' + conn.routerId) ? 'bg-blue-50' : ''"
+              @contextmenu.prevent="openContextMenu($event, conn)"
+              @mousedown="startLongPress($event, conn)"
+              @mouseup="cancelLongPress"
+              @mouseleave="cancelLongPress">
               <!-- Checkbox -->
               <td class="px-2 py-2 text-center">
                 <input type="checkbox"
@@ -282,6 +286,205 @@
       </div>
     </Transition>
 
+    <!-- ── Context Menu ── -->
+    <Teleport to="body">
+      <div v-if="ctxMenu.visible"
+        class="fixed z-[200] bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 w-52 text-sm overflow-hidden"
+        :style="{ top: ctxMenu.y + 'px', left: ctxMenu.x + 'px' }"
+        @click.stop>
+        <!-- Header -->
+        <div class="px-3 py-2 border-b border-gray-100 mb-1">
+          <p class="font-semibold text-gray-800 text-xs truncate">{{ ctxMenu.conn?.name }}</p>
+          <p class="text-[10px] text-gray-400 font-mono">{{ ctxMenu.conn?.address }}</p>
+        </div>
+        <!-- Items -->
+        <button @click="openFlow(ctxMenu.conn!); ctxMenu.visible = false"
+          class="w-full flex items-center gap-3 px-4 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition text-xs">
+          <span class="w-6 text-center text-blue-500"><i class="fas fa-tachometer-alt"></i></span>
+          تدفق البيانات
+        </button>
+        <button @click="openDetails(ctxMenu.conn!); ctxMenu.visible = false"
+          class="w-full flex items-center gap-3 px-4 py-2 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 transition text-xs">
+          <span class="w-6 text-center text-indigo-500"><i class="fas fa-info-circle"></i></span>
+          عرض التفاصيل
+        </button>
+        <button @click="openPing(ctxMenu.conn!); ctxMenu.visible = false"
+          class="w-full flex items-center gap-3 px-4 py-2 hover:bg-green-50 text-gray-700 hover:text-green-700 transition text-xs">
+          <span class="w-6 text-center text-green-500"><i class="fas fa-satellite-dish"></i></span>
+          Ping
+        </button>
+        <div class="border-t border-gray-100 mt-1 pt-1"></div>
+        <button @click="disconnectOne(ctxMenu.conn!); ctxMenu.visible = false"
+          class="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 text-red-600 hover:text-red-700 transition text-xs">
+          <span class="w-6 text-center"><i class="fas fa-sign-out-alt"></i></span>
+          قطع الاتصال
+        </button>
+      </div>
+      <!-- Backdrop -->
+      <div v-if="ctxMenu.visible" class="fixed inset-0 z-[199]" @click="ctxMenu.visible = false" @contextmenu.prevent="ctxMenu.visible = false"></div>
+    </Teleport>
+
+    <!-- ── Details Modal ── -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="detailsModal.visible" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="detailsModal.visible = false"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md" dir="rtl">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-info-circle text-indigo-500"></i>
+                تفاصيل الاتصال
+              </h3>
+              <button @click="detailsModal.visible = false" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </div>
+            <div class="px-5 py-4 space-y-2.5 text-sm" v-if="detailsModal.conn">
+              <div v-for="row in detailsRows(detailsModal.conn)" :key="row.label" class="flex items-start justify-between gap-4">
+                <span class="text-gray-500 text-xs whitespace-nowrap">{{ row.label }}</span>
+                <span class="font-medium text-gray-800 text-xs text-left font-mono break-all">{{ row.value }}</span>
+              </div>
+            </div>
+            <div class="px-5 py-3 border-t border-gray-100 flex gap-2 justify-end">
+              <button @click="openPing(detailsModal.conn!); detailsModal.visible = false"
+                class="px-4 py-1.5 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs font-medium transition flex items-center gap-1.5">
+                <i class="fas fa-satellite-dish"></i> Ping
+              </button>
+              <button @click="disconnectOne(detailsModal.conn!); detailsModal.visible = false"
+                class="px-4 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-medium transition flex items-center gap-1.5">
+                <i class="fas fa-sign-out-alt"></i> قطع الاتصال
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ── Data Flow Modal ── -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="flowModal.visible" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeFlow"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm" dir="rtl">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-tachometer-alt text-blue-500"></i>
+                تدفق البيانات
+              </h3>
+              <button @click="closeFlow" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </div>
+            <div class="px-5 py-5" v-if="flowModal.conn">
+              <p class="text-xs font-semibold text-gray-500 mb-4 font-mono">{{ flowModal.conn.name }} — {{ flowModal.conn.address }}</p>
+              <!-- Live speed gauges -->
+              <div class="grid grid-cols-2 gap-4 mb-5">
+                <div class="bg-green-50 rounded-xl p-4 text-center border border-green-100">
+                  <i class="fas fa-arrow-down text-green-500 text-lg mb-1"></i>
+                  <p class="text-[10px] text-green-600 font-medium mb-0.5">تحميل</p>
+                  <p class="text-xl font-bold text-green-700">{{ flowModal.speed ? fmtSpeedShort(flowModal.speed.down) : '...' }}</p>
+                  <p class="text-[10px] text-gray-400 mt-1">{{ fmtBytes(flowModal.conn.bytesIn) }} إجمالي</p>
+                </div>
+                <div class="bg-orange-50 rounded-xl p-4 text-center border border-orange-100">
+                  <i class="fas fa-arrow-up text-orange-500 text-lg mb-1"></i>
+                  <p class="text-[10px] text-orange-600 font-medium mb-0.5">رفع</p>
+                  <p class="text-xl font-bold text-orange-700">{{ flowModal.speed ? fmtSpeedShort(flowModal.speed.up) : '...' }}</p>
+                  <p class="text-[10px] text-gray-400 mt-1">{{ fmtBytes(flowModal.conn.bytesOut) }} إجمالي</p>
+                </div>
+              </div>
+              <!-- Speed history bars -->
+              <div class="space-y-2">
+                <div>
+                  <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                    <span>⬇ تاريخ التحميل</span>
+                    <span class="text-green-600 font-medium">{{ flowModal.history.down.length ? fmtSpeedShort(flowModal.history.down.at(-1)!) : '—' }}</span>
+                  </div>
+                  <div class="flex items-end gap-0.5 h-10 bg-gray-50 rounded-lg px-2 py-1">
+                    <div v-for="(v, idx) in flowModal.history.down" :key="idx"
+                      class="flex-1 bg-green-400 rounded-sm transition-all"
+                      :style="{ height: (flowModal.maxDown > 0 ? Math.max(4, v / flowModal.maxDown * 100) : 4) + '%' }"></div>
+                    <div v-for="n in Math.max(0, 20 - flowModal.history.down.length)" :key="'e'+n" class="flex-1 bg-gray-200 rounded-sm h-1"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+                    <span>⬆ تاريخ الرفع</span>
+                    <span class="text-orange-500 font-medium">{{ flowModal.history.up.length ? fmtSpeedShort(flowModal.history.up.at(-1)!) : '—' }}</span>
+                  </div>
+                  <div class="flex items-end gap-0.5 h-10 bg-gray-50 rounded-lg px-2 py-1">
+                    <div v-for="(v, idx) in flowModal.history.up" :key="idx"
+                      class="flex-1 bg-orange-400 rounded-sm transition-all"
+                      :style="{ height: (flowModal.maxUp > 0 ? Math.max(4, v / flowModal.maxUp * 100) : 4) + '%' }"></div>
+                    <div v-for="n in Math.max(0, 20 - flowModal.history.up.length)" :key="'e'+n" class="flex-1 bg-gray-200 rounded-sm h-1"></div>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[10px] text-gray-400 text-center mt-3">يتحدث كل {{ flowModal.interval }}ث تلقائياً</p>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ── Ping Modal ── -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="pingModal.visible" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="pingModal.visible = false"></div>
+          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm" dir="rtl">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-satellite-dish text-green-500"></i>
+                Ping — {{ pingModal.host }}
+              </h3>
+              <button @click="pingModal.visible = false" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </div>
+            <div class="px-5 py-4">
+              <div v-if="pingModal.loading" class="flex items-center justify-center gap-3 py-6 text-gray-500 text-sm">
+                <i class="fas fa-circle-notch fa-spin text-blue-400"></i> جاري إرسال الـ ping...
+              </div>
+              <div v-else-if="pingModal.results.length">
+                <div class="space-y-1.5 mb-4">
+                  <div v-for="r in pingModal.results" :key="r.seq"
+                    class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono"
+                    :class="r.status === 'reply' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'">
+                    <span class="flex items-center gap-2">
+                      <i :class="r.status === 'reply' ? 'fas fa-check-circle text-green-500' : 'fas fa-times-circle text-red-400'"></i>
+                      seq={{ r.seq }}
+                    </span>
+                    <span v-if="r.status === 'reply'">ttl={{ r.ttl }} &nbsp; time={{ r.time.toFixed(1) }}ms</span>
+                    <span v-else>timeout</span>
+                  </div>
+                </div>
+                <!-- Summary -->
+                <div class="bg-gray-50 rounded-xl px-4 py-3 text-xs grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p class="text-gray-400">مُرسَل</p>
+                    <p class="font-bold text-gray-700">{{ pingModal.results.length }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-400">وصل</p>
+                    <p class="font-bold text-green-600">{{ pingModal.results.filter(r => r.status === 'reply').length }}</p>
+                  </div>
+                  <div>
+                    <p class="text-gray-400">متوسط</p>
+                    <p class="font-bold text-blue-600">{{ pingAvg }}ms</p>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-center py-6 text-gray-400 text-sm">لا توجد نتائج</div>
+              <button @click="runPing(pingModal.routerId, pingModal.host)" :disabled="pingModal.loading"
+                class="mt-4 w-full py-2 rounded-xl bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-xs font-semibold transition flex items-center justify-center gap-2">
+                <i class="fas fa-redo"></i> إعادة الـ Ping
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
   </div>
 </template>
 
@@ -338,6 +541,116 @@ const speedMap = ref<Map<string, { down: number; up: number }>>(new Map());
 
 const toast = ref({ show: false, message: '', type: 'success' as 'success' | 'error' });
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ── Context Menu ──────────────────────────────────────────────────────────────
+const ctxMenu = ref<{ visible: boolean; x: number; y: number; conn: Connection | null }>({ visible: false, x: 0, y: 0, conn: null });
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+function openContextMenu(e: MouseEvent, conn: Connection) {
+  const margin = 8;
+  const menuW = 208, menuH = 200;
+  let x = e.clientX + margin;
+  let y = e.clientY + margin;
+  if (x + menuW > window.innerWidth)  x = e.clientX - menuW - margin;
+  if (y + menuH > window.innerHeight) y = e.clientY - menuH - margin;
+  ctxMenu.value = { visible: true, x, y, conn };
+}
+function startLongPress(e: MouseEvent, conn: Connection) {
+  if (e.button !== 0) return;
+  longPressTimer = setTimeout(() => openContextMenu(e, conn), 600);
+}
+function cancelLongPress() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}
+
+// ── Details Modal ─────────────────────────────────────────────────────────────
+const detailsModal = ref<{ visible: boolean; conn: Connection | null }>({ visible: false, conn: null });
+function openDetails(conn: Connection) { detailsModal.value = { visible: true, conn }; }
+function detailsRows(conn: Connection) {
+  const speed = getSpeed(conn);
+  return [
+    { label: 'اسم الدخول',    value: conn.name },
+    { label: 'الاسم الكامل',  value: conn.subscriberName || '—' },
+    { label: 'IP',            value: conn.address || '—' },
+    { label: 'MAC',           value: conn.macAddress || '—' },
+    { label: 'الباقة',        value: conn.packageName || '—' },
+    { label: 'الراوتر',       value: conn.routerName },
+    { label: 'مدة الاتصال',   value: conn.uptime || '—' },
+    { label: 'تحميل إجمالي',  value: fmtBytes(conn.bytesIn) },
+    { label: 'رفع إجمالي',    value: fmtBytes(conn.bytesOut) },
+    { label: 'سرعة التحميل',  value: speed ? fmtSpeed(speed.down) : '—' },
+    { label: 'سرعة الرفع',    value: speed ? fmtSpeed(speed.up) : '—' },
+    { label: 'الحالة',        value: conn.subscriberStatus === 'active' ? 'متصل الصلاحية' : conn.subscriberStatus === 'disabled' ? 'معطل' : 'غير معروف' },
+  ];
+}
+
+// ── Data Flow Modal ───────────────────────────────────────────────────────────
+const flowModal = ref<{
+  visible: boolean; conn: Connection | null;
+  speed: { down: number; up: number } | null;
+  history: { down: number[]; up: number[] };
+  maxDown: number; maxUp: number; interval: number;
+}>({ visible: false, conn: null, speed: null, history: { down: [], up: [] }, maxDown: 0, maxUp: 0, interval: 5 });
+let flowTimer: ReturnType<typeof setInterval> | null = null;
+
+function openFlow(conn: Connection) {
+  flowModal.value = { visible: true, conn, speed: getSpeed(conn) ?? null, history: { down: [], up: [] }, maxDown: 0, maxUp: 0, interval: 5 };
+  if (flowTimer) clearInterval(flowTimer);
+  flowTimer = setInterval(async () => {
+    if (!flowModal.value.visible || !flowModal.value.conn) return;
+    await loadConnections();
+    const updated = connections.value.find(c => connKey(c) === connKey(flowModal.value.conn!)) ?? flowModal.value.conn;
+    flowModal.value.conn = updated;
+    const s = getSpeed(updated);
+    flowModal.value.speed = s ?? null;
+    if (s) {
+      const hd = [...flowModal.value.history.down, s.down].slice(-20);
+      const hu = [...flowModal.value.history.up, s.up].slice(-20);
+      flowModal.value.history = { down: hd, up: hu };
+      flowModal.value.maxDown = Math.max(...hd, 1);
+      flowModal.value.maxUp   = Math.max(...hu, 1);
+    }
+  }, flowModal.value.interval * 1000);
+}
+function closeFlow() {
+  flowModal.value.visible = false;
+  if (flowTimer) { clearInterval(flowTimer); flowTimer = null; }
+}
+function fmtSpeedShort(bps: number): string {
+  if (!bps) return '0';
+  if (bps < 1_000_000)     return (bps / 1_000).toFixed(1) + ' K';
+  if (bps < 1_000_000_000) return (bps / 1_000_000).toFixed(2) + ' M';
+  return (bps / 1_000_000_000).toFixed(2) + ' G';
+}
+
+// ── Ping Modal ────────────────────────────────────────────────────────────────
+const pingModal = ref<{
+  visible: boolean; host: string; routerId: number;
+  loading: boolean; results: { seq: number; ttl: number; time: number; status: string }[];
+}>({ visible: false, host: '', routerId: 0, loading: false, results: [] });
+
+const pingAvg = computed(() => {
+  const replies = pingModal.value.results.filter(r => r.status === 'reply');
+  if (!replies.length) return '—';
+  return (replies.reduce((s, r) => s + r.time, 0) / replies.length).toFixed(1);
+});
+
+function openPing(conn: Connection) {
+  pingModal.value = { visible: true, host: conn.address, routerId: conn.routerId, loading: false, results: [] };
+  runPing(conn.routerId, conn.address);
+}
+async function runPing(routerId: number, host: string) {
+  pingModal.value.loading = true;
+  pingModal.value.results = [];
+  try {
+    const { data } = await api.post(`/routers/${routerId}/ping-host`, { host });
+    pingModal.value.results = data.results ?? [];
+  } catch {
+    showToast('فشل إرسال الـ Ping', 'error');
+  } finally {
+    pingModal.value.loading = false;
+  }
+}
 
 // ── Table columns ─────────────────────────────────────────────────────────────
 const columns = [
@@ -565,6 +878,8 @@ onMounted(() => loadConnections());
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer);
   if (toastTimer) clearTimeout(toastTimer);
+  if (flowTimer) clearInterval(flowTimer);
+  if (longPressTimer) clearTimeout(longPressTimer);
 });
 </script>
 
@@ -573,4 +888,6 @@ onUnmounted(() => {
 .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-8px); }
 .toast-enter-active, .toast-leave-active { transition: all .3s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(12px); }
+.modal-enter-active, .modal-leave-active { transition: all .2s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; transform: scale(.97); }
 </style>

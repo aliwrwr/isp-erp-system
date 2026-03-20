@@ -77,6 +77,29 @@ export class MikrotikService {
     }
   }
 
+  async pingHost(router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string }, host: string): Promise<{ seq: number; ttl: number; time: number; status: string }[]> {
+    const isSsl = router.connectionType === 'API-SSL';
+    const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
+    try {
+      await conn.connect();
+      const raw = await conn.write('/ping', [
+        `=address=${host}`,
+        '=count=4',
+        '=interval=0.5',
+      ]).catch(() => []);
+      conn.close();
+      return (raw as any[]).map((r: any, i: number) => ({
+        seq: i + 1,
+        ttl: parseInt(r.ttl) || 0,
+        time: parseFloat(r.time?.replace('ms', '') || r['response-time']?.replace('ms', '') || '0'),
+        status: r.status === 'timeout' ? 'timeout' : 'reply',
+      }));
+    } catch (err: any) {
+      this.logger.warn(`pingHost failed: ${err.message}`);
+      return [];
+    }
+  }
+
   async getStatus(router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string }): Promise<RouterStatus> {
     const isSsl = router.connectionType === 'API-SSL';
     const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);

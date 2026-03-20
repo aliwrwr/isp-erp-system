@@ -37,4 +37,15 @@ export declare class RoutersController {
     ping(id: string): Promise<{
         online: boolean;
     }>;
+    pingHost(id: string, body: {
+        host: string;
+    }): Promise<{
+        success: boolean;
+        results: {
+            seq: number;
+            ttl: number;
+            time: number;
+            status: string;
+        }[];
+    }>;
 }

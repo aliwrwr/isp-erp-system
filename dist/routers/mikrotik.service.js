@@ -36,6 +36,29 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
             return false;
         }
     }
+    async pingHost(router, host) {
+        const isSsl = router.connectionType === 'API-SSL';
+        const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
+        try {
+            await conn.connect();
+            const raw = await conn.write('/ping', [
+                `=address=${host}`,
+                '=count=4',
+                '=interval=0.5',
+            ]).catch(() => []);
+            conn.close();
+            return raw.map((r, i) => ({
+                seq: i + 1,
+                ttl: parseInt(r.ttl) || 0,
+                time: parseFloat(r.time?.replace('ms', '') || r['response-time']?.replace('ms', '') || '0'),
+                status: r.status === 'timeout' ? 'timeout' : 'reply',
+            }));
+        }
+        catch (err) {
+            this.logger.warn(`pingHost failed: ${err.message}`);
+            return [];
+        }
+    }
     async getStatus(router) {
         const isSsl = router.connectionType === 'API-SSL';
         const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);

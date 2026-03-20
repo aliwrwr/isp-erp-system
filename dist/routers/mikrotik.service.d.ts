@@ -46,6 +46,18 @@ export declare class MikrotikService {
         port?: number;
         connectionType?: string;
     }): Promise<boolean>;
+    pingHost(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, host: string): Promise<{
+        seq: number;
+        ttl: number;
+        time: number;
+        status: string;
+    }[]>;
     getStatus(router: {
         ipAddress: string;
         username: string;
