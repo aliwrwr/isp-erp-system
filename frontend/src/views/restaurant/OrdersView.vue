@@ -312,10 +312,15 @@ function deleteOrder(o: any) {
 async function confirmDelete() {
   if (!deleteTarget.value) return;
   deleting.value = true;
-  await api.delete(`/restaurant/orders/${deleteTarget.value.id}`);
-  deleteTarget.value = null;
-  deleting.value = false;
-  await load();
+  try {
+    await api.delete(`/restaurant/orders/${deleteTarget.value.id}`);
+    deleteTarget.value = null;
+    await load();
+  } catch (e) {
+    console.error('Delete failed', e);
+  } finally {
+    deleting.value = false;
+  }
 }
 
 async function updateStatus(id: number, status: string) {
