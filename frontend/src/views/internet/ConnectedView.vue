@@ -170,13 +170,13 @@
               <!-- Full name -->
               <td class="px-3 py-2 font-medium text-gray-700">{{ conn.subscriberName || '—' }}</td>
               <!-- Download -->
-              <td class="px-3 py-2 text-right font-mono">
-                <div class="text-green-700 font-semibold">⬇ {{ fmtSpeed(conn.txRate) }}</div>
+              <td class="px-3 py-2 text-center font-mono">
+                <div class="text-green-700 font-semibold">⬇ {{ getSpeed(conn) ? fmtSpeed(getSpeed(conn)!.down) : '—' }}</div>
                 <div class="text-gray-400 text-[10px]">{{ fmtBytes(conn.bytesIn) }}</div>
               </td>
               <!-- Upload -->
-              <td class="px-3 py-2 text-right font-mono">
-                <div class="text-orange-600 font-semibold">⬆ {{ fmtSpeed(conn.rxRate) }}</div>
+              <td class="px-3 py-2 text-center font-mono">
+                <div class="text-orange-600 font-semibold">⬆ {{ getSpeed(conn) ? fmtSpeed(getSpeed(conn)!.up) : '—' }}</div>
                 <div class="text-gray-400 text-[10px]">{{ fmtBytes(conn.bytesOut) }}</div>
               </td>
               <!-- Package -->
@@ -295,8 +295,6 @@ interface Connection {
   uptime: string;
   bytesIn: number;
   bytesOut: number;
-  txRate: number;
-  rxRate: number;
   routerId: number;
   routerName: string;
   subscriberId: number | null;
@@ -328,6 +326,11 @@ const selectedIds = ref<Set<string>>(new Set());
 const autoRefresh = ref(false);
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 const lastFetch = ref('');
+
+// ── Speed tracking (delta between polls) ─────────────────────────────────────
+interface SpeedEntry { bytesIn: number; bytesOut: number; ts: number; }
+const prevSnapshot = ref<Map<string, SpeedEntry>>(new Map());
+const speedMap = ref<Map<string, { down: number; up: number }>>(new Map());
 
 const toast = ref({ show: false, message: '', type: 'success' as 'success' | 'error' });
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -361,11 +364,15 @@ function fmtBytes(bytes: number): string {
 }
 
 function fmtSpeed(bps: number): string {
-  if (!bps) return '0 Kbps';
-  if (bps < 1_000)         return bps + ' bps';
+  if (!bps || bps < 0) return '—';
+  if (bps < 1_000)         return bps.toFixed(0) + ' bps';
   if (bps < 1_000_000)     return (bps / 1_000).toFixed(1) + ' Kbps';
   if (bps < 1_000_000_000) return (bps / 1_000_000).toFixed(2) + ' Mbps';
   return (bps / 1_000_000_000).toFixed(2) + ' Gbps';
+}
+
+function getSpeed(conn: Connection) {
+  return speedMap.value.get(connKey(conn)) ?? null;
 }
 
 function formatUptime(uptime: string): string {
@@ -457,7 +464,27 @@ async function loadConnections() {
       api.get('/routers/connections'),
       api.get('/routers'),
     ]);
-    connections.value = connRes.data;
+    const now = Date.now();
+    const newConns: Connection[] = connRes.data;
+
+    // Compute delta-based speeds
+    const newSpeedMap = new Map<string, { down: number; up: number }>();
+    const newSnapshot = new Map<string, SpeedEntry>();
+    for (const c of newConns) {
+      const k = connKey(c);
+      const prev = prevSnapshot.value.get(k);
+      if (prev && now > prev.ts) {
+        const elapsedSec = (now - prev.ts) / 1000;
+        const downBps = Math.max(0, (c.bytesIn - prev.bytesIn) / elapsedSec) * 8;
+        const upBps   = Math.max(0, (c.bytesOut - prev.bytesOut) / elapsedSec) * 8;
+        newSpeedMap.set(k, { down: downBps, up: upBps });
+      }
+      newSnapshot.set(k, { bytesIn: c.bytesIn, bytesOut: c.bytesOut, ts: now });
+    }
+    prevSnapshot.value = newSnapshot;
+    speedMap.value = newSpeedMap;
+
+    connections.value = newConns;
     routers.value = routersRes.data;
     lastFetch.value = new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   } catch (_) {
