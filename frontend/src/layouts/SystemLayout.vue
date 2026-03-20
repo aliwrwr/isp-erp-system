@@ -132,8 +132,6 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
   ],
   messaging: [
     { label: 'لوحة التحكم', icon: 'fas fa-tachometer-alt', route: '/messaging' },
-    { label: 'إرسال رسالة', icon: 'fas fa-paper-plane', route: '/messaging/send' },
-    { label: 'القوالب', icon: 'fas fa-file-alt', route: '/messaging/templates' },
     { label: 'السجل', icon: 'fas fa-history', route: '/messaging/history' },
     { label: 'واتساب الاشتراكات', icon: 'fab fa-whatsapp', route: '/messaging/whatsapp-internet' },
     { label: 'واتساب الأقساط', icon: 'fab fa-whatsapp', route: '/messaging/whatsapp-installments' },

@@ -124,8 +124,6 @@ const routes = [
     meta: { requiresAuth: true, system: 'messaging' },
     children: [
       { path: '', name: 'MessagingDashboard', component: () => import('../views/messaging/DashboardView.vue') },
-      { path: 'send', name: 'SendMessage', component: () => import('../views/messaging/SendMessageView.vue') },
-      { path: 'templates', name: 'Templates', component: () => import('../views/messaging/TemplatesView.vue') },
       { path: 'history', name: 'MessageHistory', component: () => import('../views/messaging/HistoryView.vue') },
       { path: 'whatsapp-internet', name: 'MessagingWhatsAppInternet', component: () => import('../views/messaging/WhatsAppInternetView.vue') },
       { path: 'whatsapp-installments', name: 'MessagingWhatsAppInstallments', component: () => import('../views/messaging/WhatsAppInstallmentsView.vue') },
