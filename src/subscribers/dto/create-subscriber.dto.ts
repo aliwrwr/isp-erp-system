@@ -33,6 +33,10 @@ export class CreateSubscriberDto {
   @IsNotEmpty()
   username: string;
 
+  @IsString()
+  @IsOptional()
+  password?: string;
+
   @IsNumber()
   @IsOptional()
   packageId?: number;

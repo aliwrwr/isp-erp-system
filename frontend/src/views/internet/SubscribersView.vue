@@ -473,8 +473,17 @@
               </p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">اسم المستخدم <span class="text-red-500">*</span></label>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">اسم المستخدم (PPPoE) <span class="text-red-500">*</span></label>
                   <input v-model="form.username" placeholder="username" dir="ltr" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">كلمة المرور (PPPoE) <span class="text-red-500">*</span></label>
+                  <div class="relative">
+                    <input v-model="form.password" type="text" dir="ltr"
+                      :placeholder="editingId ? 'اتركه فارغًا للإبقاء كما هو' : 'password'"
+                      class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition" />
+                    <p v-if="!editingId && !form.password" class="text-[11px] text-amber-500 mt-1">يُنصح باستخدام كلمة مرور مختلفة عن اسم المستخدم</p>
+                  </div>
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-gray-600 mb-1.5">عنوان IP</label>
@@ -1167,7 +1176,7 @@ const editingId = ref<number | null>(null);
 const toast = ref({ show: false, message: '', type: 'success' });
 
 const form = ref({
-  name: '', phone: '', address: '', username: '',
+  name: '', phone: '', address: '', username: '', password: '',
   ipAddress: '', cabinetSector: '', packageId: null as number | null,
   managerId: null as number | null, notes: '',
   subStartDate: '', subEndDate: ''
@@ -1264,7 +1273,7 @@ async function loadData() {
 
 function openAdd() {
   editingId.value = null;
-  form.value = { name: '', phone: '', address: '', username: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, notes: '', subStartDate: '', subEndDate: '' };
+  form.value = { name: '', phone: '', address: '', username: '', password: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, notes: '', subStartDate: '', subEndDate: '' };
   showModal.value = true;
 }
 
@@ -1275,6 +1284,7 @@ function openEdit(sub: any) {
     phone: sub.phone || '',
     address: sub.address || '',
     username: sub.username || '',
+    password: '',  // leave blank = keep current password
     ipAddress: sub.ipAddress || '',
     cabinetSector: sub.cabinetSector || '',
     packageId: sub.package?.id ?? null,
@@ -1299,6 +1309,7 @@ async function save() {
       username: form.value.username.trim(),
       notes: form.value.notes.trim() || undefined,
     };
+    if (form.value.password?.trim()) payload.password = form.value.password.trim();
     if (form.value.ipAddress?.trim()) payload.ipAddress = form.value.ipAddress.trim();
     if (form.value.cabinetSector?.trim()) payload.cabinetSector = form.value.cabinetSector.trim();
     if (form.value.packageId) payload.packageId = Number(form.value.packageId);

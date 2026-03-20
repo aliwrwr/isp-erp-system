@@ -7,6 +7,7 @@ export declare class CreateSubscriberDto {
     cabinetSector?: string;
     ipAddress?: string;
     username: string;
+    password?: string;
     packageId?: number;
     managerId?: number;
     status?: string;

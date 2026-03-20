@@ -36,7 +36,7 @@ let SubscribersService = class SubscribersService {
         const subscriber = this.subscribersRepository.create({
             ...rest,
             status: 'active',
-            password: rest.username,
+            password: rest.password?.trim() || rest.username,
             ...(packageId ? { package: { id: packageId } } : {}),
             ...(managerId ? { manager: { id: managerId } } : {}),
         });

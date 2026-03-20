@@ -25,8 +25,8 @@ export class SubscribersService {
     const subscriber = this.subscribersRepository.create({
       ...rest,
       status: 'active',
-      // Auto-generate password from username
-      password: rest.username,
+      // Use provided password or fall back to username
+      password: rest.password?.trim() || rest.username,
       ...(packageId ? { package: { id: packageId } } : {}),
       ...(managerId ? { manager: { id: managerId } } : {}),
     });
