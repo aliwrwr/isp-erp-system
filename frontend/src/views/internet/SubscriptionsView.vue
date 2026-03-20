@@ -329,214 +329,240 @@
 
   <!-- View Modal -->
   <transition name="modal">
-    <div v-if="showViewModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showViewModal = false">
-      <div v-if="selectedSub" class="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div v-if="showViewModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showViewModal = false">
+      <div v-if="selectedSub" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]" dir="rtl">
 
-        <!-- Header gradient banner -->
-        <div class="bg-gradient-to-l from-blue-600 to-indigo-700 px-6 pt-6 pb-10 relative">
-          <button @click="showViewModal = false" class="absolute top-4 left-4 w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition">
-            <i class="fas fa-times text-sm"></i>
+        <!-- ═══ HEADER ═══ -->
+        <div class="relative bg-gradient-to-bl from-indigo-700 via-blue-600 to-cyan-500 px-6 pt-5 pb-14 overflow-hidden">
+          <!-- decorative circles -->
+          <div class="absolute -top-8 -left-8 w-40 h-40 bg-white/10 rounded-full"></div>
+          <div class="absolute top-4 left-20 w-16 h-16 bg-white/5 rounded-full"></div>
+          <div class="absolute -bottom-6 right-8 w-28 h-28 bg-white/10 rounded-full"></div>
+
+          <button @click="showViewModal = false"
+            class="absolute top-4 left-4 w-8 h-8 rounded-xl bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition z-10">
+            <i class="fas fa-times text-xs"></i>
           </button>
-          <div class="flex items-center gap-4">
+
+          <div class="relative z-10 flex items-center gap-4">
             <!-- Avatar -->
-            <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white text-xl font-bold shadow-inner shrink-0">
+            <div class="w-16 h-16 rounded-2xl bg-white/25 ring-4 ring-white/20 flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg">
               {{ selectedSub.subscriberName?.charAt(0) || '؟' }}
             </div>
-            <div>
-              <p class="text-white/70 text-xs mb-0.5">اشتراك إنترنت</p>
-              <h3 class="text-white text-lg font-bold leading-tight">{{ selectedSub.subscriberName }}</h3>
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full text-xs font-semibold"
-                :class="{
-                  'bg-emerald-400/30 text-emerald-100': selectedSub.status === 'active',
-                  'bg-red-400/30 text-red-100': selectedSub.status === 'expired',
-                  'bg-amber-400/30 text-amber-100': selectedSub.status === 'pending',
-                }">
-                <span class="w-1.5 h-1.5 rounded-full"
+            <div class="flex-1 min-w-0">
+              <p class="text-white/60 text-[11px] font-medium mb-0.5 tracking-wider uppercase">اشتراك إنترنت</p>
+              <h3 class="text-white text-xl font-bold leading-tight truncate">{{ selectedSub.subscriberName }}</h3>
+              <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                <!-- Status badge -->
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
                   :class="{
-                    'bg-emerald-300': selectedSub.status === 'active',
-                    'bg-red-300': selectedSub.status === 'expired',
-                    'bg-amber-300': selectedSub.status === 'pending',
-                  }"></span>
-                {{ { active: 'نشط', expired: 'منتهي', pending: 'معلق' }[selectedSub.status] || selectedSub.status }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Content -->
-        <div class="overflow-y-auto flex-1 -mt-6">
-          <div class="px-6 pb-6 space-y-4">
-
-            <!-- Subscriber info card -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div class="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
-                <i class="fas fa-user text-blue-500 text-xs"></i>
-                <span class="text-xs font-semibold text-gray-600 uppercase tracking-wide">بيانات المشترك</span>
-              </div>
-              <div class="grid grid-cols-2 divide-x divide-x-reverse divide-gray-100">
-                <div class="p-4">
-                  <p class="text-xs text-gray-400 mb-1 flex items-center gap-1"><i class="fas fa-phone text-gray-300 text-xs"></i> رقم الهاتف</p>
-                  <p class="font-mono text-gray-800 font-medium text-sm">{{ selectedSub.phone || '—' }}</p>
-                </div>
-                <div class="p-4">
-                  <p class="text-xs text-gray-400 mb-1 flex items-center gap-1"><i class="fas fa-wifi text-gray-300 text-xs"></i> الباقة</p>
-                  <p class="font-semibold text-indigo-700 text-sm">{{ selectedSub.packageName }}</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dates card -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div class="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
-                <i class="fas fa-calendar-alt text-indigo-500 text-xs"></i>
-                <span class="text-xs font-semibold text-gray-600 uppercase tracking-wide">مدة الاشتراك</span>
-              </div>
-              <div class="p-4">
-                <div class="flex items-center gap-3">
-                  <div class="flex-1 text-center">
-                    <p class="text-xs text-gray-400 mb-1">تاريخ البدء</p>
-                    <p class="text-sm font-semibold text-gray-700">{{ formatDate(selectedSub.startDate) }}</p>
-                  </div>
-                  <div class="flex flex-col items-center gap-1 px-2">
-                    <div class="h-px w-10 bg-gray-200"></div>
-                    <i class="fas fa-arrow-left text-gray-300 text-xs"></i>
-                    <div class="h-px w-10 bg-gray-200"></div>
-                  </div>
-                  <div class="flex-1 text-center">
-                    <p class="text-xs text-gray-400 mb-1">تاريخ الانتهاء</p>
-                    <p class="text-sm font-semibold" :class="isExpiringSoon(selectedSub.endDate) ? 'text-red-600' : 'text-gray-700'">
-                      {{ formatDate(selectedSub.endDate) }}
-                    </p>
-                  </div>
-                </div>
-                <!-- Expiry warning -->
-                <div v-if="isExpiringSoon(selectedSub.endDate) && selectedSub.status === 'active'" class="mt-3 flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-medium">
-                  <i class="fas fa-exclamation-triangle"></i>
-                  ينتهي الاشتراك قريباً — يرجى التجديد
-                </div>
-                <div v-else-if="selectedSub.status === 'expired'" class="mt-3 flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-xl text-xs font-medium">
-                  <i class="fas fa-times-circle"></i>
-                  انتهى الاشتراك
-                </div>
-              </div>
-            </div>
-
-            <!-- Financial card -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div class="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <i class="fas fa-coins text-amber-500 text-xs"></i>
-                  <span class="text-xs font-semibold text-gray-600 uppercase tracking-wide">التفاصيل المالية</span>
-                </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                  :class="{
-                    'bg-green-50 text-green-700': selectedSub.paymentMethod === 'cash',
-                    'bg-orange-50 text-orange-700': selectedSub.paymentMethod === 'credit',
-                    'bg-blue-50 text-blue-700': selectedSub.paymentMethod === 'partial',
+                    'bg-emerald-400/25 text-emerald-100 ring-1 ring-emerald-300/30': selectedSub.status === 'active',
+                    'bg-red-400/25 text-red-100 ring-1 ring-red-300/30': selectedSub.status === 'expired',
+                    'bg-amber-400/25 text-amber-100 ring-1 ring-amber-300/30': selectedSub.status === 'pending',
                   }">
-                  <i class="fas text-xs"
+                  <span class="w-1.5 h-1.5 rounded-full animate-pulse"
                     :class="{
-                      'fa-money-bill-wave': selectedSub.paymentMethod === 'cash',
-                      'fa-clock': selectedSub.paymentMethod === 'credit',
-                      'fa-percentage': selectedSub.paymentMethod === 'partial',
-                    }"></i>
-                  {{ { cash: 'نقداً', credit: 'آجل', partial: 'جزئي' }[selectedSub.paymentMethod] || selectedSub.paymentMethod }}
+                      'bg-emerald-300': selectedSub.status === 'active',
+                      'bg-red-300': selectedSub.status === 'expired',
+                      'bg-amber-300': selectedSub.status === 'pending',
+                    }"></span>
+                  {{ { active: 'نشط', expired: 'منتهي', pending: 'معلق' }[selectedSub.status] || selectedSub.status }}
+                </span>
+                <!-- Package badge -->
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/20 text-white/90">
+                  <i class="fas fa-wifi text-[9px]"></i>
+                  {{ selectedSub.packageName }}
                 </span>
               </div>
-              <div class="p-4">
-                <!-- Case 1: Cash, no debt → paid in full -->
-                <template v-if="selectedSub.paymentMethod === 'cash' && Number(selectedSub.debtAmount || 0) === 0">
-                  <div class="flex items-center justify-between px-4 py-3 bg-green-50 rounded-xl border border-green-100">
-                    <span class="text-sm text-green-700 flex items-center gap-2"><i class="fas fa-check-circle"></i> المبلغ المدفوع نقداً</span>
-                    <span class="text-base font-bold text-green-700 font-mono">{{ Number(selectedSub.price || 0).toLocaleString('ar-IQ') }} <span class="text-xs font-normal">د.ع</span></span>
-                  </div>
-                </template>
+            </div>
+          </div>
+        </div>
 
-                <!-- Case 2: Credit, nothing paid yet -->
-                <template v-else-if="selectedSub.paymentMethod === 'credit' && Number(selectedSub.paidAmount || 0) === 0 && Number(selectedSub.debtAmount || 0) === 0">
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 rounded-xl">
-                      <span class="text-sm text-gray-600 flex items-center gap-2"><i class="fas fa-tag text-gray-400"></i> سعر الباقة</span>
-                      <span class="font-mono font-semibold text-gray-800">{{ Number(selectedSub.price || 0).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-400">د.ع</span></span>
-                    </div>
-                    <div class="flex items-center justify-between px-4 py-2.5 bg-red-50 rounded-xl border border-red-100">
-                      <span class="text-sm text-red-600 flex items-center gap-2"><i class="fas fa-hourglass-half"></i> المتبقي (آجل)</span>
-                      <span class="font-mono font-bold text-red-600">{{ Number(selectedSub.price || 0).toLocaleString('ar-IQ') }} <span class="text-xs font-normal">د.ع</span></span>
-                    </div>
-                  </div>
-                </template>
+        <!-- ═══ SCROLLABLE CONTENT ═══ -->
+        <div class="overflow-y-auto flex-1 -mt-7">
+          <div class="px-5 pb-5 space-y-3">
 
-                <!-- Case 3 or 4: has payments or debt — show full breakdown -->
-                <template v-else>
-                  <div class="space-y-2">
-                    <!-- Original price -->
-                    <div class="flex items-center justify-between px-4 py-2.5 bg-gray-50 rounded-xl">
-                      <span class="text-sm text-gray-600 flex items-center gap-2"><i class="fas fa-tag text-gray-400"></i> سعر الباقة</span>
-                      <span class="font-mono font-semibold text-gray-800">{{ Number(selectedSub.price || 0).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-400">د.ع</span></span>
-                    </div>
-                    <!-- Added debt (if any) -->
-                    <div v-if="Number(selectedSub.debtAmount || 0) > 0" class="flex items-center justify-between px-4 py-2.5 bg-orange-50 rounded-xl border border-orange-100">
-                      <span class="text-sm text-orange-600 flex items-center gap-2"><i class="fas fa-plus-circle"></i> دين مضاف</span>
-                      <span class="font-mono font-semibold text-orange-600">+ {{ Number(selectedSub.debtAmount).toLocaleString('ar-IQ') }} <span class="text-xs font-normal">د.ع</span></span>
-                    </div>
-                    <!-- Total (only when debt exists) -->
-                    <div v-if="Number(selectedSub.debtAmount || 0) > 0" class="flex items-center justify-between px-4 py-2.5 bg-gray-100 rounded-xl">
-                      <span class="text-sm text-gray-700 flex items-center gap-2 font-medium"><i class="fas fa-sigma text-gray-500"></i> الإجمالي</span>
-                      <span class="font-mono font-bold text-gray-800">{{ (Number(selectedSub.price || 0) + Number(selectedSub.debtAmount || 0)).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-500">د.ع</span></span>
-                    </div>
-                    <!-- Paid amount -->
-                    <div v-if="Number(selectedSub.paidAmount || 0) > 0" class="flex items-center justify-between px-4 py-2.5 bg-emerald-50 rounded-xl border border-emerald-100">
-                      <span class="text-sm text-emerald-600 flex items-center gap-2"><i class="fas fa-check"></i> المدفوع</span>
-                      <span class="font-mono font-semibold text-emerald-600">{{ Number(selectedSub.paidAmount).toLocaleString('ar-IQ') }} <span class="text-xs font-normal">د.ع</span></span>
-                    </div>
-                    <!-- Remaining -->
-                    <div class="flex items-center justify-between px-4 py-2.5 rounded-xl border"
-                      :class="(Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0
-                        ? 'bg-emerald-50 border-emerald-100'
-                        : 'bg-red-50 border-red-100'">
-                      <span class="text-sm flex items-center gap-2"
-                        :class="(Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0
-                          ? 'text-emerald-600'
-                          : 'text-red-600'">
-                        <i class="fas"
-                          :class="(Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0
-                            ? 'fa-check-double'
-                            : 'fa-exclamation-circle'"></i>
-                        {{ (Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0 ? 'تم التسديد بالكامل' : 'المتبقي' }}
-                      </span>
-                      <span class="font-mono font-bold"
-                        :class="(Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0
-                          ? 'text-emerald-600'
-                          : 'text-red-600'">
-                        {{ Math.max(0, Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)).toLocaleString('ar-IQ') }}
-                        <span class="text-xs font-normal">د.ع</span>
-                      </span>
-                    </div>
-                  </div>
-                </template>
+            <!-- ── Stats row ── -->
+            <div class="grid grid-cols-3 gap-2">
+              <!-- Days remaining -->
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-3.5 text-center">
+                <div class="text-2xl font-black leading-none"
+                  :class="{
+                    'text-emerald-500': remainingDaysCount(selectedSub.endDate) > 7,
+                    'text-amber-500': remainingDaysCount(selectedSub.endDate) > 0 && remainingDaysCount(selectedSub.endDate) <= 7,
+                    'text-red-500': remainingDaysCount(selectedSub.endDate) <= 0,
+                  }">
+                  {{ Math.max(0, remainingDaysCount(selectedSub.endDate)) }}
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1 font-medium">أيام متبقية</p>
+              </div>
+              <!-- Start date -->
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-3.5 text-center">
+                <div class="text-xs font-bold text-indigo-600 leading-tight">{{ formatDate(selectedSub.startDate) }}</div>
+                <p class="text-[10px] text-gray-400 mt-1 font-medium">تاريخ البدء</p>
+              </div>
+              <!-- End date -->
+              <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-3.5 text-center"
+                :class="remainingDaysCount(selectedSub.endDate) <= 0 ? 'border-red-200 bg-red-50' : ''">
+                <div class="text-xs font-bold leading-tight"
+                  :class="remainingDaysCount(selectedSub.endDate) <= 0 ? 'text-red-600' : 'text-gray-700'">
+                  {{ formatDate(selectedSub.endDate) }}
+                </div>
+                <p class="text-[10px] mt-1 font-medium"
+                  :class="remainingDaysCount(selectedSub.endDate) <= 0 ? 'text-red-400' : 'text-gray-400'">
+                  {{ remainingDaysCount(selectedSub.endDate) <= 0 ? 'منتهي' : 'تاريخ الانتهاء' }}
+                </p>
               </div>
             </div>
 
-            <!-- Notes card -->
-            <div v-if="selectedSub.notes" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div class="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
-                <i class="fas fa-sticky-note text-yellow-500 text-xs"></i>
-                <span class="text-xs font-semibold text-gray-600 uppercase tracking-wide">الملاحظات</span>
+            <!-- ── Progress bar (days used) ── -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 px-4 py-3.5">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-semibold text-gray-600">تقدم الاشتراك</span>
+                <span class="text-xs font-bold"
+                  :class="{
+                    'text-emerald-600': subscriptionProgress(selectedSub) < 80,
+                    'text-amber-600': subscriptionProgress(selectedSub) >= 80 && subscriptionProgress(selectedSub) < 100,
+                    'text-red-600': subscriptionProgress(selectedSub) >= 100,
+                  }">
+                  {{ subscriptionProgress(selectedSub) }}%
+                </span>
               </div>
-              <div class="p-4">
-                <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ selectedSub.notes }}</p>
+              <div class="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500"
+                  :class="{
+                    'bg-emerald-400': subscriptionProgress(selectedSub) < 80,
+                    'bg-amber-400': subscriptionProgress(selectedSub) >= 80 && subscriptionProgress(selectedSub) < 100,
+                    'bg-red-500': subscriptionProgress(selectedSub) >= 100,
+                  }"
+                  :style="{ width: Math.min(100, subscriptionProgress(selectedSub)) + '%' }">
+                </div>
               </div>
+              <div class="flex justify-between mt-1.5 text-[10px] text-gray-400">
+                <span>بدأ</span>
+                <span>انتهى</span>
+              </div>
+            </div>
+
+            <!-- ── Subscriber info ── -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div class="px-4 py-2.5 bg-gradient-to-l from-blue-50 to-indigo-50 border-b border-gray-100 flex items-center gap-2">
+                <div class="w-5 h-5 rounded-lg bg-blue-500 flex items-center justify-center">
+                  <i class="fas fa-user text-white text-[9px]"></i>
+                </div>
+                <span class="text-xs font-bold text-gray-700">بيانات المشترك</span>
+              </div>
+              <div class="grid grid-cols-2 divide-x divide-x-reverse divide-gray-100">
+                <div class="p-3.5">
+                  <p class="text-[10px] text-gray-400 mb-1">رقم الهاتف</p>
+                  <p class="font-mono text-gray-800 font-semibold text-sm">{{ selectedSub.phone || '—' }}</p>
+                </div>
+                <div class="p-3.5">
+                  <p class="text-[10px] text-gray-400 mb-1">طريقة الدفع</p>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold"
+                    :class="{
+                      'bg-green-100 text-green-700': selectedSub.paymentMethod === 'cash',
+                      'bg-orange-100 text-orange-700': selectedSub.paymentMethod === 'credit',
+                      'bg-blue-100 text-blue-700': selectedSub.paymentMethod === 'partial',
+                    }">
+                    <i class="fas text-[9px]"
+                      :class="{
+                        'fa-money-bill-wave': selectedSub.paymentMethod === 'cash',
+                        'fa-clock': selectedSub.paymentMethod === 'credit',
+                        'fa-percentage': selectedSub.paymentMethod === 'partial',
+                      }"></i>
+                    {{ { cash: 'نقداً', credit: 'آجل', partial: 'جزئي' }[selectedSub.paymentMethod] || selectedSub.paymentMethod }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Financial breakdown ── -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div class="px-4 py-2.5 bg-gradient-to-l from-amber-50 to-yellow-50 border-b border-gray-100 flex items-center gap-2">
+                <div class="w-5 h-5 rounded-lg bg-amber-500 flex items-center justify-center">
+                  <i class="fas fa-coins text-white text-[9px]"></i>
+                </div>
+                <span class="text-xs font-bold text-gray-700">التفاصيل المالية</span>
+              </div>
+              <div class="p-4 space-y-2.5">
+                <!-- Price row -->
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-gray-500 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block"></span>
+                    سعر الباقة
+                  </span>
+                  <span class="font-mono font-semibold text-gray-800 text-sm">{{ Number(selectedSub.price || 0).toLocaleString('ar-IQ') }} <span class="text-[10px] text-gray-400">د.ع</span></span>
+                </div>
+                <!-- Debt row (if any) -->
+                <div v-if="Number(selectedSub.debtAmount || 0) > 0" class="flex items-center justify-between">
+                  <span class="text-xs text-orange-500 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block"></span>
+                    دين مضاف
+                  </span>
+                  <span class="font-mono font-semibold text-orange-500 text-sm">+ {{ Number(selectedSub.debtAmount).toLocaleString('ar-IQ') }} <span class="text-[10px]">د.ع</span></span>
+                </div>
+                <!-- Divider + total when debt exists -->
+                <div v-if="Number(selectedSub.debtAmount || 0) > 0" class="border-t border-dashed border-gray-200 pt-2 flex items-center justify-between">
+                  <span class="text-xs text-gray-600 font-semibold flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-500 inline-block"></span>
+                    الإجمالي
+                  </span>
+                  <span class="font-mono font-bold text-gray-800 text-sm">
+                    {{ (Number(selectedSub.price || 0) + Number(selectedSub.debtAmount || 0)).toLocaleString('ar-IQ') }}
+                    <span class="text-[10px] text-gray-400">د.ع</span>
+                  </span>
+                </div>
+                <!-- Paid row -->
+                <div v-if="Number(selectedSub.paidAmount || 0) > 0" class="flex items-center justify-between">
+                  <span class="text-xs text-emerald-600 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                    المدفوع
+                  </span>
+                  <span class="font-mono font-semibold text-emerald-600 text-sm">{{ Number(selectedSub.paidAmount).toLocaleString('ar-IQ') }} <span class="text-[10px]">د.ع</span></span>
+                </div>
+
+                <!-- Remaining / paid-in-full pill -->
+                <div class="mt-1">
+                  <div class="flex items-center justify-between px-4 py-3 rounded-2xl"
+                    :class="(Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0
+                      ? 'bg-gradient-to-l from-emerald-500 to-teal-500'
+                      : 'bg-gradient-to-l from-red-500 to-rose-500'">
+                    <span class="text-white text-sm font-bold flex items-center gap-2">
+                      <i class="fas"
+                        :class="(Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0
+                          ? 'fa-check-double'
+                          : 'fa-exclamation-circle'"></i>
+                      {{ (Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)) <= 0 ? 'تم التسديد بالكامل' : 'المبلغ المتبقي' }}
+                    </span>
+                    <span class="text-white font-black text-base font-mono">
+                      {{ Math.max(0, Number(selectedSub.price||0) + Number(selectedSub.debtAmount||0) - Number(selectedSub.paidAmount||0)).toLocaleString('ar-IQ') }}
+                      <span class="text-xs font-normal opacity-80">د.ع</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Notes ── -->
+            <div v-if="selectedSub.notes" class="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5 flex gap-3">
+              <i class="fas fa-sticky-note text-amber-400 mt-0.5 shrink-0"></i>
+              <p class="text-sm text-amber-800 leading-relaxed whitespace-pre-line">{{ selectedSub.notes }}</p>
             </div>
 
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/60 flex justify-between items-center">
-          <button @click="printSubscription(selectedSub)" class="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-xl transition shadow-sm">
+        <!-- ═══ FOOTER ═══ -->
+        <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex gap-2">
+          <button @click="printSubscription(selectedSub)"
+            class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-2xl transition shadow-sm shadow-emerald-200">
             <i class="fas fa-print"></i> طباعة
           </button>
-          <button @click="showViewModal = false" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-100 transition text-gray-600">إغلاق</button>
+          <button @click="showViewModal = false"
+            class="px-5 py-2.5 text-sm font-semibold border border-gray-200 rounded-2xl hover:bg-gray-100 transition text-gray-600">
+            إغلاق
+          </button>
         </div>
 
       </div>
@@ -829,6 +855,25 @@ function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('ar-IQ');
+}
+
+function remainingDaysCount(dateStr: string): number {
+  if (!dateStr) return 0;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function subscriptionProgress(s: any): number {
+  if (!s.startDate || !s.endDate) return 0;
+  const start = new Date(s.startDate).getTime();
+  const end = new Date(s.endDate).getTime();
+  const now = Date.now();
+  if (end <= start) return 100;
+  return Math.min(100, Math.round(((now - start) / (end - start)) * 100));
 }
 
 function isExpiringSoon(dateStr: string) {
