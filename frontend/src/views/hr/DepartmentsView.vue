@@ -213,18 +213,19 @@
                   <!-- Page Rows -->
                   <div v-for="item in activeGroup.items" :key="item.key"
                     class="grid gap-1 py-1.5 px-1 rounded-lg hover:bg-gray-50/80 transition items-center"
-                    :class="isRowAllSelected(activeGroup.key, item.key) ? 'bg-hr/5 hover:bg-hr/5' : ''"
+                    :class="isRowAnySelected(activeGroup.key, item.key) ? 'bg-hr/5 hover:bg-hr/5' : ''"
                     style="grid-template-columns: 1fr repeat(4, 58px)">
-                    <!-- Row label = click to toggle all -->
-                    <button type="button" @click="toggleAllRow(activeGroup.key, item.key)"
-                      class="text-xs font-medium pr-1 text-right hover:text-hr transition flex items-center gap-1.5"
-                      :class="isRowAllSelected(activeGroup.key, item.key) ? 'text-hr font-bold' : 'text-gray-600'">
+                    <!-- Row label - static indicator only (no auto-select on click) -->
+                    <div class="text-xs font-medium pr-1 text-right flex items-center gap-1.5"
+                      :class="isRowAnySelected(activeGroup.key, item.key) ? 'text-hr font-bold' : 'text-gray-600'">
                       <i :class="isRowAllSelected(activeGroup.key, item.key)
                         ? 'fas fa-check-circle text-hr'
-                        : 'far fa-circle text-gray-200'"
+                        : isRowAnySelected(activeGroup.key, item.key)
+                          ? 'fas fa-minus-circle text-amber-400'
+                          : 'far fa-circle text-gray-200'"
                         class="text-xs shrink-0 transition"></i>
                       {{ item.label }}
-                    </button>
+                    </div>
                     <!-- Action checkboxes -->
                     <div v-for="action in actions" :key="action.key" class="flex justify-center">
                       <input type="checkbox"
@@ -410,7 +411,7 @@ function getGroupPermCount(groupKey: string) {
   return form.value.permissions.filter(p => p.startsWith(groupKey + '.')).length;
 }
 
-// ─── Row (page) toggle ────────────────────────────────────────
+// ─── Row helpers ─────────────────────────────────────────────
 function toggleAllRow(sys: string, page: string) {
   const all = actions.map(a => permKey(sys, page, a.key));
   const allSel = all.every(p => form.value.permissions.includes(p));
@@ -422,6 +423,9 @@ function toggleAllRow(sys: string, page: string) {
 }
 function isRowAllSelected(sys: string, page: string) {
   return actions.every(a => form.value.permissions.includes(permKey(sys, page, a.key)));
+}
+function isRowAnySelected(sys: string, page: string) {
+  return actions.some(a => form.value.permissions.includes(permKey(sys, page, a.key)));
 }
 
 // ─── Column (action) toggle ───────────────────────────────────

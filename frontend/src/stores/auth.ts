@@ -38,7 +38,9 @@ export const useAuthStore = defineStore('auth', {
     hasPermission() {
       return (perm: string) => {
         if (this.isSuperAdmin) return true;
-        return this.permissions.includes(perm);
+        // Exact match OR any stored permission starts with perm + '.' (new action-based format)
+        return this.permissions.includes(perm) ||
+               this.permissions.some((p: string) => p.startsWith(perm + '.'));
       };
     },
     hasSystemAccess() {
