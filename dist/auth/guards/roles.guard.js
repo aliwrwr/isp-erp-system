@@ -40,7 +40,8 @@ let RolesGuard = class RolesGuard {
                 return true;
         }
         if (requiredPermissions) {
-            const hasPerm = requiredPermissions.some((perm) => user.permissions?.includes(perm));
+            const userPerms = user.permissions ?? [];
+            const hasPerm = requiredPermissions.some((perm) => userPerms.some((up) => up === perm || up.startsWith(perm + '.')));
             if (hasPerm)
                 return true;
         }

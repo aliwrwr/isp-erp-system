@@ -36,9 +36,12 @@ export class RolesGuard implements CanActivate {
     }
 
     // Check department permissions
+    // Supports both exact match ('internet.subscribers')
+    // and prefix match ('internet.subscribers.create' satisfies 'internet.subscribers')
     if (requiredPermissions) {
+      const userPerms: string[] = user.permissions ?? [];
       const hasPerm = requiredPermissions.some((perm) =>
-        user.permissions?.includes(perm),
+        userPerms.some((up) => up === perm || up.startsWith(perm + '.')),
       );
       if (hasPerm) return true;
     }
