@@ -109,9 +109,11 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
         const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
         try {
             await conn.connect();
-            const pppoe = await conn.write('/ppp/active/print', ['=stats='])
-                .catch(() => conn.write('/ppp/active/print').catch(() => []));
+            const pppoe = await conn.write('/ppp/active/print').catch(() => []);
             conn.close();
+            if (pppoe.length > 0) {
+                this.logger.log('PPPoE RAW FIELDS: ' + JSON.stringify(pppoe[0]));
+            }
             return pppoe.map((s) => ({
                 id: s['.id'] || '',
                 name: s.name || '',
@@ -119,8 +121,8 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
                 address: s.address || '',
                 macAddress: s['caller-id'] || '',
                 uptime: s.uptime || '',
-                bytesIn: parseInt(s['bytes-out']) || parseInt(s['tx-byte']) || 0,
-                bytesOut: parseInt(s['bytes-in']) || parseInt(s['rx-byte']) || 0,
+                bytesIn: parseInt(s['bytes-out'] ?? s['tx-byte'] ?? s['tx-bytes'] ?? '0') || 0,
+                bytesOut: parseInt(s['bytes-in'] ?? s['rx-byte'] ?? s['rx-bytes'] ?? '0') || 0,
                 encoding: s.encoding || '',
                 comment: s.comment || '',
                 _raw: s,

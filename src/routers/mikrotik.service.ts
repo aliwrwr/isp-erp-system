@@ -160,11 +160,14 @@ export class MikrotikService {
     try {
       await conn.connect();
 
-      // Get all fields including stats (bytes-in/bytes-out) — requires =stats= flag in RouterOS API
-      const pppoe = await conn.write('/ppp/active/print', ['=stats='])
-        .catch(() => conn.write('/ppp/active/print').catch(() => []));
+      const pppoe = await conn.write('/ppp/active/print').catch(() => []);
 
       conn.close();
+
+      // Log raw first entry so we can see actual field names in PM2 logs
+      if ((pppoe as any[]).length > 0) {
+        this.logger.log('PPPoE RAW FIELDS: ' + JSON.stringify((pppoe as any[])[0]));
+      }
 
       return (pppoe as any[]).map((s: any) => ({
         id: s['.id'] || '',
@@ -173,11 +176,11 @@ export class MikrotikService {
         address: s.address || '',
         macAddress: s['caller-id'] || '',
         uptime: s.uptime || '',
-        bytesIn: parseInt(s['bytes-out']) || parseInt(s['tx-byte']) || 0,
-        bytesOut: parseInt(s['bytes-in']) || parseInt(s['rx-byte']) || 0,
+        bytesIn: parseInt(s['bytes-out'] ?? s['tx-byte'] ?? s['tx-bytes'] ?? '0') || 0,
+        bytesOut: parseInt(s['bytes-in'] ?? s['rx-byte'] ?? s['rx-bytes'] ?? '0') || 0,
         encoding: s.encoding || '',
         comment: s.comment || '',
-        _raw: s,  // keep for debug
+        _raw: s,
       }));
     } catch (err: any) {
       this.logger.warn(`getActiveConnections failed for ${router.ipAddress}: ${err.message}`);
