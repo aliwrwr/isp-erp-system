@@ -33,6 +33,8 @@ export interface ActiveConnection {
     uptime: string;
     bytesIn: number;
     bytesOut: number;
+    txRate: number;
+    rxRate: number;
     encoding?: string;
     comment?: string;
 }

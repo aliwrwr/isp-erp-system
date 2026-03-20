@@ -170,9 +170,15 @@
               <!-- Full name -->
               <td class="px-3 py-2 font-medium text-gray-700">{{ conn.subscriberName || '—' }}</td>
               <!-- Download -->
-              <td class="px-3 py-2 text-right font-mono text-green-700">{{ fmtBytes(conn.bytesIn) }}</td>
+              <td class="px-3 py-2 text-right font-mono">
+                <div class="text-green-700 font-semibold">⬇ {{ fmtSpeed(conn.txRate) }}</div>
+                <div class="text-gray-400 text-[10px]">{{ fmtBytes(conn.bytesIn) }}</div>
+              </td>
               <!-- Upload -->
-              <td class="px-3 py-2 text-right font-mono text-orange-600">{{ fmtBytes(conn.bytesOut) }}</td>
+              <td class="px-3 py-2 text-right font-mono">
+                <div class="text-orange-600 font-semibold">⬆ {{ fmtSpeed(conn.rxRate) }}</div>
+                <div class="text-gray-400 text-[10px]">{{ fmtBytes(conn.bytesOut) }}</div>
+              </td>
               <!-- Package -->
               <td class="px-3 py-2">
                 <span v-if="conn.packageName" class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">
@@ -289,6 +295,8 @@ interface Connection {
   uptime: string;
   bytesIn: number;
   bytesOut: number;
+  txRate: number;
+  rxRate: number;
   routerId: number;
   routerName: string;
   subscriberId: number | null;
@@ -350,6 +358,14 @@ function fmtBytes(bytes: number): string {
   if (bytes < 1024 * 1024)    return (bytes / 1024).toFixed(2) + ' KB';
   if (bytes < 1024 ** 3)      return (bytes / 1024 ** 2).toFixed(2) + ' MB';
   return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+}
+
+function fmtSpeed(bps: number): string {
+  if (!bps) return '0 Kbps';
+  if (bps < 1_000)         return bps + ' bps';
+  if (bps < 1_000_000)     return (bps / 1_000).toFixed(1) + ' Kbps';
+  if (bps < 1_000_000_000) return (bps / 1_000_000).toFixed(2) + ' Mbps';
+  return (bps / 1_000_000_000).toFixed(2) + ' Gbps';
 }
 
 function formatUptime(uptime: string): string {

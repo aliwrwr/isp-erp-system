@@ -110,7 +110,7 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
         try {
             await conn.connect();
             const pppoe = await conn.write('/ppp/active/print', [
-                '=.proplist=.id,name,service,address,uptime,bytes-in,bytes-out,caller-id,encoding',
+                '=.proplist=.id,name,service,address,uptime,bytes-in,bytes-out,tx-rate,rx-rate,caller-id,encoding',
             ]).catch(() => conn.write('/ppp/active/print').catch(() => []));
             conn.close();
             return pppoe.map((s) => ({
@@ -122,6 +122,8 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
                 uptime: s.uptime || '',
                 bytesIn: parseInt(s['bytes-out']) || 0,
                 bytesOut: parseInt(s['bytes-in']) || 0,
+                txRate: parseInt(s['tx-rate']) || 0,
+                rxRate: parseInt(s['rx-rate']) || 0,
                 encoding: s.encoding || '',
                 comment: s.comment || '',
             }));
