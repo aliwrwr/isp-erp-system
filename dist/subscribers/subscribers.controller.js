@@ -41,6 +41,9 @@ let SubscribersController = class SubscribersController {
     remove(id) {
         return this.subscribersService.remove(+id);
     }
+    syncToRouter(id) {
+        return this.subscribersService.syncToRouter(+id);
+    }
 };
 exports.SubscribersController = SubscribersController;
 __decorate([
@@ -87,6 +90,17 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], SubscribersController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/sync-router'),
+    (0, common_1.HttpCode)(200),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, permissions_decorator_1.Permissions)('internet.subscribers'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], SubscribersController.prototype, "syncToRouter", null);
 exports.SubscribersController = SubscribersController = __decorate([
     (0, swagger_1.ApiTags)('Subscribers'),
     (0, common_1.Controller)('subscribers'),

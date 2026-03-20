@@ -21,4 +21,8 @@ export declare class SubscribersService {
     findOne(id: number): Promise<Subscriber | null>;
     update(id: number, updateSubscriberDto: UpdateSubscriberDto): Promise<Subscriber | null>;
     remove(id: number): Promise<void>;
+    syncToRouter(id: number): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

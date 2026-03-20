@@ -246,4 +246,38 @@ export class SubscribersService {
     await this.subscriptionsRepository.delete({ subscriber: { id } });
     await this.subscribersRepository.delete(id);
   }
+
+  /**
+   * Force-sync subscriber PPPoE secret to MikroTik.
+   * Deletes old secret (if username changed) then recreates with current data.
+   * Safe to call multiple times (idempotent).
+   */
+  async syncToRouter(id: number): Promise<{ success: boolean; message: string }> {
+    if (!this.mikrotikService) return { success: false, message: 'خدمة المايكروتك غير مفعلة' };
+    const sub = await this.subscribersRepository.findOne({ where: { id }, relations: ['router', 'package'] });
+    if (!sub) return { success: false, message: 'المشترك غير موجود' };
+    if (!sub.router) return { success: false, message: 'لم يتم تحديد راوتر لهذا المشترك' };
+
+    const router = sub.router;
+    const profile = (sub as any).package?.routerProfile || undefined;
+    const password = (sub as any).password || sub.username;
+    const isEnabled = (sub as any).isEnabled !== false;
+
+    try {
+      // Remove old secret if exists, then recreate fresh
+      await this.mikrotikService.deletePppoeSecret(router, sub.username);
+      await this.mikrotikService.createPppoeSecret(router, {
+        name: sub.username,
+        password,
+        profile,
+        comment: 'ISP-ERP',
+      });
+      if (!isEnabled) {
+        await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, false);
+      }
+      return { success: true, message: `تمت المزامنة بنجاح مع ${router.name}` };
+    } catch (err: any) {
+      return { success: false, message: `فشل الاتصال بالراوتر: ${err.message}` };
+    }
+  }
 }

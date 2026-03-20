@@ -601,6 +601,12 @@
               <i class="w-4 text-center" :class="contextMenuSub?.isEnabled !== false ? 'fas fa-stop-circle' : 'fas fa-play-circle'"></i>
               <span>{{ contextMenuSub?.isEnabled !== false ? 'إيقاف الراوتر' : 'تشغيل الراوتر' }}</span>
             </button>
+            <!-- مزامنة مع الراوتر -->
+            <button @click="syncToRouter" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+              :title="!contextMenuSub?.router ? 'لم يُحدد راوتر لهذا المشترك' : ''">
+              <i class="fas fa-sync-alt w-4 text-center"></i>
+              <span>مزامنة مع الراوتر</span>
+            </button>
 
             <div class="my-1 border-t border-gray-100"></div>
 
@@ -1579,6 +1585,23 @@ async function toggleEnabled() {
     showToast(newVal ? 'تم تشغيل الراوتر للمشترك' : 'تم إيقاف الراوتر للمشترك', newVal ? 'success' : 'error');
   } catch {
     showToast('فشل تغيير حالة الراوتر', 'error');
+  }
+}
+
+async function syncToRouter() {
+  const sub = contextMenuSub.value;
+  closeContextMenu();
+  if (!sub) return;
+  if (!sub.router) {
+    showToast('لم يُحدد راوتر لهذا المشترك — قم بتعديل المشترك وأضف الراوتر أولاً', 'error');
+    return;
+  }
+  try {
+    showToast('جاري المزامنة مع الراوتر...', 'success');
+    const { data } = await api.post(`/subscribers/${sub.id}/sync-router`);
+    showToast(data.message || 'تمت المزامنة', data.success ? 'success' : 'error');
+  } catch {
+    showToast('فشل الاتصال بالراوتر', 'error');
   }
 }
 

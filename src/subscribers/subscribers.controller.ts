@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpCode } from '@nestjs/common';
 import { SubscribersService } from './subscribers.service';
 import { CreateSubscriberDto } from './dto/create-subscriber.dto';
 import { UpdateSubscriberDto } from './dto/update-subscriber.dto';
@@ -46,5 +46,14 @@ export class SubscribersController {
   @Permissions('internet.subscribers')
   remove(@Param('id') id: string) {
     return this.subscribersService.remove(+id);
+  }
+
+  @Post(':id/sync-router')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('internet.subscribers')
+  syncToRouter(@Param('id') id: string) {
+    return this.subscribersService.syncToRouter(+id);
   }
 }
