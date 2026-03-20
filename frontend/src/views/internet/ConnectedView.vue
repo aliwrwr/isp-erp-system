@@ -171,13 +171,17 @@
               <td class="px-3 py-2 font-medium text-gray-700">{{ conn.subscriberName || '—' }}</td>
               <!-- Download -->
               <td class="px-3 py-2 text-center font-mono">
-                <div class="text-green-700 font-semibold">⬇ {{ getSpeed(conn) ? fmtSpeed(getSpeed(conn)!.down) : '—' }}</div>
-                <div class="text-gray-400 text-[10px]">{{ fmtBytes(conn.bytesIn) }}</div>
+                <div class="text-green-700 font-semibold">{{ fmtBytes(conn.bytesIn) }}</div>
+                <div v-if="getSpeed(conn)" class="mt-0.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-50 text-green-600 text-[10px] font-semibold">
+                  ⬇ {{ fmtSpeed(getSpeed(conn)!.down) }}
+                </div>
               </td>
               <!-- Upload -->
               <td class="px-3 py-2 text-center font-mono">
-                <div class="text-orange-600 font-semibold">⬆ {{ getSpeed(conn) ? fmtSpeed(getSpeed(conn)!.up) : '—' }}</div>
-                <div class="text-gray-400 text-[10px]">{{ fmtBytes(conn.bytesOut) }}</div>
+                <div class="text-orange-600 font-semibold">{{ fmtBytes(conn.bytesOut) }}</div>
+                <div v-if="getSpeed(conn)" class="mt-0.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-orange-50 text-orange-500 text-[10px] font-semibold">
+                  ⬆ {{ fmtSpeed(getSpeed(conn)!.up) }}
+                </div>
               </td>
               <!-- Package -->
               <td class="px-3 py-2">
