@@ -100,7 +100,7 @@
             <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">رقم السند</p><p class="font-black text-indigo-600 font-mono">#000001</p></div>
             <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">رقم العقد</p><p class="font-bold font-mono">INST-00001</p></div>
             <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">اسم العميل</p><p class="font-bold">محمد أحمد</p></div>
-            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">رقم العميل</p><p class="font-bold font-mono">#12</p></div>
+            <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">هاتف العميل</p><p class="font-bold font-mono" dir="ltr">07701234567</p></div>
             <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">المنتج</p><p class="font-bold">تلفاز سامسونج</p></div>
             <div class="bg-gray-50 rounded-md px-2 py-1.5"><p class="text-gray-400">رقم القسط</p><p class="font-bold">3 / 12</p></div>
           </div>

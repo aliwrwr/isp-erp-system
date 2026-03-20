@@ -279,8 +279,8 @@
                   <p class="font-bold text-sm truncate">{{ receiptData.customerName }}</p>
                 </div>
                 <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
-                  <p class="text-gray-400 text-xs">رقم العميل</p>
-                  <p class="font-bold font-mono text-sm">#{{ receiptData.customerId }}</p>
+                  <p class="text-gray-400 text-xs">رقم هاتف العميل</p>
+                  <p class="font-bold font-mono text-sm" dir="ltr">{{ receiptData.customerPhone }}</p>
                 </div>
                 <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
                   <p class="text-gray-400 text-xs">المنتج</p>
@@ -497,7 +497,7 @@ body{font-family:'Arial','Tahoma',sans-serif;font-size:${fz[ps]};color:#111;back
   ${cell('رقم السند', `#${String(d.paymentId).padStart(6,'0')}`, 'color:#4f46e5;font-family:monospace;')}
   ${cell('رقم العقد', d.contractNumber, 'font-family:monospace;')}
   ${cell('اسم العميل', d.customerName || '')}
-  ${cell('رقم العميل', `#${d.customerId || ''}`, 'font-family:monospace;')}
+  ${cell('هاتف العميل', d.customerPhone || '—', 'font-family:monospace;direction:ltr;text-align:left;')}
   ${cell('المنتج', d.productName || '')}
   ${cell('رقم القسط', `${d.installmentNo} / ${d.installmentCount}`)}
 </div>
