@@ -238,82 +238,80 @@
               </div>
             </div>
             <!-- Receipt content (printable) -->
-            <div id="receipt-area" class="p-6 font-[Arial,sans-serif]" dir="rtl">
-              <!-- Header -->
-              <div class="text-center border-b-2 border-dashed border-gray-300 pb-4 mb-4">
-                <template v-if="sysSettings.logo">
-                  <img :src="sysSettings.logo" class="w-16 h-16 object-contain mx-auto mb-2 rounded-lg" />
-                </template>
-                <template v-else>
-                  <div class="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-2">
-                    <i class="fas fa-hand-holding-usd text-2xl text-indigo-600"></i>
+            <div id="receipt-area" class="p-5 font-[Arial,sans-serif] text-sm" dir="rtl">
+              <!-- Header 2-col -->
+              <div class="flex items-start gap-3 pb-3 mb-3 border-b-2 border-dashed border-gray-300">
+                <!-- Right: logo + name + subtitle -->
+                <div class="flex items-start gap-2 flex-1 min-w-0">
+                  <template v-if="sysSettings.logo">
+                    <img :src="sysSettings.logo" class="w-12 h-12 object-contain rounded-lg flex-shrink-0" />
+                  </template>
+                  <template v-else>
+                    <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <i class="fas fa-hand-holding-usd text-lg text-indigo-600"></i>
+                    </div>
+                  </template>
+                  <div class="min-w-0">
+                    <p class="font-black text-gray-800 leading-tight">{{ sysSettings.shopName || 'نظام الأقساط' }}</p>
+                    <p class="text-indigo-600 font-bold text-xs mt-0.5">سند قبض</p>
+                    <p class="text-gray-400 text-xs mt-0.5">{{ receiptData.date }} – {{ receiptData.time }}</p>
                   </div>
-                </template>
-                <h2 class="text-lg font-black text-gray-800">{{ sysSettings.shopName || 'نظام الأقساط' }}</h2>
-                <p class="text-xs text-gray-500 mt-0.5">{{ sysSettings.subtitle || 'سند قبض' }}</p>
-                <p v-if="sysSettings.phone" class="text-xs text-gray-400 mt-0.5" dir="ltr">{{ sysSettings.phone }}</p>
-                <p v-if="sysSettings.address" class="text-xs text-gray-400">{{ sysSettings.address }}</p>
-              </div>
-              <!-- Details -->
-              <div class="space-y-2.5 text-sm">
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">رقم السند</span>
-                  <span class="font-black text-indigo-600 font-mono">#{{ String(receiptData.paymentId).padStart(6,'0') }}</span>
                 </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">رقم العقد</span>
-                  <span class="font-bold font-mono">{{ receiptData.contractNumber }}</span>
-                </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">التاريخ</span>
-                  <span class="font-bold">{{ receiptData.date }}</span>
-                </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">اسم العميل</span>
-                  <span class="font-bold">{{ receiptData.customerName }}</span>
-                </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">الهاتف</span>
-                  <span class="font-bold font-mono" dir="ltr">{{ receiptData.customerPhone }}</span>
-                </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">المنتج</span>
-                  <span class="font-bold">{{ receiptData.productName }}</span>
-                </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">رقم القسط</span>
-                  <span class="font-bold">{{ receiptData.installmentNo }} / {{ receiptData.installmentCount }}</span>
-                </div>
-                <!-- Amount highlight -->
-                <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex justify-between items-center">
-                  <span class="text-green-700 font-bold">المبلغ المدفوع</span>
-                  <span class="text-xl font-black text-green-600">{{ receiptData.amount }}</span>
-                </div>
-                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">المتبقي بعد الدفعة</span>
-                  <span class="font-bold text-red-500">{{ receiptData.remaining }}</span>
-                </div>
-                <div v-if="receiptData.receivedBy" class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">استلم بواسطة</span>
-                  <span class="font-bold">{{ receiptData.receivedBy }}</span>
-                </div>
-                <div v-if="receiptData.notes" class="flex justify-between items-center py-1.5 border-b border-gray-100">
-                  <span class="text-gray-500">ملاحظات</span>
-                  <span class="font-bold text-gray-600 text-xs">{{ receiptData.notes }}</span>
+                <!-- Left: address + phone -->
+                <div class="text-xs text-gray-500 text-left flex-shrink-0 space-y-0.5">
+                  <p v-if="sysSettings.address" class="font-medium">{{ sysSettings.address }}</p>
+                  <p v-if="sysSettings.phone" dir="ltr" class="text-gray-400">{{ sysSettings.phone }}</p>
                 </div>
               </div>
-              <!-- Signature -->
-              <div class="mt-5 pt-4 border-t border-dashed border-gray-300 grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div class="h-10 border-b border-gray-300 mb-1"></div>
-                  <p class="text-xs text-gray-400">توقيع المستلم</p>
+
+              <!-- 2-col info cells -->
+              <div class="grid grid-cols-2 gap-2 mb-3">
+                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">رقم السند</p>
+                  <p class="font-black text-indigo-600 font-mono text-sm">#{{ String(receiptData.paymentId).padStart(6,'0') }}</p>
                 </div>
-                <div>
-                  <div class="h-10 border-b border-gray-300 mb-1"></div>
-                  <p class="text-xs text-gray-400">توقيع العميل</p>
+                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">رقم العقد</p>
+                  <p class="font-bold font-mono text-sm">{{ receiptData.contractNumber }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">اسم العميل</p>
+                  <p class="font-bold text-sm truncate">{{ receiptData.customerName }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">رقم العميل</p>
+                  <p class="font-bold font-mono text-sm">#{{ receiptData.customerId }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">المنتج</p>
+                  <p class="font-bold text-sm truncate">{{ receiptData.productName }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">رقم القسط</p>
+                  <p class="font-bold text-sm">{{ receiptData.installmentNo }} / {{ receiptData.installmentCount }}</p>
                 </div>
               </div>
-              <p class="text-center text-xs text-gray-400 mt-4">{{ sysSettings.footer || 'شكراً لتعاملكم' }}</p>
+
+              <!-- Amount full-width -->
+              <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex justify-between items-center mb-3">
+                <span class="text-green-700 font-bold">المبلغ المدفوع</span>
+                <span class="text-xl font-black text-green-600">{{ receiptData.amount }}</span>
+              </div>
+
+              <!-- Remaining + received by -->
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <div class="bg-red-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">المتبقي بعد الدفعة</p>
+                  <p class="font-bold text-red-500 text-sm">{{ receiptData.remaining }}</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                  <p class="text-gray-400 text-xs">استلم بواسطة</p>
+                  <p class="font-bold text-sm">{{ receiptData.receivedBy || '—' }}</p>
+                </div>
+              </div>
+
+              <p v-if="receiptData.notes" class="text-xs text-gray-400 px-1 mb-2">ملاحظات: {{ receiptData.notes }}</p>
+              <p class="text-center text-xs text-gray-400 mt-3 pt-2 border-t border-dashed border-gray-200">{{ sysSettings.footer || 'شكراً لتعاملكم' }}</p>
             </div>
           </div>
         </div>
@@ -392,7 +390,9 @@ async function savePayment() {
       paymentId:        res.data?.id || Date.now(),
       contractNumber:   contract.value?.contractNumber,
       date:             formatDate(payForm.value.date),
+      time:             new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
       customerName:     contract.value?.customer?.name,
+      customerId:       contract.value?.customer?.id,
       customerPhone:    contract.value?.customer?.phone,
       productName:      contract.value?.productName,
       installmentNo:    newPaidCount,
@@ -411,7 +411,9 @@ function printReceipt(p: any, idx: number) {
     paymentId:        p.id,
     contractNumber:   contract.value?.contractNumber,
     date:             formatDate(p.date),
+    time:             new Date(p.date).toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' }),
     customerName:     contract.value?.customer?.name,
+    customerId:       contract.value?.customer?.id,
     customerPhone:    contract.value?.customer?.phone,
     productName:      contract.value?.productName,
     installmentNo:    idx,
@@ -429,104 +431,91 @@ function doPrint() {
   const cfg = sysSettings.value;
 
   const shopName = cfg.shopName || 'نظام الأقساط';
-  const subtitle = cfg.subtitle || 'سند قبض';
   const phone    = cfg.phone    || '';
   const address  = cfg.address  || '';
   const footer   = cfg.footer   || 'شكراً لتعاملكم';
   const logo     = cfg.logo     || '';
 
   const pageCSS: Record<string, string> = {
-    'A5':   '@page { size: A5 portrait; margin: 12mm 15mm; }',
-    '80mm': '@page { size: 80mm auto;  margin: 4mm 5mm; }',
-    '58mm': '@page { size: 58mm auto;  margin: 3mm 4mm; }',
+    'A5':   '@page { size: A5 portrait; margin: 10mm 14mm; }',
+    '80mm': '@page { size: 80mm auto;  margin: 3mm 4mm; }',
+    '58mm': '@page { size: 58mm auto;  margin: 2mm 3mm; }',
   };
   const bodyW: Record<string, string> = {
-    'A5': '100%', '80mm': '70mm', '58mm': '50mm',
+    'A5': '100%', '80mm': '72mm', '58mm': '52mm',
   };
   const fz: Record<string, string> = {
-    'A5': '13px', '80mm': '11.5px', '58mm': '10px',
+    'A5': '12.5px', '80mm': '11px', '58mm': '9.5px',
   };
   const ps = paperSize.value;
 
-  const maybeRow = (label: string, val: string | undefined, cls = '') =>
-    val ? `<div class="row"><span class="lbl">${label}</span><span class="val ${cls}">${val}</span></div>` : '';
+  const logoHTML = logo
+    ? `<img src="${logo}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;flex-shrink:0;" />`
+    : `<div style="width:44px;height:44px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" width="20" height="20" fill="#4f46e5"><path d="M64 64C28.7 64 0 92.7 0 128v256c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H64zm64 96H192c17.7 0 32 14.3 32 32v32c0 17.7-14.3 32-32 32H128c-17.7 0-32-14.3-32-32V192c0-17.7 14.3-32 32-32zM72 320H504c13.3 0 24 10.7 24 24s-10.7 24-24 24H72c-13.3 0-24-10.7-24-24s10.7-24 24-24z"/></svg>
+       </div>`;
 
-  // Build header: logo img or icon fallback
-  const hdrLogo = logo
-    ? `<img src="${logo}" style="width:56px;height:56px;object-fit:contain;border-radius:8px;margin:0 auto 6px;display:block;" />`
-    : `<div class="ico"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" width="22" height="22" fill="#4f46e5"><path d="M96 64c0-17.7 14.3-32 32-32H448h64c70.7 0 128 57.3 128 128s-57.3 128-128 128H480c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64H96zm416 160h32c35.3 0 64-28.7 64-64s-28.7-64-64-64H512v128zM0 416c0-17.7 14.3-32 32-32H576c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32z"/></svg></div>`;
+  const cell = (lbl: string, val: string, cls = '') =>
+    `<div style="background:#f8fafc;border-radius:6px;padding:5px 8px;">
+      <div style="color:#94a3b8;font-size:.75em;margin-bottom:2px;">${lbl}</div>
+      <div style="font-weight:700;${cls}">${val}</div>
+    </div>`;
 
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
-<head>
-<meta charset="UTF-8">
-<title>سند قبض - ${d.contractNumber}</title>
+<head><meta charset="UTF-8"><title>سند قبض - ${d.contractNumber}</title>
 <style>
 ${pageCSS[ps]}
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:'Arial','Tahoma',sans-serif;
-  font-size:${fz[ps]};
-  color:#111;background:#fff;
-  width:${bodyW[ps]};margin:0 auto;direction:rtl;
-}
-.hdr{text-align:center;border-bottom:2px dashed #cbd5e1;padding-bottom:10px;margin-bottom:10px}
-.ico{width:46px;height:46px;border-radius:50%;background:#e0e7ff;
-  display:flex;align-items:center;justify-content:center;
-  margin:0 auto 6px}
-.hdr-title{font-size:1.1em;font-weight:900;color:#1e293b}
-.hdr-sub{font-size:.75em;color:#64748b;margin-top:2px}
-.hdr-meta{font-size:.7em;color:#94a3b8;margin-top:1px}
-.row{display:flex;justify-content:space-between;align-items:center;
-  padding:5px 0;border-bottom:1px solid #f1f5f9}
-.lbl{color:#64748b}
-.val{font-weight:700}
-.val.mono{font-family:monospace}
-.val.indigo{color:#4f46e5}
-.val.red{color:#dc2626}
-.val.sm{font-size:.85em}
-.amt{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;
-  padding:8px 12px;display:flex;justify-content:space-between;
-  align-items:center;margin:8px 0}
-.amt-lbl{color:#15803d;font-weight:700}
-.amt-val{font-size:1.25em;font-weight:900;color:#16a34a}
-.sig{border-top:1px dashed #cbd5e1;margin-top:12px;padding-top:10px;
-  display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:center}
-.sig-line{height:28px;border-bottom:1px solid #d1d5db;margin-bottom:3px}
-.sig-lbl{font-size:.7em;color:#9ca3af}
-.footer{text-align:center;font-size:.7em;color:#9ca3af;margin-top:10px}
-</style>
-</head>
+body{font-family:'Arial','Tahoma',sans-serif;font-size:${fz[ps]};color:#111;background:#fff;width:${bodyW[ps]};margin:0 auto;direction:rtl;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.amt{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.amt-lbl{color:#15803d;font-weight:700;}
+.amt-val{font-size:1.3em;font-weight:900;color:#16a34a;}
+.footer{text-align:center;font-size:.7em;color:#9ca3af;margin-top:8px;padding-top:6px;border-top:1px dashed #e2e8f0;}
+</style></head>
 <body>
-<div class="hdr">
-  ${hdrLogo}
-  <div class="hdr-title">${shopName}</div>
-  <div class="hdr-sub">${subtitle}</div>
-  ${phone   ? `<div class="hdr-meta" dir="ltr">${phone}</div>`   : ''}
-  ${address ? `<div class="hdr-meta">${address}</div>` : ''}
+<!-- HEADER -->
+<div style="display:flex;align-items:flex-start;gap:10px;padding-bottom:10px;margin-bottom:10px;border-bottom:2px dashed #cbd5e1;">
+  <!-- Right: logo + name -->
+  <div style="display:flex;align-items:flex-start;gap:8px;flex:1;">
+    ${logoHTML}
+    <div>
+      <div style="font-weight:900;font-size:1.05em;color:#1e293b;line-height:1.2;">${shopName}</div>
+      <div style="color:#6366f1;font-weight:700;font-size:.8em;margin-top:2px;">سند قبض</div>
+      <div style="color:#94a3b8;font-size:.72em;margin-top:1px;">${d.date} – ${d.time}</div>
+    </div>
+  </div>
+  <!-- Left: address + phone -->
+  <div style="text-align:left;font-size:.75em;color:#64748b;line-height:1.6;flex-shrink:0;">
+    ${address ? `<div>${address}</div>` : ''}
+    ${phone   ? `<div dir="ltr">${phone}</div>` : ''}
+  </div>
 </div>
-<div class="row"><span class="lbl">رقم السند</span><span class="val mono indigo">#${String(d.paymentId).padStart(6,'0')}</span></div>
-<div class="row"><span class="lbl">رقم العقد</span><span class="val mono">${d.contractNumber}</span></div>
-<div class="row"><span class="lbl">التاريخ</span><span class="val">${d.date}</span></div>
-<div class="row"><span class="lbl">اسم العميل</span><span class="val">${d.customerName||''}</span></div>
-${maybeRow('الهاتف', d.customerPhone ? `<span dir="ltr">${d.customerPhone}</span>` : undefined)}
-<div class="row"><span class="lbl">المنتج</span><span class="val">${d.productName||''}</span></div>
-<div class="row"><span class="lbl">رقم القسط</span><span class="val">${d.installmentNo} / ${d.installmentCount}</span></div>
+<!-- INFO GRID -->
+<div class="grid2">
+  ${cell('رقم السند', `#${String(d.paymentId).padStart(6,'0')}`, 'color:#4f46e5;font-family:monospace;')}
+  ${cell('رقم العقد', d.contractNumber, 'font-family:monospace;')}
+  ${cell('اسم العميل', d.customerName || '')}
+  ${cell('رقم العميل', `#${d.customerId || ''}`, 'font-family:monospace;')}
+  ${cell('المنتج', d.productName || '')}
+  ${cell('رقم القسط', `${d.installmentNo} / ${d.installmentCount}`)}
+</div>
+<!-- AMOUNT -->
 <div class="amt">
   <span class="amt-lbl">المبلغ المدفوع</span>
   <span class="amt-val">${d.amount}</span>
 </div>
-<div class="row"><span class="lbl">المتبقي بعد الدفعة</span><span class="val red">${d.remaining}</span></div>
-${maybeRow('استلم بواسطة', d.receivedBy)}
-${maybeRow('ملاحظات', d.notes, 'sm')}
-<div class="sig">
-  <div><div class="sig-line"></div><div class="sig-lbl">توقيع المستلم</div></div>
-  <div><div class="sig-line"></div><div class="sig-lbl">توقيع العميل</div></div>
+<!-- REMAINING + RECEIVED -->
+<div class="grid2">
+  ${cell('المتبقي بعد الدفعة', d.remaining, 'color:#dc2626;')}
+  ${cell('استلم بواسطة', d.receivedBy || '—')}
 </div>
+${d.notes ? `<div style="font-size:.75em;color:#94a3b8;margin-bottom:4px;padding:0 2px;">ملاحظات: ${d.notes}</div>` : ''}
 <div class="footer">${footer}</div>
 </body></html>`;
 
-  const win = window.open('', '_blank', 'width=520,height=720');
+  const win = window.open('', '_blank', 'width=520,height=680');
   if (!win) { alert('يرجى السماح بالنوافذ المنبثقة'); return; }
   win.document.write(html);
   win.document.close();
