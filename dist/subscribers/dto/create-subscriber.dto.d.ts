@@ -10,6 +10,7 @@ export declare class CreateSubscriberDto {
     password?: string;
     packageId?: number;
     managerId?: number;
+    routerId?: number;
     status?: string;
     notes?: string;
     subStartDate?: string;

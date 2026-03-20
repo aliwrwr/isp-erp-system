@@ -12,15 +12,17 @@ const typeorm_1 = require("@nestjs/typeorm");
 const subscriber_entity_1 = require("./entities/subscriber.entity");
 const subscription_entity_1 = require("../subscriptions/entities/subscription.entity");
 const package_entity_1 = require("../packages/entities/package.entity");
+const router_entity_1 = require("../routers/entities/router.entity");
 const subscribers_service_1 = require("./subscribers.service");
 const subscribers_controller_1 = require("./subscribers.controller");
 const whatsapp_module_1 = require("../whatsapp/whatsapp.module");
+const routers_module_1 = require("../routers/routers.module");
 let SubscribersModule = class SubscribersModule {
 };
 exports.SubscribersModule = SubscribersModule;
 exports.SubscribersModule = SubscribersModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([subscriber_entity_1.Subscriber, subscription_entity_1.Subscription, package_entity_1.Package]), whatsapp_module_1.WhatsappModule],
+        imports: [typeorm_1.TypeOrmModule.forFeature([subscriber_entity_1.Subscriber, subscription_entity_1.Subscription, package_entity_1.Package, router_entity_1.Router]), whatsapp_module_1.WhatsappModule, routers_module_1.RoutersModule],
         controllers: [subscribers_controller_1.SubscribersController],
         providers: [subscribers_service_1.SubscribersService],
         exports: [subscribers_service_1.SubscribersService, typeorm_1.TypeOrmModule],

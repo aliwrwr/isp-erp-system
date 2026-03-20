@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDat
 import { Package } from '../../packages/entities/package.entity';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
 import { Manager } from '../../managers/entities/manager.entity';
+import { Router } from '../../routers/entities/router.entity';
 
 @Entity('subscribers')
 export class Subscriber {
@@ -43,6 +44,9 @@ export class Subscriber {
 
   @ManyToOne(() => Package, pkg => pkg.subscribers)
   package: Package;
+
+  @ManyToOne(() => Router, { nullable: true, eager: false })
+  router: Router;
 
   @OneToMany(() => Subscription, subscription => subscription.subscriber)
   subscriptions: Subscription[];

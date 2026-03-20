@@ -45,6 +45,10 @@ export class CreateSubscriberDto {
   @IsOptional()
   managerId?: number;
 
+  @IsNumber()
+  @IsOptional()
+  routerId?: number;
+
   @IsString()
   @IsOptional()
   status?: string;

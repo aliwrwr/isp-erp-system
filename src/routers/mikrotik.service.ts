@@ -225,4 +225,122 @@ export class MikrotikService {
       return false;
     }
   }
+
+  // ── PPPoE Secret Management ──────────────────────────────────────────────────
+
+  private routerConn(router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string }): RouterOSAPI {
+    const isSsl = router.connectionType === 'API-SSL';
+    return this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
+  }
+
+  /** Create a PPPoE secret. Returns true on success. */
+  async createPppoeSecret(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    secret: { name: string; password: string; profile?: string; comment?: string },
+  ): Promise<boolean> {
+    const conn = this.routerConn(router);
+    try {
+      await conn.connect();
+      const params = [
+        `=name=${secret.name}`,
+        `=password=${secret.password}`,
+        `=service=pppoe`,
+        `=disabled=no`,
+      ];
+      if (secret.profile) params.push(`=profile=${secret.profile}`);
+      if (secret.comment) params.push(`=comment=${secret.comment}`);
+      await conn.write('/ppp/secret/add', params);
+      conn.close();
+      this.logger.log(`PPPoE secret created: ${secret.name} on ${router.ipAddress}`);
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`createPppoeSecret failed for ${secret.name}: ${err.message}`);
+      conn.close();
+      return false;
+    }
+  }
+
+  /** Enable or disable a PPPoE secret by username. */
+  async setPppoeSecretEnabled(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    name: string,
+    enabled: boolean,
+  ): Promise<boolean> {
+    const conn = this.routerConn(router);
+    try {
+      await conn.connect();
+      // Find the secret .id
+      const secrets = await conn.write('/ppp/secret/print', [`?name=${name}`]) as any[];
+      if (!secrets || secrets.length === 0) {
+        conn.close();
+        this.logger.warn(`setPppoeSecretEnabled: secret not found: ${name}`);
+        return false;
+      }
+      const id = secrets[0]['.id'];
+      await conn.write('/ppp/secret/set', [`=.id=${id}`, `=disabled=${enabled ? 'no' : 'yes'}`]);
+      conn.close();
+      this.logger.log(`PPPoE secret ${name} on ${router.ipAddress}: disabled=${!enabled}`);
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`setPppoeSecretEnabled failed for ${name}: ${err.message}`);
+      conn.close();
+      return false;
+    }
+  }
+
+  /** Update username, password and/or profile of a PPPoE secret. */
+  async updatePppoeSecret(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    oldName: string,
+    updates: { name?: string; password?: string; profile?: string },
+  ): Promise<boolean> {
+    const conn = this.routerConn(router);
+    try {
+      await conn.connect();
+      const secrets = await conn.write('/ppp/secret/print', [`?name=${oldName}`]) as any[];
+      if (!secrets || secrets.length === 0) {
+        conn.close();
+        this.logger.warn(`updatePppoeSecret: secret not found: ${oldName}`);
+        return false;
+      }
+      const id = secrets[0]['.id'];
+      const params: string[] = [`=.id=${id}`];
+      if (updates.name)     params.push(`=name=${updates.name}`);
+      if (updates.password) params.push(`=password=${updates.password}`);
+      if (updates.profile)  params.push(`=profile=${updates.profile}`);
+      await conn.write('/ppp/secret/set', params);
+      conn.close();
+      this.logger.log(`PPPoE secret updated: ${oldName} on ${router.ipAddress}`);
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`updatePppoeSecret failed for ${oldName}: ${err.message}`);
+      conn.close();
+      return false;
+    }
+  }
+
+  /** Delete a PPPoE secret by username. */
+  async deletePppoeSecret(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    name: string,
+  ): Promise<boolean> {
+    const conn = this.routerConn(router);
+    try {
+      await conn.connect();
+      const secrets = await conn.write('/ppp/secret/print', [`?name=${name}`]) as any[];
+      if (!secrets || secrets.length === 0) {
+        conn.close();
+        return true; // already removed
+      }
+      const id = secrets[0]['.id'];
+      await conn.write('/ppp/secret/remove', [`=.id=${id}`]);
+      conn.close();
+      this.logger.log(`PPPoE secret deleted: ${name} on ${router.ipAddress}`);
+      return true;
+    } catch (err: any) {
+      this.logger.warn(`deletePppoeSecret failed for ${name}: ${err.message}`);
+      conn.close();
+      return false;
+    }
+  }
 }

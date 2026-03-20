@@ -503,6 +503,14 @@
                     <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name || m.position }}</option>
                   </select>
                 </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">الراوتر (MikroTik)</label>
+                  <select v-model="form.routerId" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition cursor-pointer">
+                    <option :value="null">— بدون راوتر —</option>
+                    <option v-for="r in routers" :key="r.id" :value="r.id">{{ r.name }} ({{ r.ipAddress }})</option>
+                  </select>
+                  <p v-if="form.routerId" class="text-[11px] text-teal-600 mt-1">⚡ سيتم إنشاء الـ PPPoE secret تلقائياً في المايكروتك</p>
+                </div>
                 <div class="sm:col-span-2">
                   <label class="block text-xs font-semibold text-gray-600 mb-1.5">اسم الكابينة / السكتر</label>
                   <input v-model="form.cabinetSector" placeholder="مثال: كابينة A — سكتر 3" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition" />
@@ -1172,14 +1180,15 @@ const saving = ref(false);
 const subscribers = ref<any[]>([]);
 const packages = ref<any[]>([]);
 const managers = ref<any[]>([]);
+const routers = ref<any[]>([]);
 const editingId = ref<number | null>(null);
 const toast = ref({ show: false, message: '', type: 'success' });
 
 const form = ref({
   name: '', phone: '', address: '', username: '', password: '',
   ipAddress: '', cabinetSector: '', packageId: null as number | null,
-  managerId: null as number | null, notes: '',
-  subStartDate: '', subEndDate: ''
+  managerId: null as number | null, routerId: null as number | null,
+  notes: '', subStartDate: '', subEndDate: ''
 });
 
 function showToast(message: string, type: 'success' | 'error' = 'success') {
@@ -1259,13 +1268,14 @@ function avatarColor(name: string): string {
 
 async function loadData() {
   try {
-    const [subRes, pkgRes, mgrRes] = await Promise.allSettled([
-      api.get('/subscribers'), api.get('/packages'), api.get('/managers')
+    const [subRes, pkgRes, mgrRes, rtrRes] = await Promise.allSettled([
+      api.get('/subscribers'), api.get('/packages'), api.get('/managers'), api.get('/routers')
     ]);
     if (subRes.status === 'fulfilled') subscribers.value = subRes.value.data;
     else showToast('فشل تحميل بيانات المشتركين', 'error');
     if (pkgRes.status === 'fulfilled') packages.value = pkgRes.value.data;
     if (mgrRes.status === 'fulfilled') managers.value = mgrRes.value.data;
+    if (rtrRes.status === 'fulfilled') routers.value = rtrRes.value.data;
   } catch {
     showToast('فشل تحميل البيانات', 'error');
   }
@@ -1273,7 +1283,7 @@ async function loadData() {
 
 function openAdd() {
   editingId.value = null;
-  form.value = { name: '', phone: '', address: '', username: '', password: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, notes: '', subStartDate: '', subEndDate: '' };
+  form.value = { name: '', phone: '', address: '', username: '', password: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, routerId: null, notes: '', subStartDate: '', subEndDate: '' };
   showModal.value = true;
 }
 
@@ -1289,6 +1299,7 @@ function openEdit(sub: any) {
     cabinetSector: sub.cabinetSector || '',
     packageId: sub.package?.id ?? null,
     managerId: sub.manager?.id ?? null,
+    routerId: sub.router?.id ?? null,
     notes: sub.notes || ''
   };
   showModal.value = true;
@@ -1310,6 +1321,7 @@ async function save() {
       notes: form.value.notes.trim() || undefined,
     };
     if (form.value.password?.trim()) payload.password = form.value.password.trim();
+    if (form.value.routerId) payload.routerId = Number(form.value.routerId);
     if (form.value.ipAddress?.trim()) payload.ipAddress = form.value.ipAddress.trim();
     if (form.value.cabinetSector?.trim()) payload.cabinetSector = form.value.cabinetSector.trim();
     if (form.value.packageId) payload.packageId = Number(form.value.packageId);

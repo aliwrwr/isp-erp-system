@@ -19,28 +19,83 @@ const typeorm_2 = require("typeorm");
 const subscriber_entity_1 = require("./entities/subscriber.entity");
 const subscription_entity_1 = require("../subscriptions/entities/subscription.entity");
 const package_entity_1 = require("../packages/entities/package.entity");
+const router_entity_1 = require("../routers/entities/router.entity");
 const whatsapp_service_1 = require("../whatsapp/whatsapp.service");
+const mikrotik_service_1 = require("../routers/mikrotik.service");
 let SubscribersService = class SubscribersService {
     subscribersRepository;
     subscriptionsRepository;
     packagesRepository;
+    routerRepository;
     whatsappService;
-    constructor(subscribersRepository, subscriptionsRepository, packagesRepository, whatsappService) {
+    mikrotikService;
+    constructor(subscribersRepository, subscriptionsRepository, packagesRepository, routerRepository, whatsappService, mikrotikService) {
         this.subscribersRepository = subscribersRepository;
         this.subscriptionsRepository = subscriptionsRepository;
         this.packagesRepository = packagesRepository;
+        this.routerRepository = routerRepository;
         this.whatsappService = whatsappService;
+        this.mikrotikService = mikrotikService;
+    }
+    async syncPppoe(router, sub, action) {
+        if (!this.mikrotikService)
+            return;
+        const profile = sub.package?.routerProfile || undefined;
+        try {
+            if (action === 'create') {
+                await this.mikrotikService.createPppoeSecret(router, {
+                    name: sub.username,
+                    password: sub.password,
+                    profile,
+                    comment: 'ISP-ERP',
+                });
+                if (!sub.isEnabled) {
+                    await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, false);
+                }
+            }
+            else if (action === 'enable') {
+                const ok = await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, true);
+                if (!ok) {
+                    await this.mikrotikService.createPppoeSecret(router, {
+                        name: sub.username,
+                        password: sub.password,
+                        profile,
+                        comment: 'ISP-ERP',
+                    });
+                }
+            }
+            else if (action === 'disable') {
+                await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, false);
+            }
+            else if (action === 'delete') {
+                await this.mikrotikService.deletePppoeSecret(router, sub.username);
+            }
+        }
+        catch (_) { }
     }
     async create(createSubscriberDto) {
-        const { packageId, managerId, subStartDate, subEndDate, paymentMethod: pmCreate, partialAmount: paCreate, ...rest } = createSubscriberDto;
+        const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod: pmCreate, partialAmount: paCreate, ...rest } = createSubscriberDto;
         const subscriber = this.subscribersRepository.create({
             ...rest,
             status: 'active',
             password: rest.password?.trim() || rest.username,
             ...(packageId ? { package: { id: packageId } } : {}),
             ...(managerId ? { manager: { id: managerId } } : {}),
+            ...(routerId ? { router: { id: routerId } } : {}),
         });
         const saved = await this.subscribersRepository.save(subscriber);
+        if (routerId && this.mikrotikService) {
+            const router = await this.routerRepository.findOne({ where: { id: routerId } });
+            const pkg = packageId ? await this.packagesRepository.findOne({ where: { id: packageId } }) : null;
+            if (router) {
+                await this.syncPppoe(router, {
+                    username: saved.username,
+                    password: saved.password,
+                    isEnabled: saved.isEnabled !== false,
+                    package: pkg,
+                }, 'create');
+            }
+        }
         if (subStartDate && packageId) {
             const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
             let endDate = subEndDate ? new Date(subEndDate) : null;
@@ -70,18 +125,42 @@ let SubscribersService = class SubscribersService {
         return this.findOne(saved.id);
     }
     findAll() {
-        return this.subscribersRepository.find({ relations: ['manager', 'package', 'subscriptions'] });
+        return this.subscribersRepository.find({ relations: ['manager', 'package', 'subscriptions', 'router'] });
     }
     findOne(id) {
-        return this.subscribersRepository.findOne({ where: { id }, relations: ['manager', 'package', 'subscriptions'] });
+        return this.subscribersRepository.findOne({ where: { id }, relations: ['manager', 'package', 'subscriptions', 'router'] });
     }
     async update(id, updateSubscriberDto) {
-        const { packageId, managerId, subStartDate, subEndDate, paymentMethod, partialAmount, ...rest } = updateSubscriberDto;
+        const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod, partialAmount, ...rest } = updateSubscriberDto;
+        const before = await this.subscribersRepository.findOne({ where: { id }, relations: ['router', 'package'] });
         await this.subscribersRepository.update(id, {
             ...rest,
             ...(packageId !== undefined ? { package: { id: packageId } } : {}),
             ...(managerId !== undefined ? { manager: { id: managerId } } : {}),
+            ...(routerId !== undefined ? { router: routerId ? { id: routerId } : null } : {}),
         });
+        if (this.mikrotikService) {
+            const after = await this.subscribersRepository.findOne({ where: { id }, relations: ['router', 'package'] });
+            const router = after?.router ?? before?.router;
+            if (router) {
+                if (rest.isEnabled !== undefined) {
+                    await this.syncPppoe(router, {
+                        username: after?.username ?? before?.username ?? '',
+                        password: after?.password ?? before?.password ?? '',
+                        isEnabled: rest.isEnabled,
+                        package: after?.package ?? before?.package,
+                    }, rest.isEnabled ? 'enable' : 'disable');
+                }
+                const passwordChanged = rest.password && rest.password !== before?.password;
+                const profileChanged = packageId && (after?.package?.routerProfile !== before?.package?.routerProfile);
+                if (passwordChanged || profileChanged) {
+                    await this.mikrotikService.updatePppoeSecret(router, before?.username ?? '', {
+                        password: passwordChanged ? rest.password : undefined,
+                        profile: profileChanged ? (after?.package?.routerProfile ?? undefined) : undefined,
+                    }).catch(() => { });
+                }
+            }
+        }
         let activationNotificationSent = false;
         if (subStartDate && packageId) {
             const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
@@ -123,6 +202,14 @@ let SubscribersService = class SubscribersService {
         return this.findOne(id);
     }
     async remove(id) {
+        const sub = await this.subscribersRepository.findOne({ where: { id }, relations: ['router'] });
+        if (sub?.router && this.mikrotikService) {
+            await this.syncPppoe(sub.router, {
+                username: sub.username,
+                password: sub.password,
+                isEnabled: false,
+            }, 'delete');
+        }
         await this.subscriptionsRepository.delete({ subscriber: { id } });
         await this.subscribersRepository.delete(id);
     }
@@ -133,10 +220,14 @@ exports.SubscribersService = SubscribersService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(subscriber_entity_1.Subscriber)),
     __param(1, (0, typeorm_1.InjectRepository)(subscription_entity_1.Subscription)),
     __param(2, (0, typeorm_1.InjectRepository)(package_entity_1.Package)),
-    __param(3, (0, common_1.Optional)()),
+    __param(3, (0, typeorm_1.InjectRepository)(router_entity_1.Router)),
+    __param(4, (0, common_1.Optional)()),
+    __param(5, (0, common_1.Optional)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        whatsapp_service_1.WhatsappService])
+        typeorm_2.Repository,
+        whatsapp_service_1.WhatsappService,
+        mikrotik_service_1.MikrotikService])
 ], SubscribersService);
 //# sourceMappingURL=subscribers.service.js.map

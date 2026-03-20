@@ -1,6 +1,7 @@
 import { Package } from '../../packages/entities/package.entity';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
 import { Manager } from '../../managers/entities/manager.entity';
+import { Router } from '../../routers/entities/router.entity';
 export declare class Subscriber {
     id: number;
     name: string;
@@ -15,6 +16,7 @@ export declare class Subscriber {
     password: string;
     manager: Manager;
     package: Package;
+    router: Router;
     subscriptions: Subscription[];
     status: string;
     isEnabled: boolean;

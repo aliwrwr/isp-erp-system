@@ -4,9 +4,11 @@ import { Repository } from 'typeorm';
 import { Subscriber } from './entities/subscriber.entity';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Package } from '../packages/entities/package.entity';
+import { Router } from '../routers/entities/router.entity';
 import { CreateSubscriberDto } from './dto/create-subscriber.dto';
 import { UpdateSubscriberDto } from './dto/update-subscriber.dto';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { MikrotikService } from '../routers/mikrotik.service';
 
 @Injectable()
 export class SubscribersService {
@@ -17,11 +19,52 @@ export class SubscribersService {
     private subscriptionsRepository: Repository<Subscription>,
     @InjectRepository(Package)
     private packagesRepository: Repository<Package>,
+    @InjectRepository(Router)
+    private routerRepository: Repository<Router>,
     @Optional() private readonly whatsappService: WhatsappService,
+    @Optional() private readonly mikrotikService: MikrotikService,
   ) {}
 
+  /** Sync a PPPoE secret to MikroTik. Creates it if missing, updates if exists, disables if isEnabled=false. */
+  private async syncPppoe(
+    router: Router,
+    sub: { username: string; password: string; isEnabled: boolean; package?: any },
+    action: 'create' | 'enable' | 'disable' | 'delete',
+  ): Promise<void> {
+    if (!this.mikrotikService) return;
+    const profile = sub.package?.routerProfile || undefined;
+    try {
+      if (action === 'create') {
+        await this.mikrotikService.createPppoeSecret(router, {
+          name: sub.username,
+          password: sub.password,
+          profile,
+          comment: 'ISP-ERP',
+        });
+        if (!sub.isEnabled) {
+          await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, false);
+        }
+      } else if (action === 'enable') {
+        // Try enable; if secret doesn't exist yet, create it
+        const ok = await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, true);
+        if (!ok) {
+          await this.mikrotikService.createPppoeSecret(router, {
+            name: sub.username,
+            password: sub.password,
+            profile,
+            comment: 'ISP-ERP',
+          });
+        }
+      } else if (action === 'disable') {
+        await this.mikrotikService.setPppoeSecretEnabled(router, sub.username, false);
+      } else if (action === 'delete') {
+        await this.mikrotikService.deletePppoeSecret(router, sub.username);
+      }
+    } catch (_) { /* never throw — MikroTik errors must not break the ERP */ }
+  }
+
   async create(createSubscriberDto: CreateSubscriberDto): Promise<Subscriber> {
-    const { packageId, managerId, subStartDate, subEndDate, paymentMethod: pmCreate, partialAmount: paCreate, ...rest } = createSubscriberDto as any;
+    const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod: pmCreate, partialAmount: paCreate, ...rest } = createSubscriberDto as any;
     const subscriber = this.subscribersRepository.create({
       ...rest,
       status: 'active',
@@ -29,8 +72,23 @@ export class SubscribersService {
       password: rest.password?.trim() || rest.username,
       ...(packageId ? { package: { id: packageId } } : {}),
       ...(managerId ? { manager: { id: managerId } } : {}),
+      ...(routerId ? { router: { id: routerId } } : {}),
     });
     const saved = await (this.subscribersRepository.save(subscriber) as unknown as Promise<Subscriber>);
+
+    // Sync PPPoE secret to MikroTik
+    if (routerId && this.mikrotikService) {
+      const router = await this.routerRepository.findOne({ where: { id: routerId } });
+      const pkg = packageId ? await this.packagesRepository.findOne({ where: { id: packageId } }) : null;
+      if (router) {
+        await this.syncPppoe(router, {
+          username: saved.username,
+          password: (saved as any).password,
+          isEnabled: (saved as any).isEnabled !== false,
+          package: pkg,
+        }, 'create');
+      }
+    }
 
     // Auto-create subscription if startDate is provided
     if (subStartDate && packageId) {
@@ -71,20 +129,51 @@ export class SubscribersService {
   }
 
   findAll(): Promise<Subscriber[]> {
-    return this.subscribersRepository.find({ relations: ['manager', 'package', 'subscriptions'] });
+    return this.subscribersRepository.find({ relations: ['manager', 'package', 'subscriptions', 'router'] });
   }
 
   findOne(id: number): Promise<Subscriber | null> {
-    return this.subscribersRepository.findOne({ where: { id }, relations: ['manager', 'package', 'subscriptions'] });
+    return this.subscribersRepository.findOne({ where: { id }, relations: ['manager', 'package', 'subscriptions', 'router'] });
   }
 
   async update(id: number, updateSubscriberDto: UpdateSubscriberDto): Promise<Subscriber | null> {
-    const { packageId, managerId, subStartDate, subEndDate, paymentMethod, partialAmount, ...rest } = updateSubscriberDto as any;
+    const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod, partialAmount, ...rest } = updateSubscriberDto as any;
+
+    // Load current subscriber before update (for PPPoE comparison)
+    const before = await this.subscribersRepository.findOne({ where: { id }, relations: ['router', 'package'] });
+
     await this.subscribersRepository.update(id, {
       ...rest,
       ...(packageId !== undefined ? { package: { id: packageId } } : {}),
       ...(managerId !== undefined ? { manager: { id: managerId } } : {}),
+      ...(routerId !== undefined ? { router: routerId ? { id: routerId } : null } : {}),
     });
+
+    // ── MikroTik PPPoE sync ─────────────────────────────────────────
+    if (this.mikrotikService) {
+      const after = await this.subscribersRepository.findOne({ where: { id }, relations: ['router', 'package'] });
+      const router = after?.router ?? before?.router;
+      if (router) {
+        // isEnabled toggled
+        if (rest.isEnabled !== undefined) {
+          await this.syncPppoe(router, {
+            username: after?.username ?? before?.username ?? '',
+            password: after?.password ?? before?.password ?? '',
+            isEnabled: rest.isEnabled,
+            package: after?.package ?? before?.package,
+          }, rest.isEnabled ? 'enable' : 'disable');
+        }
+        // password or profile changed
+        const passwordChanged = rest.password && rest.password !== before?.password;
+        const profileChanged = packageId && (after?.package?.routerProfile !== before?.package?.routerProfile);
+        if (passwordChanged || profileChanged) {
+          await this.mikrotikService.updatePppoeSecret(router, before?.username ?? '', {
+            password: passwordChanged ? rest.password : undefined,
+            profile: profileChanged ? (after?.package?.routerProfile ?? undefined) : undefined,
+          }).catch(() => {});
+        }
+      }
+    }
 
     // Auto-create subscription on package change if startDate provided
     let activationNotificationSent = false;
@@ -145,6 +234,15 @@ export class SubscribersService {
   }
 
   async remove(id: number): Promise<void> {
+    // Delete PPPoE secret from MikroTik before removing subscriber
+    const sub = await this.subscribersRepository.findOne({ where: { id }, relations: ['router'] });
+    if (sub?.router && this.mikrotikService) {
+      await this.syncPppoe(sub.router, {
+        username: sub.username,
+        password: (sub as any).password,
+        isEnabled: false,
+      }, 'delete');
+    }
     await this.subscriptionsRepository.delete({ subscriber: { id } });
     await this.subscribersRepository.delete(id);
   }

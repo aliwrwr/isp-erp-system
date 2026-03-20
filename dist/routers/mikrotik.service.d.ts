@@ -81,4 +81,42 @@ export declare class MikrotikService {
         port?: number;
         connectionType?: string;
     }, sessionId: string): Promise<boolean>;
+    private routerConn;
+    createPppoeSecret(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, secret: {
+        name: string;
+        password: string;
+        profile?: string;
+        comment?: string;
+    }): Promise<boolean>;
+    setPppoeSecretEnabled(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, name: string, enabled: boolean): Promise<boolean>;
+    updatePppoeSecret(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, oldName: string, updates: {
+        name?: string;
+        password?: string;
+        profile?: string;
+    }): Promise<boolean>;
+    deletePppoeSecret(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, name: string): Promise<boolean>;
 }

@@ -165,6 +165,107 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
             return false;
         }
     }
+    routerConn(router) {
+        const isSsl = router.connectionType === 'API-SSL';
+        return this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
+    }
+    async createPppoeSecret(router, secret) {
+        const conn = this.routerConn(router);
+        try {
+            await conn.connect();
+            const params = [
+                `=name=${secret.name}`,
+                `=password=${secret.password}`,
+                `=service=pppoe`,
+                `=disabled=no`,
+            ];
+            if (secret.profile)
+                params.push(`=profile=${secret.profile}`);
+            if (secret.comment)
+                params.push(`=comment=${secret.comment}`);
+            await conn.write('/ppp/secret/add', params);
+            conn.close();
+            this.logger.log(`PPPoE secret created: ${secret.name} on ${router.ipAddress}`);
+            return true;
+        }
+        catch (err) {
+            this.logger.warn(`createPppoeSecret failed for ${secret.name}: ${err.message}`);
+            conn.close();
+            return false;
+        }
+    }
+    async setPppoeSecretEnabled(router, name, enabled) {
+        const conn = this.routerConn(router);
+        try {
+            await conn.connect();
+            const secrets = await conn.write('/ppp/secret/print', [`?name=${name}`]);
+            if (!secrets || secrets.length === 0) {
+                conn.close();
+                this.logger.warn(`setPppoeSecretEnabled: secret not found: ${name}`);
+                return false;
+            }
+            const id = secrets[0]['.id'];
+            await conn.write('/ppp/secret/set', [`=.id=${id}`, `=disabled=${enabled ? 'no' : 'yes'}`]);
+            conn.close();
+            this.logger.log(`PPPoE secret ${name} on ${router.ipAddress}: disabled=${!enabled}`);
+            return true;
+        }
+        catch (err) {
+            this.logger.warn(`setPppoeSecretEnabled failed for ${name}: ${err.message}`);
+            conn.close();
+            return false;
+        }
+    }
+    async updatePppoeSecret(router, oldName, updates) {
+        const conn = this.routerConn(router);
+        try {
+            await conn.connect();
+            const secrets = await conn.write('/ppp/secret/print', [`?name=${oldName}`]);
+            if (!secrets || secrets.length === 0) {
+                conn.close();
+                this.logger.warn(`updatePppoeSecret: secret not found: ${oldName}`);
+                return false;
+            }
+            const id = secrets[0]['.id'];
+            const params = [`=.id=${id}`];
+            if (updates.name)
+                params.push(`=name=${updates.name}`);
+            if (updates.password)
+                params.push(`=password=${updates.password}`);
+            if (updates.profile)
+                params.push(`=profile=${updates.profile}`);
+            await conn.write('/ppp/secret/set', params);
+            conn.close();
+            this.logger.log(`PPPoE secret updated: ${oldName} on ${router.ipAddress}`);
+            return true;
+        }
+        catch (err) {
+            this.logger.warn(`updatePppoeSecret failed for ${oldName}: ${err.message}`);
+            conn.close();
+            return false;
+        }
+    }
+    async deletePppoeSecret(router, name) {
+        const conn = this.routerConn(router);
+        try {
+            await conn.connect();
+            const secrets = await conn.write('/ppp/secret/print', [`?name=${name}`]);
+            if (!secrets || secrets.length === 0) {
+                conn.close();
+                return true;
+            }
+            const id = secrets[0]['.id'];
+            await conn.write('/ppp/secret/remove', [`=.id=${id}`]);
+            conn.close();
+            this.logger.log(`PPPoE secret deleted: ${name} on ${router.ipAddress}`);
+            return true;
+        }
+        catch (err) {
+            this.logger.warn(`deletePppoeSecret failed for ${name}: ${err.message}`);
+            conn.close();
+            return false;
+        }
+    }
 };
 exports.MikrotikService = MikrotikService;
 exports.MikrotikService = MikrotikService = MikrotikService_1 = __decorate([

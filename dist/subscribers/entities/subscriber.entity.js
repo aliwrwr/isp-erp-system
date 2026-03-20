@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const package_entity_1 = require("../../packages/entities/package.entity");
 const subscription_entity_1 = require("../../subscriptions/entities/subscription.entity");
 const manager_entity_1 = require("../../managers/entities/manager.entity");
+const router_entity_1 = require("../../routers/entities/router.entity");
 let Subscriber = class Subscriber {
     id;
     name;
@@ -28,6 +29,7 @@ let Subscriber = class Subscriber {
     password;
     manager;
     package;
+    router;
     subscriptions;
     status;
     isEnabled;
@@ -87,6 +89,10 @@ __decorate([
     (0, typeorm_1.ManyToOne)(() => package_entity_1.Package, pkg => pkg.subscribers),
     __metadata("design:type", package_entity_1.Package)
 ], Subscriber.prototype, "package", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => router_entity_1.Router, { nullable: true, eager: false }),
+    __metadata("design:type", router_entity_1.Router)
+], Subscriber.prototype, "router", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => subscription_entity_1.Subscription, subscription => subscription.subscriber),
     __metadata("design:type", Array)

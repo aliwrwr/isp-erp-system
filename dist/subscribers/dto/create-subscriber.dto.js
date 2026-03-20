@@ -23,6 +23,7 @@ class CreateSubscriberDto {
     password;
     packageId;
     managerId;
+    routerId;
     status;
     notes;
     subStartDate;
@@ -87,6 +88,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateSubscriberDto.prototype, "managerId", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateSubscriberDto.prototype, "routerId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
