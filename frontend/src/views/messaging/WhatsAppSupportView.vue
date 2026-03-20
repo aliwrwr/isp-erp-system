@@ -61,6 +61,44 @@
       </div>
     </div>
 
+    <!-- Auto Connect Setting -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <h2 class="text-base font-bold text-gray-700 flex items-center gap-2">
+          <i class="fas fa-plug text-gray-400"></i>
+          إعداد الاتصال التلقائي
+        </h2>
+        <button @click="saveAutoConnect" :disabled="savingAutoConnect"
+          class="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors disabled:opacity-50">
+          <i class="fas fa-save text-xs"></i>
+          {{ savingAutoConnect ? 'جاري الحفظ...' : 'حفظ' }}
+        </button>
+      </div>
+      <div class="p-4 rounded-xl border-2 transition-colors cursor-pointer"
+        :class="autoConnect ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-gray-50'"
+        @click="autoConnect = !autoConnect">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center"
+              :class="autoConnect ? 'bg-blue-500' : 'bg-gray-300'">
+              <i class="fas fa-plug text-white text-sm"></i>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-gray-700">اتصال تلقائي عند تشغيل النظام</p>
+              <p class="text-xs text-gray-500 mt-0.5">يقوم النظام بالاتصال بواتساب تلقائياً عند كل إعادة تشغيل — يستخدم الجلسة المحفوظة دون الحاجة لمسح QR</p>
+            </div>
+          </div>
+          <div class="relative flex-shrink-0">
+            <div class="w-12 h-6 rounded-full transition-colors"
+              :class="autoConnect ? 'bg-blue-500' : 'bg-gray-300'">
+              <div class="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all"
+                :class="autoConnect ? 'right-1' : 'left-1'"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Notification Settings -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
       <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
@@ -239,6 +277,8 @@ import api from '../../api';
 
 const loading = ref(false);
 const savingSettings = ref(false);
+const savingAutoConnect = ref(false);
+const autoConnect = ref(false);
 const sendingManual = ref(false);
 const manualPhone = ref('');
 const manualMessage = ref('');
@@ -270,16 +310,30 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
 async function refresh() {
   loading.value = true;
   try {
-    const [stRes, cfgRes] = await Promise.all([
+    const [stRes, cfgRes, mainCfgRes] = await Promise.all([
       api.get('/whatsapp/status'),
       api.get('/whatsapp/settings-support'),
+      api.get('/whatsapp/settings'),
     ]);
     Object.assign(status, stRes.data);
     Object.assign(settings, cfgRes.data);
+    autoConnect.value = mainCfgRes.data.autoConnect ?? false;
   } catch {
     showToast('فشل تحميل البيانات', 'error');
   } finally {
     loading.value = false;
+  }
+}
+
+async function saveAutoConnect() {
+  savingAutoConnect.value = true;
+  try {
+    await api.patch('/whatsapp/settings', { autoConnect: autoConnect.value });
+    showToast('تم حفظ إعداد الاتصال التلقائي');
+  } catch {
+    showToast('فشل الحفظ', 'error');
+  } finally {
+    savingAutoConnect.value = false;
   }
 }
 
