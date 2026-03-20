@@ -1374,8 +1374,9 @@ function getLatestSub(sub: any) {
   )[0];
 }
 
-function getEffectiveStatus(sub: any): 'active' | 'expired' | 'suspended' {
+function getEffectiveStatus(sub: any): 'active' | 'expired' | 'suspended' | 'disabled' {
   if (sub.status === 'suspended') return 'suspended';
+  if (sub.isEnabled === false) return 'disabled';
   const latest = getLatestSub(sub);
   if (!latest) return 'expired';
   if (latest?.endDate) {
@@ -1389,6 +1390,7 @@ function getStatusClass(sub: any): string {
   const s = getEffectiveStatus(sub);
   if (s === 'active') return 'bg-emerald-400';
   if (s === 'expired') return 'bg-red-400';
+  if (s === 'disabled') return 'bg-gray-400';
   return 'bg-orange-400';
 }
 
@@ -1396,7 +1398,8 @@ function getStatusTitle(sub: any): string {
   const s = getEffectiveStatus(sub);
   if (s === 'active') return 'فعال';
   if (s === 'expired') return 'منتهي الصلاحية';
-  return 'معطل';
+  if (s === 'disabled') return 'معطّل (محظور من الاتصال)';
+  return 'موقوف';
 }
 
 function remainingDays(endDate: string | Date): number {
