@@ -333,7 +333,7 @@
       <div v-if="selectedSub" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]" dir="rtl">
 
         <!-- ═══ HEADER ═══ -->
-        <div class="relative bg-gradient-to-bl from-indigo-700 via-blue-600 to-cyan-500 px-6 pt-5 pb-14 overflow-hidden">
+        <div class="relative bg-gradient-to-bl from-indigo-700 via-blue-600 to-cyan-500 px-6 pt-5 pb-6 overflow-hidden">
           <!-- decorative circles -->
           <div class="absolute -top-8 -left-8 w-40 h-40 bg-white/10 rounded-full"></div>
           <div class="absolute top-4 left-20 w-16 h-16 bg-white/5 rounded-full"></div>
@@ -379,8 +379,8 @@
         </div>
 
         <!-- ═══ SCROLLABLE CONTENT ═══ -->
-        <div class="overflow-y-auto flex-1 -mt-7">
-          <div class="px-5 pb-5 space-y-3">
+        <div class="overflow-y-auto flex-1">
+          <div class="px-5 pt-4 pb-5 space-y-3">
 
             <!-- ── Stats row ── -->
             <div class="grid grid-cols-3 gap-2">
