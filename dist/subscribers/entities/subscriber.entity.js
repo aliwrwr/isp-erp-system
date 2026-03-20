@@ -30,6 +30,7 @@ let Subscriber = class Subscriber {
     package;
     subscriptions;
     status;
+    isEnabled;
     notes;
     createdAt;
 };
@@ -94,6 +95,10 @@ __decorate([
     (0, typeorm_1.Column)({ default: 'active' }),
     __metadata("design:type", String)
 ], Subscriber.prototype, "status", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: true }),
+    __metadata("design:type", Boolean)
+], Subscriber.prototype, "isEnabled", void 0);
 __decorate([
     (0, typeorm_1.Column)('text', { nullable: true }),
     __metadata("design:type", String)

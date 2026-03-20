@@ -15,4 +15,5 @@ export declare class CreateSubscriberDto {
     subEndDate?: string;
     paymentMethod?: string;
     partialAmount?: number;
+    isEnabled?: boolean;
 }

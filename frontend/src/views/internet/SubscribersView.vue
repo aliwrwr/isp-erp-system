@@ -578,6 +578,12 @@
               <i class="fas fa-pause-circle w-4 text-center"></i>
               <span>إلغاء / إيقاف</span>
             </button>
+            <!-- تشغيل / إيقاف الراوتر -->
+            <button @click="toggleEnabled" class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
+              :class="contextMenuSub?.isEnabled !== false ? 'text-red-600 hover:bg-red-50' : 'text-teal-600 hover:bg-teal-50'">
+              <i class="w-4 text-center" :class="contextMenuSub?.isEnabled !== false ? 'fas fa-stop-circle' : 'fas fa-play-circle'"></i>
+              <span>{{ contextMenuSub?.isEnabled !== false ? 'إيقاف الراوتر' : 'تشغيل الراوتر' }}</span>
+            </button>
 
             <div class="my-1 border-t border-gray-100"></div>
 
@@ -1535,6 +1541,22 @@ function deleteFromMenu() {
   if (!sub) return;
   deleteTargetSub.value = sub;
   showDeleteConfirmModal.value = true;
+}
+
+async function toggleEnabled() {
+  const sub = contextMenuSub.value;
+  closeContextMenu();
+  if (!sub) return;
+  const newVal = sub.isEnabled === false ? true : false;
+  try {
+    await api.patch(`/subscribers/${sub.id}`, { isEnabled: newVal });
+    sub.isEnabled = newVal;
+    const idx = subscribers.value.findIndex((s: any) => s.id === sub.id);
+    if (idx !== -1) subscribers.value[idx].isEnabled = newVal;
+    showToast(newVal ? 'تم تشغيل الراوتر للمشترك' : 'تم إيقاف الراوتر للمشترك', newVal ? 'success' : 'error');
+  } catch {
+    showToast('فشل تغيير حالة الراوتر', 'error');
+  }
 }
 
 async function confirmDelete() {

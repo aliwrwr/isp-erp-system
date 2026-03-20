@@ -17,6 +17,7 @@ export declare class Subscriber {
     package: Package;
     subscriptions: Subscription[];
     status: string;
+    isEnabled: boolean;
     notes: string;
     createdAt: Date;
 }

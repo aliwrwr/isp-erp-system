@@ -50,6 +50,9 @@ export class Subscriber {
   @Column({ default: 'active' })
   status: string;
 
+  @Column({ default: true })
+  isEnabled: boolean;
+
   @Column('text', { nullable: true })
   notes: string;
 

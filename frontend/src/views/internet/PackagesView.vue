@@ -27,6 +27,7 @@
           <div class="flex justify-between"><span>⬇ سرعة التحميل</span><span class="font-medium text-secondary">{{ pkg.downloadSpeed }} Mbps</span></div>
           <div class="flex justify-between"><span>⬆ سرعة الرفع</span><span class="font-medium text-secondary">{{ pkg.uploadSpeed }} Mbps</span></div>
           <div class="flex justify-between"><span>السعر</span><span class="font-bold text-primary">{{ pkg.price }} د.ع</span></div>
+          <div v-if="pkg.routerProfile" class="flex justify-between"><span>Pool</span><span class="font-medium text-secondary font-mono text-xs">{{ pkg.routerProfile }}</span></div>
         </div>
         <div class="flex gap-2 mt-4 pt-3 border-t border-gray-100">
           <button @click="openEdit(pkg)" class="flex-1 text-center py-1.5 text-xs text-primary hover:bg-primary/5 rounded-lg transition">
@@ -113,6 +114,11 @@
               <label class="block text-sm font-medium text-gray-600 mb-1">المدة (أيام) <span class="text-red-500">*</span></label>
               <input v-model.number="form.duration" type="number" min="1" placeholder="30" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-600 mb-1">Pool (بروفايل الراوتر)</label>
+              <input v-model="form.routerProfile" placeholder="مثال: pppoe-profile" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary" />
+              <p class="text-xs text-gray-400 mt-1">اسم البروفايل (PPPoE Pool) في الميكروتك المرتبط بهذه الباقة</p>
+            </div>
           </div>
         </div>
         <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
@@ -138,7 +144,7 @@ const saving = ref(false);
 const showDeleteConfirmModal = ref(false);
 const deleteTargetPkg = ref<any>(null);
 const editingId = ref<number | null>(null);
-const form = ref({ name: '', downloadSpeed: 0, uploadSpeed: 0, price: 0, duration: 30 });
+const form = ref({ name: '', downloadSpeed: 0, uploadSpeed: 0, price: 0, duration: 30, routerProfile: '' });
 const toast = ref({ show: false, message: '', type: 'success' });
 
 function showToast(message: string, type: 'success' | 'error' = 'success') {
@@ -157,7 +163,7 @@ async function loadData() {
 
 function openAdd() {
   editingId.value = null;
-  form.value = { name: '', downloadSpeed: 0, uploadSpeed: 0, price: 0, duration: 30 };
+  form.value = { name: '', downloadSpeed: 0, uploadSpeed: 0, price: 0, duration: 30, routerProfile: '' };
   showModal.value = true;
 }
 
@@ -169,6 +175,7 @@ function openEdit(pkg: any) {
     uploadSpeed: Number(pkg.uploadSpeed),
     price: Number(pkg.price),
     duration: Number(pkg.duration),
+    routerProfile: pkg.routerProfile || '',
   };
   showModal.value = true;
 }
@@ -181,13 +188,14 @@ async function save() {
 
   saving.value = true;
   try {
-    const payload = {
+    const payload: any = {
       name: form.value.name.trim(),
       downloadSpeed: Number(form.value.downloadSpeed),
       uploadSpeed: Number(form.value.uploadSpeed),
       price: Number(form.value.price),
       duration: Number(form.value.duration),
     };
+    if (form.value.routerProfile.trim()) payload.routerProfile = form.value.routerProfile.trim();
     if (editingId.value) {
       await api.patch(`/packages/${editingId.value}`, payload);
       logActivity({ action: 'edit_package', module: 'package', packageName: form.value.name, details: `تعديل باقة: ${form.value.name}` });

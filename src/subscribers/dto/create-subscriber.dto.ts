@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean } from 'class-validator';
 
 export class CreateSubscriberDto {
   @IsString()
@@ -64,4 +64,8 @@ export class CreateSubscriberDto {
   @IsNumber()
   @IsOptional()
   partialAmount?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  isEnabled?: boolean;
 }

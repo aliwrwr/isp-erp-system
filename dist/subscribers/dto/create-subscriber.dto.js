@@ -28,6 +28,7 @@ class CreateSubscriberDto {
     subEndDate;
     paymentMethod;
     partialAmount;
+    isEnabled;
 }
 exports.CreateSubscriberDto = CreateSubscriberDto;
 __decorate([
@@ -110,4 +111,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateSubscriberDto.prototype, "partialAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateSubscriberDto.prototype, "isEnabled", void 0);
 //# sourceMappingURL=create-subscriber.dto.js.map
