@@ -593,7 +593,7 @@
             <!-- الغاء -->
             <button @click="suspendSub" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-orange-500 hover:bg-orange-50 transition-colors">
               <i class="fas fa-pause-circle w-4 text-center"></i>
-              <span>إلغاء / إيقاف</span>
+              <span>إلغاء الاشتراك</span>
             </button>
             <!-- تعطيل / إلغاء التعطيل -->
             <button @click="toggleEnabled" class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
