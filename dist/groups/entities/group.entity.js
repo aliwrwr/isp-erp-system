@@ -15,6 +15,7 @@ let Group = class Group {
     id;
     name;
     description;
+    layout;
     permissions;
     active;
 };
@@ -31,6 +32,10 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Group.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)('text', { nullable: true }),
+    __metadata("design:type", String)
+], Group.prototype, "layout", void 0);
 __decorate([
     (0, typeorm_1.Column)('text', { nullable: true }),
     __metadata("design:type", String)
