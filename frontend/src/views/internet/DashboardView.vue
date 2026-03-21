@@ -145,53 +145,6 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Recent Subscribers -->
-      <DataTable title="آخر المشتركين">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-right text-gray-500 font-medium">الاسم</th>
-              <th class="px-4 py-3 text-right text-gray-500 font-medium">الباقة</th>
-              <th class="px-4 py-3 text-right text-gray-500 font-medium">الحالة</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(sub, i) in recentSubs" :key="i" class="border-t border-gray-50 hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium text-secondary">{{ sub.name }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ sub.package }}</td>
-              <td class="px-4 py-3">
-                <span class="px-2 py-1 rounded-full text-xs font-medium" :class="sub.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                  {{ sub.active ? 'نشط' : 'معلق' }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </DataTable>
-
-      <!-- Expiring Soon -->
-      <DataTable title="ينتهي قريباً">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-right text-gray-500 font-medium">المشترك</th>
-              <th class="px-4 py-3 text-right text-gray-500 font-medium">تاريخ الانتهاء</th>
-              <th class="px-4 py-3 text-right text-gray-500 font-medium">الأيام المتبقية</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(item, i) in expiringSoon" :key="i" class="border-t border-gray-50 hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium text-secondary">{{ item.name }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ item.expiry }}</td>
-              <td class="px-4 py-3">
-                <span class="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">{{ item.days }} يوم</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </DataTable>
-    </div>
   </div>
 </template>
 
@@ -215,26 +168,6 @@ const expiredSub = computed(() => totalSub.value - activeSub.value);
 const monthlyRevenue = computed(() => {
   const sum = subscriptionsData.value.reduce((s, x) => s + Number(x.price || 0), 0);
   return '$' + sum.toLocaleString();
-});
-
-const recentSubs = computed(() => subscribersData.value.slice(0, 5).map(s => ({
-  name: s.name,
-  package: s.package?.name || '—',
-  active: s.status === 'active',
-})));
-
-const expiringSoon = computed(() => {
-  const now = Date.now();
-  return subscriptionsData.value
-    .filter(s => s.status === 'active' && s.endDate)
-    .map(s => {
-      const end = new Date(s.endDate).getTime();
-      const days = Math.ceil((end - now) / 86400000);
-      return { name: s.subscriber?.name || '—', expiry: s.endDate, days };
-    })
-    .filter(s => s.days > 0 && s.days <= 30)
-    .sort((a, b) => a.days - b.days)
-    .slice(0, 5);
 });
 
 // ── Routers ───────────────────────────────────────────────────────
