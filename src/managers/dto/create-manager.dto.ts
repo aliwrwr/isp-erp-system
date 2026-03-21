@@ -1,8 +1,32 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
 
 export class CreateManagerDto {
+  @IsOptional()
+  @IsString()
+  username?: string;
+
   @IsString()
   name: string;
+
+  @IsOptional()
+  @IsNumber()
+  balance?: number;
+
+  @IsOptional()
+  @IsNumber()
+  loans?: number;
+
+  @IsOptional()
+  @IsString()
+  permissions?: string;
+
+  @IsOptional()
+  @IsNumber()
+  parentId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  points?: number;
 
   @IsOptional()
   @IsString()

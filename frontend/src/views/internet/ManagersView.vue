@@ -31,41 +31,54 @@
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="text-right px-4 py-3 font-semibold text-gray-500">#</th>
-              <th class="text-right px-4 py-3 font-semibold text-gray-500">الاسم</th>
-              <th class="text-right px-4 py-3 font-semibold text-gray-500">الهاتف</th>
-              <th class="text-right px-4 py-3 font-semibold text-gray-500">البريد الإلكتروني</th>
-              <th class="text-right px-4 py-3 font-semibold text-gray-500">المنصب</th>
-              <th class="text-right px-4 py-3 font-semibold text-gray-500">الحالة</th>
-              <th class="text-right px-4 py-3 font-semibold text-gray-500">الإجراءات</th>
+              <th class="px-3 py-3">
+                <input type="checkbox" class="w-4 h-4 accent-primary rounded cursor-pointer"
+                  :checked="selectedIds.size > 0 && paginatedManagers.every(m => selectedIds.has(m.id))"
+                  :indeterminate="selectedIds.size > 0 && !paginatedManagers.every(m => selectedIds.has(m.id))"
+                  @change="toggleSelectAll" />
+              </th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">#</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">اسم الدخول</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الاسم الكامل</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الرصيد</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">القروض</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الصلاحيات</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">تابع الى</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">عدد المشتركين</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">النقاط</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الإجراءات</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="filteredManagers.length === 0">
-              <td colspan="7" class="text-center py-12 text-gray-400">لا يوجد مدراء</td>
+              <td colspan="11" class="text-center py-12 text-gray-400">لا يوجد مدراء</td>
             </tr>
             <tr
               v-for="(m, index) in paginatedManagers"
               :key="m.id"
-              class="border-b border-gray-50 hover:bg-gray-50 transition"
+              :class="selectedIds.has(m.id) ? 'bg-primary/5' : 'hover:bg-gray-50'"
+              class="border-b border-gray-50 transition"
             >
-              <td class="px-4 py-3 text-gray-400">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
-              <td class="px-4 py-3 font-medium text-secondary">{{ m.name }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ m.phone || '—' }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ m.email || '—' }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ m.position || '—' }}</td>
-              <td class="px-4 py-3">
-                <span
-                  :class="m.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                  class="px-2 py-0.5 rounded-full text-xs font-medium"
-                >
-                  {{ m.active ? 'نشط' : 'غير نشط' }}
-                </span>
+              <td class="px-3 py-3">
+                <input type="checkbox" class="w-4 h-4 accent-primary rounded cursor-pointer"
+                  :checked="selectedIds.has(m.id)"
+                  @change="toggleSelect(m.id)" />
               </td>
-              <td class="px-4 py-3">
-                <div class="flex gap-2">
-                  <button @click="openEdit(m)" class="text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg text-xs transition">تعديل</button>
-                  <button @click="remove(m.id)" class="text-danger hover:bg-danger/10 px-3 py-1.5 rounded-lg text-xs transition">حذف</button>
+              <td class="px-3 py-3 text-gray-400">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+              <td class="px-3 py-3 font-mono text-indigo-700 font-semibold">{{ m.username || '—' }}</td>
+              <td class="px-3 py-3 font-medium text-secondary">{{ m.name }}</td>
+              <td class="px-3 py-3 text-green-700 font-semibold">{{ fmtNum(m.balance) }}</td>
+              <td class="px-3 py-3 text-red-600 font-semibold">{{ fmtNum(m.loans) }}</td>
+              <td class="px-3 py-3 text-gray-600 max-w-[140px] truncate" :title="m.permissions || ''">{{ m.permissions || '—' }}</td>
+              <td class="px-3 py-3 text-gray-600">{{ getParentName(m.parentId) }}</td>
+              <td class="px-3 py-3">
+                <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ m.subscriberCount ?? 0 }}</span>
+              </td>
+              <td class="px-3 py-3 text-amber-600 font-semibold">{{ fmtNum(m.points) }}</td>
+              <td class="px-3 py-3">
+                <div class="flex gap-1">
+                  <button @click="openEdit(m)" class="text-primary hover:bg-primary/10 px-2.5 py-1 rounded-lg text-xs transition">تعديل</button>
+                  <button @click="remove(m.id)" class="text-danger hover:bg-danger/10 px-2.5 py-1 rounded-lg text-xs transition">حذف</button>
                 </div>
               </td>
             </tr>
@@ -121,36 +134,77 @@
 
     <!-- Modal -->
     <div v-if="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showModal = false">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl">
         <div class="p-6 border-b border-gray-100 flex items-center justify-between">
           <h3 class="font-bold text-lg text-secondary">{{ editingId ? 'تعديل مدير' : 'إضافة مدير جديد' }}</h3>
           <button @click="showModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
         </div>
-        <div class="p-6 space-y-4">
+        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <div class="grid grid-cols-2 gap-4">
-            <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-600 mb-1">الاسم <span class="text-red-500">*</span></label>
+            <!-- اسم الدخول -->
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">اسم الدخول</label>
+              <input v-model="form.username" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono" placeholder="username" />
+            </div>
+            <!-- الاسم الكامل -->
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">الاسم الكامل <span class="text-red-500">*</span></label>
               <input v-model="form.name" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
+            <!-- الرصيد -->
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">الرصيد</label>
+              <input v-model.number="form.balance" type="number" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <!-- القروض -->
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">القروض</label>
+              <input v-model.number="form.loans" type="number" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <!-- الصلاحيات -->
+            <div class="col-span-2">
+              <label class="block text-sm font-medium text-gray-600 mb-1">الصلاحيات</label>
+              <input v-model="form.permissions" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="مثال: internet.subscribers, internet.managers" />
+            </div>
+            <!-- تابع الى -->
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">تابع الى</label>
+              <select v-model="form.parentId" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                <option :value="null">— بدون —</option>
+                <option v-for="mgr in managers.filter(mg => mg.id !== editingId)" :key="mgr.id" :value="mgr.id">
+                  {{ mgr.name }}{{ mgr.username ? ` (${mgr.username})` : '' }}
+                </option>
+              </select>
+            </div>
+            <!-- النقاط -->
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">النقاط</label>
+              <input v-model.number="form.points" type="number" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <!-- الهاتف -->
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1">الهاتف</label>
               <input v-model="form.phone" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
+            <!-- البريد -->
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1">البريد الإلكتروني</label>
               <input v-model="form.email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
+            <!-- المنصب -->
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1">المنصب</label>
               <input v-model="form.position" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
+            <!-- نشط -->
             <div class="flex items-center gap-2 mt-2">
               <input v-model="form.active" type="checkbox" id="activeCheck" class="w-4 h-4 accent-primary" />
               <label for="activeCheck" class="text-sm text-gray-600">نشط</label>
             </div>
+            <!-- ملاحظات -->
             <div class="col-span-2">
               <label class="block text-sm font-medium text-gray-600 mb-1">ملاحظات</label>
-              <textarea v-model="form.notes" rows="3" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+              <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
             </div>
           </div>
         </div>
@@ -183,7 +237,41 @@ const search = ref('');
 const currentPage = ref(1);
 const pageSize = ref(10);
 const toast = ref({ show: false, message: '', type: 'success' });
-const form = ref({ name: '', phone: '', email: '', position: '', notes: '', active: true });
+const selectedIds = ref<Set<number>>(new Set());
+
+const form = ref({
+  username: '', name: '', balance: 0, loans: 0,
+  permissions: '', parentId: null as number | null, points: 0,
+  phone: '', email: '', position: '', notes: '', active: true,
+});
+
+function fmtNum(v: any): string {
+  const n = parseFloat(v);
+  if (!v && v !== 0) return '—';
+  if (isNaN(n)) return '—';
+  return n % 1 === 0 ? String(n) : n.toFixed(2);
+}
+
+function getParentName(parentId: number | null): string {
+  if (!parentId) return '—';
+  const p = managers.value.find(m => m.id === parentId);
+  return p ? (p.name + (p.username ? ` (${p.username})` : '')) : '—';
+}
+
+function toggleSelect(id: number) {
+  const s = new Set(selectedIds.value);
+  s.has(id) ? s.delete(id) : s.add(id);
+  selectedIds.value = s;
+}
+
+function toggleSelectAll(e: Event) {
+  const checked = (e.target as HTMLInputElement).checked;
+  const s = new Set(selectedIds.value);
+  for (const m of paginatedManagers.value) {
+    checked ? s.add(m.id) : s.delete(m.id);
+  }
+  selectedIds.value = s;
+}
 
 function showToast(message: string, type: 'success' | 'error' = 'success') {
   toast.value = { show: true, message, type };
@@ -224,14 +312,20 @@ async function loadData() {
 
 function openAdd() {
   editingId.value = null;
-  form.value = { name: '', phone: '', email: '', position: '', notes: '', active: true };
+  form.value = { username: '', name: '', balance: 0, loans: 0, permissions: '', parentId: null, points: 0, phone: '', email: '', position: '', notes: '', active: true };
   showModal.value = true;
 }
 
 function openEdit(m: any) {
   editingId.value = m.id;
   form.value = {
+    username: m.username || '',
     name: m.name || '',
+    balance: parseFloat(m.balance) || 0,
+    loans: parseFloat(m.loans) || 0,
+    permissions: m.permissions || '',
+    parentId: m.parentId || null,
+    points: parseFloat(m.points) || 0,
     phone: m.phone || '',
     email: m.email || '',
     position: m.position || '',
