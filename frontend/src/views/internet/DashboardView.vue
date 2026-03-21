@@ -145,6 +145,105 @@
       </div>
     </div>
 
+    <!-- Bottom Row: Subscriber Stats + Server Resources -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Right: Subscriber Stats -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
+          <i class="fas fa-users text-internet text-sm"></i>
+          <h3 class="font-bold text-secondary text-sm">المشتركين</h3>
+        </div>
+        <div class="divide-y divide-gray-50">
+          <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition">
+            <span class="text-sm font-bold text-secondary">{{ totalSub }}</span>
+            <span class="text-sm text-gray-500">عدد المشتركين</span>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition">
+            <span class="text-sm font-bold text-green-600">{{ activeSub }}</span>
+            <span class="text-sm text-gray-500">المشتركين الفعاليين</span>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition">
+            <span class="text-sm font-bold text-red-500">{{ expiredSub }}</span>
+            <span class="text-sm text-gray-500">المنتهي اشتراكهم</span>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition">
+            <span class="text-sm font-bold text-orange-500">{{ expiringToday }}</span>
+            <span class="text-sm text-gray-500">ينتهي اشتراكهم اليوم</span>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition">
+            <span class="text-sm font-bold text-yellow-600">{{ almostExpiring }}</span>
+            <span class="text-sm text-gray-500">على وشك الانتهاء</span>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-50/50 transition">
+            <span class="text-sm font-bold text-indigo-600">{{ adminCount }}</span>
+            <span class="text-sm text-gray-500">مدراء النظام</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Left: Server Resources -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
+          <i class="fas fa-microchip text-internet text-sm"></i>
+          <h3 class="font-bold text-secondary text-sm">موارد الخادم</h3>
+          <button @click="fetchServerStats" class="mr-auto text-xs text-gray-400 hover:text-primary transition flex items-center gap-1">
+            <i class="fas fa-sync-alt text-[10px]"></i> تحديث
+          </button>
+        </div>
+        <div class="p-5 grid grid-cols-3 gap-4">
+          <!-- CPU -->
+          <div class="flex flex-col items-center">
+            <div class="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center mb-2">
+              <i class="fas fa-robot text-orange-500 text-sm"></i>
+            </div>
+            <svg viewBox="-5 -5 210 115" class="w-full max-w-[140px]">
+              <path d="M 10 100 A 90 90 0 0 1 190 100"
+                fill="none" stroke="#f3f4f6" stroke-width="18" stroke-linecap="round"/>
+              <path d="M 10 100 A 90 90 0 0 1 190 100"
+                fill="none" stroke="#f97316" stroke-width="18" stroke-linecap="round"
+                :stroke-dasharray="`${(serverStats.cpu / 100) * 282.74} 282.74`"
+                class="transition-all duration-700"/>
+              <text x="100" y="82" text-anchor="middle" font-size="20" font-weight="700" fill="#0ea5e9">{{ serverStats.cpu }}%</text>
+            </svg>
+            <p class="text-xs text-gray-500 mt-1 font-medium">المعالج</p>
+          </div>
+          <!-- RAM -->
+          <div class="flex flex-col items-center">
+            <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center mb-2">
+              <i class="fas fa-memory text-purple-500 text-sm"></i>
+            </div>
+            <svg viewBox="-5 -5 210 115" class="w-full max-w-[140px]">
+              <path d="M 10 100 A 90 90 0 0 1 190 100"
+                fill="none" stroke="#f3f4f6" stroke-width="18" stroke-linecap="round"/>
+              <path d="M 10 100 A 90 90 0 0 1 190 100"
+                fill="none" stroke="#a855f7" stroke-width="18" stroke-linecap="round"
+                :stroke-dasharray="`${(serverStats.ram / 100) * 282.74} 282.74`"
+                class="transition-all duration-700"/>
+              <text x="100" y="82" text-anchor="middle" font-size="20" font-weight="700" fill="#0ea5e9">{{ serverStats.ram }}%</text>
+            </svg>
+            <p class="text-xs text-gray-500 mt-1 font-medium">الذاكرة العشوائية</p>
+          </div>
+          <!-- Disk -->
+          <div class="flex flex-col items-center">
+            <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center mb-2">
+              <i class="fas fa-hdd text-green-500 text-sm"></i>
+            </div>
+            <svg viewBox="-5 -5 210 115" class="w-full max-w-[140px]">
+              <path d="M 10 100 A 90 90 0 0 1 190 100"
+                fill="none" stroke="#f3f4f6" stroke-width="18" stroke-linecap="round"/>
+              <path d="M 10 100 A 90 90 0 0 1 190 100"
+                fill="none" stroke="#22c55e" stroke-width="18" stroke-linecap="round"
+                :stroke-dasharray="`${(serverStats.disk / 100) * 282.74} 282.74`"
+                class="transition-all duration-700"/>
+              <text x="100" y="82" text-anchor="middle" font-size="20" font-weight="700" fill="#0ea5e9">{{ serverStats.disk }}%</text>
+            </svg>
+            <p class="text-xs text-gray-500 mt-1 font-medium">وحدة الخزن</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -161,6 +260,7 @@ const canSeeRouters = computed(() => authStore.hasPermission('internet.routers')
 // ── Subscribers / Subscriptions ───────────────────────────────────
 const subscribersData = ref<any[]>([]);
 const subscriptionsData = ref<any[]>([]);
+const usersData = ref<any[]>([]);
 
 const totalSub = computed(() => subscribersData.value.length);
 const activeSub = computed(() => subscribersData.value.filter(s => s.status === 'active').length);
@@ -169,6 +269,29 @@ const monthlyRevenue = computed(() => {
   const sum = subscriptionsData.value.reduce((s, x) => s + Number(x.price || 0), 0);
   return '$' + sum.toLocaleString();
 });
+
+const expiringToday = computed(() => {
+  const today = new Date().toISOString().slice(0, 10);
+  return subscriptionsData.value.filter(s => s.status === 'active' && s.endDate?.slice(0, 10) === today).length;
+});
+const almostExpiring = computed(() => {
+  const now = Date.now();
+  return subscriptionsData.value.filter(s => {
+    if (s.status !== 'active' || !s.endDate) return false;
+    const days = Math.ceil((new Date(s.endDate).getTime() - now) / 86400000);
+    return days > 0 && days <= 7;
+  }).length;
+});
+const adminCount = computed(() => usersData.value.length);
+
+// ── Server Resources ──────────────────────────────────────────────
+const serverStats = ref({ cpu: 0, ram: 0, disk: 0 });
+async function fetchServerStats() {
+  try {
+    const { data } = await api.get('/system/stats');
+    serverStats.value = data;
+  } catch { /* ignore */ }
+}
 
 // ── Routers ───────────────────────────────────────────────────────
 const routers = ref<any[]>([]);
@@ -239,13 +362,19 @@ async function refreshRouters() {
 // ── Mount ─────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    const requests: Promise<any>[] = [api.get('/subscribers'), api.get('/subscriptions')];
+    const requests: Promise<any>[] = [
+      api.get('/subscribers'),
+      api.get('/subscriptions'),
+      api.get('/users'),
+    ];
     if (canSeeRouters.value) requests.push(api.get('/routers'));
-    const [subRes, subscRes, routersRes] = await Promise.all(requests);
+    const [subRes, subscRes, usersRes, routersRes] = await Promise.all(requests);
     subscribersData.value = subRes.data;
     subscriptionsData.value = subscRes.data;
+    usersData.value = usersRes?.data || [];
     if (routersRes) routers.value = routersRes.data;
   } catch {}
+  fetchServerStats();
   // Check routers status in background (non-blocking)
   if (canSeeRouters.value) {
     refreshRouters();
