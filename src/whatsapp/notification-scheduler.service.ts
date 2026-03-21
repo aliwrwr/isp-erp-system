@@ -217,28 +217,23 @@ export class NotificationSchedulerService {
   }
 
   /**
-   * Runs every day at 00:01 AM.
-   * Finds all active subscriptions whose endDate has passed, marks them expired,
-   * then disables the subscriber on MikroTik and kicks active sessions.
+   * Runs every minute.
+   * Finds all active subscriptions whose endDate has passed (exact datetime),
+   * marks them expired, then disables the subscriber on MikroTik and kicks active sessions.
    */
-  @Cron('1 0 * * *')
+  @Cron('* * * * *')
   async autoExpireSubscriptions(): Promise<void> {
-    this.logger.log('Running auto-expire check for subscriptions...');
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
 
-    // Find all subscriptions that ended before today and are still 'active'
+    // Find all subscriptions whose exact endDate has passed and are still 'active'
     const expired = await this.subscriptionsRepository.find({
       where: { endDate: LessThan(now as any) as any, status: 'active' },
       relations: ['subscriber', 'subscriber.router'],
     });
 
-    if (expired.length === 0) {
-      this.logger.log('No expired subscriptions found.');
-      return;
-    }
+    if (expired.length === 0) return;
 
-    this.logger.log(`Found ${expired.length} expired subscription(s). Processing...`);
+    if (expired.length === 0) return;
 
     const processedSubscribers = new Set<number>();
 
@@ -252,18 +247,15 @@ export class NotificationSchedulerService {
 
       // Disable subscriber in DB
       await this.subscriberRepository.update(subscriber.id, { isEnabled: false } as any).catch(() => {});
-      this.logger.log(`Disabled subscriber: ${subscriber.name} (id=${subscriber.id})`);
+      this.logger.log(`Auto-expire: disabled subscriber ${subscriber.name} (id=${subscriber.id}) at ${new Date().toISOString()}`);
 
       // Disable on MikroTik + kick active session
       if (this.mikrotikService && subscriber.router) {
         const router = subscriber.router;
         await this.mikrotikService.setPppoeSecretEnabled(router, subscriber.username, false).catch(() => {});
         await this.mikrotikService.disconnectByUsername(router, subscriber.username).catch(() => {});
-        this.logger.log(`MikroTik: disabled+disconnected ${subscriber.username} on ${router.ipAddress}`);
       }
     }
-
-    this.logger.log(`Auto-expire complete. Processed ${processedSubscribers.size} subscriber(s).`);
   }
 
   private formatDate(date: Date | string): string {

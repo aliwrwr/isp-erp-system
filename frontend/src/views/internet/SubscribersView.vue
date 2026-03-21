@@ -1333,8 +1333,16 @@ async function save() {
     if (form.value.packageId) payload.packageId = Number(form.value.packageId);
     if (form.value.managerId) payload.managerId = Number(form.value.managerId);
     if (!editingId.value && form.value.subStartDate) {
-      payload.subStartDate = form.value.subStartDate;
-      if (form.value.subEndDate) payload.subEndDate = form.value.subEndDate;
+      // Attach current time so endDate is calculated with same time-of-day
+      const [y, m, d] = form.value.subStartDate.split('-').map(Number);
+      const now = new Date();
+      const startDt = new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds());
+      payload.subStartDate = startDt.toISOString();
+      if (form.value.subEndDate) {
+        const [ey, em, ed] = form.value.subEndDate.split('-').map(Number);
+        const endDt = new Date(ey, em - 1, ed, now.getHours(), now.getMinutes(), now.getSeconds());
+        payload.subEndDate = endDt.toISOString();
+      }
     }
 
     if (editingId.value) {
@@ -1512,10 +1520,14 @@ async function saveActivate() {
   if (!sub) return;
   saving.value = true;
   try {
+    // Attach current time so endDate is calculated with same time-of-day
+    const [y, m, d] = activateForm.value.startDate.split('-').map(Number);
+    const now = new Date();
+    const startDt = new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds());
     const payload: any = {
       status: 'active',
       isEnabled: true,
-      subStartDate: activateForm.value.startDate,
+      subStartDate: startDt.toISOString(),
       paymentMethod: activateForm.value.paymentMethod,
     };
     if (sub.package?.id) payload.packageId = sub.package.id;
@@ -1644,9 +1656,16 @@ async function saveChangePackage() {
   if (!changePackageForm.value.packageId) return showToast('يرجى اختيار باقة', 'error');
   saving.value = true;
   try {
+    let subStartDate: string | undefined;
+    if (changePackageForm.value.startDate) {
+      // Attach current time so endDate is calculated with same time-of-day
+      const [y, m, d] = changePackageForm.value.startDate.split('-').map(Number);
+      const now = new Date();
+      subStartDate = new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds()).toISOString();
+    }
     await api.patch(`/subscribers/${sub.id}`, {
       packageId: Number(changePackageForm.value.packageId),
-      subStartDate: changePackageForm.value.startDate || undefined,
+      subStartDate: subStartDate,
     });
     logActivity({ action: 'change_package', module: 'subscriber', subscriberName: sub.name, details: `تغيير باقة المشترك: ${sub.name}` });
     showToast('تم تغيير الباقة بنجاح');

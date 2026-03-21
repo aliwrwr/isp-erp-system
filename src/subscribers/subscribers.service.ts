@@ -95,9 +95,11 @@ export class SubscribersService {
     // Auto-create subscription if startDate is provided
     if (subStartDate && packageId) {
       const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
+      // Preserve full datetime (time-of-day) so expiry fires at exact creation time
+      const startDt = new Date(subStartDate);
       let endDate = subEndDate ? new Date(subEndDate) : null;
       if (!endDate && pkg?.duration) {
-        endDate = new Date(subStartDate);
+        endDate = new Date(startDt.getTime()); // copy exact time
         endDate.setDate(endDate.getDate() + pkg.duration);
       }
       if (endDate) {
@@ -106,7 +108,7 @@ export class SubscribersService {
         const subscription = this.subscriptionsRepository.create({
           subscriber: { id: saved.id } as any,
           package: { id: packageId } as any,
-          startDate: new Date(subStartDate),
+          startDate: startDt,
           endDate,
           price: Number(pkg?.price || 0),
           paymentMethod: createPm,
@@ -181,9 +183,11 @@ export class SubscribersService {
     let activationNotificationSent = false;
     if (subStartDate && packageId) {
       const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
+      // Preserve full datetime (time-of-day) so expiry fires at exact creation time
+      const startDt = new Date(subStartDate);
       let endDate = subEndDate ? new Date(subEndDate) : null;
       if (!endDate && pkg?.duration) {
-        endDate = new Date(subStartDate);
+        endDate = new Date(startDt.getTime()); // copy exact time
         endDate.setDate(endDate.getDate() + pkg.duration);
       }
       if (endDate) {
@@ -192,7 +196,7 @@ export class SubscribersService {
         const subscription = this.subscriptionsRepository.create({
           subscriber: { id } as any,
           package: { id: packageId } as any,
-          startDate: new Date(subStartDate),
+          startDate: startDt,
           endDate,
           price: Number(pkg?.price || 0),
           paymentMethod,
