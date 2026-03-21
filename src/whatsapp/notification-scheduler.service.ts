@@ -269,12 +269,15 @@ export class NotificationSchedulerService {
       } as any).catch(() => {});
       this.logger.log(`Auto-expire: disabled subscriber ${subscriber.name} (id=${subscriber.id}) at ${new Date().toISOString()}`);
 
-      // Update MikroTik: switch profile to 'expired', then kick session
+      // Update MikroTik: ensure 'expired' profile exists, switch profile, disable, kick session
       if (this.mikrotikService && subscriber.router) {
         const router = subscriber.router;
-        // Set PPPoE profile to 'expired' (zero-speed profile on router)
+        const profileName = expiredPackage.routerProfile || 'expired';
+        // Auto-create the profile on the router if it doesn't exist (1k/1k = blocked effectively)
+        await this.mikrotikService.ensurePppoeProfile(router, profileName, '1k/1k').catch(() => {});
+        // Set PPPoE profile to 'expired'
         await this.mikrotikService.updatePppoeSecret(router, subscriber.username, {
-          profile: expiredPackage.routerProfile || 'expired',
+          profile: profileName,
         }).catch(() => {});
         // Disable the secret so it cannot reconnect
         await this.mikrotikService.setPppoeSecretEnabled(router, subscriber.username, false).catch(() => {});

@@ -386,6 +386,34 @@ export class MikrotikService {
     }
   }
 
+  /**
+   * Ensure a PPPoE profile exists on the router. Creates it if missing.
+   * For the 'expired' profile: rate-limit 1k/1k (effectively zero usable speed).
+   */
+  async ensurePppoeProfile(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    profileName: string,
+    rateLimit = '1k/1k',
+  ): Promise<void> {
+    const conn = this.routerConn(router);
+    try {
+      await conn.connect();
+      const existing = await conn.write('/ppp/profile/print', [`?name=${profileName}`]) as any[];
+      if (!existing || existing.length === 0) {
+        await conn.write('/ppp/profile/add', [
+          `=name=${profileName}`,
+          `=rate-limit=${rateLimit}`,
+          `=session-timeout=00:00:00`,
+        ]);
+        this.logger.log(`PPPoE profile '${profileName}' created on ${router.ipAddress}`);
+      }
+      conn.close();
+    } catch (err: any) {
+      this.logger.warn(`ensurePppoeProfile failed on ${router.ipAddress}: ${err.message}`);
+      conn.close();
+    }
+  }
+
   /** Delete a PPPoE secret by username. */
   async deletePppoeSecret(
     router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
