@@ -224,10 +224,10 @@
               </td>
 
               <!-- رقم الهاتف -->
-              <td class="px-5 py-3.5" dir="ltr">
+              <td class="px-5 py-3.5">
                 <div class="flex items-center gap-1.5 text-gray-600 text-xs font-mono">
                   <i class="fas fa-phone text-gray-300 text-[10px]"></i>
-                  {{ sub.phone || '—' }}
+                  <span dir="ltr">{{ sub.phone || '—' }}</span>
                 </div>
               </td>
 
