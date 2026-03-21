@@ -10,6 +10,10 @@ export class CreateGroupDto {
 
   @IsOptional()
   @IsString()
+  layout?: string;
+
+  @IsOptional()
+  @IsString()
   permissions?: string;
 
   @IsOptional()

@@ -1,1 +1,0 @@
-import{C as e,s as t,u as n}from"./runtime-core.esm-bundler-DJfhPO9U.js";import{t as r}from"./index-BJxHfDMO.js";var i={};function a(r,i){return e(),n(`div`,null,[...i[0]||=[t(`h2`,{class:`text-lg font-bold text-secondary mb-6`},`الصلاحيات`,-1)]])}var o=r(i,[[`render`,a]]);export{o as default};

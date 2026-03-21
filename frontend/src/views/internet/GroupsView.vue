@@ -216,7 +216,7 @@ async function loadDashboards() {
 function loadDashboard(d: any) {
   currentId.value   = d.id;
   currentName.value = d.name;
-  layout.value      = parseLayout(d.permissions);
+  layout.value      = parseLayout(d.layout);
 }
 
 function switchDashboard() {
@@ -234,7 +234,7 @@ async function saveDashboard() {
   if (!currentName.value.trim()) return;
   saving.value = true;
   try {
-    const payload = { name: currentName.value, permissions: JSON.stringify(layout.value) };
+    const payload = { name: currentName.value, layout: JSON.stringify(layout.value) };
     if (currentId.value) {
       await api.patch(`/groups/${currentId.value}`, payload);
       const idx = dashboards.value.findIndex(d => d.id === currentId.value);

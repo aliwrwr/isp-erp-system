@@ -12,7 +12,10 @@ export class Group {
   description: string;
 
   @Column('text', { nullable: true })
-  permissions: string;
+  layout: string; // dashboard layout JSON (used by GroupsView)
+
+  @Column('text', { nullable: true })
+  permissions: string; // security permission keys JSON array
 
   @Column({ default: true })
   active: boolean;
