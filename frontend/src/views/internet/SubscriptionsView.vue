@@ -452,14 +452,16 @@
                 </div>
                 <span class="text-xs font-bold text-gray-700">بيانات المشترك</span>
               </div>
-              <div class="grid grid-cols-2 divide-x divide-x-reverse divide-gray-100">
-                <div class="p-3.5">
-                  <p class="text-[10px] text-gray-400 mb-1">رقم الهاتف</p>
-                  <p class="font-mono text-gray-800 font-semibold text-sm">{{ selectedSub.phone || '—' }}</p>
+              <div class="flex items-center justify-between px-4 py-3 gap-3">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-phone text-blue-400 text-xs"></i>
+                  <span class="text-[11px] text-gray-500">رقم الهاتف</span>
+                  <span class="font-mono text-gray-800 font-semibold text-sm" dir="ltr">{{ selectedSub.phone || '—' }}</span>
                 </div>
-                <div class="p-3.5">
-                  <p class="text-[10px] text-gray-400 mb-1">طريقة الدفع</p>
-                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold"
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-wallet text-gray-400 text-xs"></i>
+                  <span class="text-[11px] text-gray-500">الدفع</span>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
                     :class="{
                       'bg-green-100 text-green-700': selectedSub.paymentMethod === 'cash',
                       'bg-orange-100 text-orange-700': selectedSub.paymentMethod === 'credit',
