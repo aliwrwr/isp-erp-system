@@ -1426,7 +1426,10 @@ function getDaysClass(days: number): string {
 
 function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '—';
-  return new Date(date).toLocaleDateString('ar-IQ', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const d = new Date(date);
+  const datePart = d.toLocaleDateString('ar-IQ', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const timePart = d.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${datePart} ${timePart}`;
 }
 
 onMounted(loadData);
