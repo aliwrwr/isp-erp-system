@@ -223,6 +223,35 @@ export class MikrotikService {
     }
   }
 
+  async getConnectionByUsername(
+    router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string },
+    username: string,
+  ): Promise<{ bytesIn: number; bytesOut: number; uptime: string; address: string } | null> {
+    const isSsl = router.connectionType === 'API-SSL';
+    const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);
+    try {
+      await conn.connect();
+      const [pppoe, ifaceStats] = await Promise.all([
+        conn.write('/ppp/active/print', [`?name=${username}`]).catch(() => []),
+        conn.write('/interface/print', [`?name=<pppoe-${username}>`, '=stats=']).catch(() => []),
+      ]);
+      conn.close();
+      const session = (pppoe as any[])[0];
+      if (!session) return null;
+      const iface = (ifaceStats as any[])[0] || {};
+      return {
+        bytesIn:  parseInt(iface['tx-byte']) || 0,
+        bytesOut: parseInt(iface['rx-byte']) || 0,
+        uptime:   session.uptime || '',
+        address:  session.address || '',
+      };
+    } catch {
+      return null;
+    } finally {
+      try { conn.close(); } catch {}
+    }
+  }
+
   async getIpAddresses(router: { ipAddress: string; username: string; password: string; port?: number; connectionType?: string }): Promise<any[]> {
     const isSsl = router.connectionType === 'API-SSL';
     const conn = this.createConnection(router.ipAddress, router.username, router.password, router.port || (isSsl ? 8729 : 8728), isSsl);

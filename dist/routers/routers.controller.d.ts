@@ -19,6 +19,12 @@ export declare class RoutersController {
         error?: undefined;
     }>;
     getAllConnections(): Promise<any[]>;
+    getConnectionStats(id: string, username: string): Promise<{
+        bytesIn: number;
+        bytesOut: number;
+        uptime: string;
+        address: string;
+    } | null>;
     disconnectSession(id: string, body: {
         sessionId: string;
     }): Promise<{

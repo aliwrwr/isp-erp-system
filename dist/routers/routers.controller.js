@@ -69,6 +69,12 @@ let RoutersController = class RoutersController {
         }));
         return results;
     }
+    async getConnectionStats(id, username) {
+        const router = await this.routersService.findOne(+id);
+        if (!router)
+            return null;
+        return this.mikrotikService.getConnectionByUsername(router, username);
+    }
     async disconnectSession(id, body) {
         const router = await this.routersService.findOne(+id);
         if (!router)
@@ -146,6 +152,16 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], RoutersController.prototype, "getAllConnections", null);
+__decorate([
+    (0, common_1.Get)(':id/connection/:username'),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.connected'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('username')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], RoutersController.prototype, "getConnectionStats", null);
 __decorate([
     (0, common_1.Post)(':id/disconnect-session'),
     (0, common_1.HttpCode)(200),

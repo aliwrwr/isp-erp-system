@@ -79,6 +79,18 @@ export declare class MikrotikService {
         port?: number;
         connectionType?: string;
     }): Promise<ActiveConnection[]>;
+    getConnectionByUsername(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, username: string): Promise<{
+        bytesIn: number;
+        bytesOut: number;
+        uptime: string;
+        address: string;
+    } | null>;
     getIpAddresses(router: {
         ipAddress: string;
         username: string;

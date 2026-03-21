@@ -218,16 +218,6 @@
                   {{ conn.routerName }}
                 </span>
               </td>
-              <!-- Disconnect -->
-              <td class="px-2 py-2 text-center">
-                <button @click="disconnectOne(conn)"
-                  :disabled="disconnectingId === (conn.id + '_' + conn.routerId)"
-                  title="قطع الاتصال"
-                  class="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-40 transition mx-auto">
-                  <i class="fas fa-sign-out-alt text-[11px]"
-                    :class="disconnectingId === (conn.id + '_' + conn.routerId) ? 'fa-spin fas fa-circle-notch' : ''"></i>
-                </button>
-              </td>
             </tr>
           </tbody>
         </table>
@@ -538,7 +528,12 @@
                   </div>
                 </div>
               </div>
-              <p class="text-[10px] text-gray-400 text-center mt-3">يتحدث كل {{ flowModal.interval }}ث تلقائياً</p>
+              <p class="text-[10px] text-gray-400 text-center mt-3">
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                  تحديث لحظي — كل ثانية
+                </span>
+              </p>
             </div>
           </div>
         </div>
@@ -756,27 +751,44 @@ const flowModal = ref<{
   speed: { down: number; up: number } | null;
   history: { down: number[]; up: number[] };
   maxDown: number; maxUp: number; interval: number;
-}>({ visible: false, conn: null, speed: null, history: { down: [], up: [] }, maxDown: 0, maxUp: 0, interval: 5 });
+}>({ visible: false, conn: null, speed: null, history: { down: [], up: [] }, maxDown: 0, maxUp: 0, interval: 1 });
 let flowTimer: ReturnType<typeof setInterval> | null = null;
 
+// Last sample for delta calculation
+let _flowPrev: { bytesIn: number; bytesOut: number; ts: number } | null = null;
+
 function openFlow(conn: Connection) {
-  flowModal.value = { visible: true, conn, speed: getSpeed(conn) ?? null, history: { down: [], up: [] }, maxDown: 0, maxUp: 0, interval: 5 };
+  _flowPrev = null;
+  flowModal.value = { visible: true, conn, speed: null, history: { down: [], up: [] }, maxDown: 0, maxUp: 0, interval: 1 };
   if (flowTimer) clearInterval(flowTimer);
   flowTimer = setInterval(async () => {
     if (!flowModal.value.visible || !flowModal.value.conn) return;
-    await loadConnections();
-    const updated = connections.value.find(c => connKey(c) === connKey(flowModal.value.conn!)) ?? flowModal.value.conn;
-    flowModal.value.conn = updated;
-    const s = getSpeed(updated);
-    flowModal.value.speed = s ?? null;
-    if (s) {
-      const hd = [...flowModal.value.history.down, s.down].slice(-20);
-      const hu = [...flowModal.value.history.up, s.up].slice(-20);
-      flowModal.value.history = { down: hd, up: hu };
-      flowModal.value.maxDown = Math.max(...hd, 1);
-      flowModal.value.maxUp   = Math.max(...hu, 1);
-    }
-  }, flowModal.value.interval * 1000);
+    const c = flowModal.value.conn;
+    try {
+      const res = await api.get(`/routers/${c.routerId}/connection/${encodeURIComponent(c.name)}`);
+      const data = res.data as { bytesIn: number; bytesOut: number; uptime: string; address: string } | null;
+      if (!data) return;
+      const now = Date.now();
+      // Update conn bytes for display
+      flowModal.value.conn = { ...c, bytesIn: data.bytesIn, bytesOut: data.bytesOut, uptime: data.uptime };
+      // Calculate speed from delta
+      if (_flowPrev) {
+        const dt = (now - _flowPrev.ts) / 1000; // seconds
+        if (dt > 0) {
+          const down = Math.max(0, (data.bytesIn  - _flowPrev.bytesIn)  / dt) * 8;
+          const up   = Math.max(0, (data.bytesOut - _flowPrev.bytesOut) / dt) * 8;
+          const s = { down, up };
+          flowModal.value.speed = s;
+          const hd = [...flowModal.value.history.down, s.down].slice(-60);
+          const hu = [...flowModal.value.history.up,   s.up  ].slice(-60);
+          flowModal.value.history = { down: hd, up: hu };
+          flowModal.value.maxDown = Math.max(...hd, 1);
+          flowModal.value.maxUp   = Math.max(...hu, 1);
+        }
+      }
+      _flowPrev = { bytesIn: data.bytesIn, bytesOut: data.bytesOut, ts: now };
+    } catch { /* silent */ }
+  }, 1000);
 }
 function closeFlow() {
   flowModal.value.visible = false;

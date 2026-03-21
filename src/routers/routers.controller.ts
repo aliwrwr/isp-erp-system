@@ -67,6 +67,19 @@ export class RoutersController {
     return results;
   }
 
+  // ── Single connection stats (fast poll) ──────────────────────────────────────
+  @Get(':id/connection/:username')
+  @Roles('Super Admin', 'Network Admin')
+  @Permissions('internet.connected')
+  async getConnectionStats(
+    @Param('id') id: string,
+    @Param('username') username: string,
+  ) {
+    const router = await this.routersService.findOne(+id);
+    if (!router) return null;
+    return this.mikrotikService.getConnectionByUsername(router, username);
+  }
+
   // ── Disconnect a PPPoE session ────────────────────────────────────────────────
   @Post(':id/disconnect-session')
   @HttpCode(200)
