@@ -260,11 +260,11 @@ const canSeeRouters = computed(() => authStore.hasPermission('internet.routers')
 // ── Subscribers / Subscriptions ───────────────────────────────────
 const subscribersData = ref<any[]>([]);
 const subscriptionsData = ref<any[]>([]);
-const usersData = ref<any[]>([]);
+const managersData = ref<any[]>([]);
 
 const totalSub = computed(() => subscribersData.value.length);
-const activeSub = computed(() => subscribersData.value.filter(s => s.status === 'active').length);
-const expiredSub = computed(() => totalSub.value - activeSub.value);
+const activeSub = computed(() => subscribersData.value.filter(s => s.status === 'active' && s.isEnabled !== false).length);
+const expiredSub = computed(() => subscribersData.value.filter(s => s.status !== 'active' || s.isEnabled === false).length);
 const monthlyRevenue = computed(() => {
   const sum = subscriptionsData.value.reduce((s, x) => s + Number(x.price || 0), 0);
   return '$' + sum.toLocaleString();
@@ -282,7 +282,7 @@ const almostExpiring = computed(() => {
     return days > 0 && days <= 7;
   }).length;
 });
-const adminCount = computed(() => usersData.value.length);
+const adminCount = computed(() => managersData.value.length);
 
 // ── Server Resources ──────────────────────────────────────────────
 const serverStats = ref({ cpu: 0, ram: 0, disk: 0 });
@@ -365,13 +365,13 @@ onMounted(async () => {
     const requests: Promise<any>[] = [
       api.get('/subscribers'),
       api.get('/subscriptions'),
-      api.get('/users'),
+      api.get('/managers'),
     ];
     if (canSeeRouters.value) requests.push(api.get('/routers'));
-    const [subRes, subscRes, usersRes, routersRes] = await Promise.all(requests);
+    const [subRes, subscRes, managersRes, routersRes] = await Promise.all(requests);
     subscribersData.value = subRes.data;
     subscriptionsData.value = subscRes.data;
-    usersData.value = usersRes?.data || [];
+    managersData.value = managersRes?.data || [];
     if (routersRes) routers.value = routersRes.data;
   } catch {}
   fetchServerStats();
