@@ -214,9 +214,12 @@
               </div>
 
               <!-- المجموعة (security group) -->
-              <div>
+              <div class="col-span-2">
                 <label class="block text-sm font-medium text-gray-600 mb-1">
                   المجموعة <span class="text-red-400">*</span>
+                  <span v-if="selectedGroupPerms.length" class="mr-2 text-[11px] font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                    {{ selectedGroupPerms.length }} صلاحية
+                  </span>
                 </label>
                 <select v-model="form.groupId"
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
@@ -224,6 +227,41 @@
                   <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
                 <p v-if="formErrors.groupId" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.groupId }}</p>
+
+                <!-- Permissions Preview from selected group -->
+                <div v-if="form.groupId && selectedGroupPerms.length" class="mt-2 border border-gray-100 rounded-lg bg-gray-50 overflow-hidden">
+                  <div class="flex items-center justify-between px-3 py-1.5 bg-gray-100 border-b border-gray-200">
+                    <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">الصلاحيات الممنوحة من هذه المجموعة</span>
+                    <button type="button" @click="showGroupPerms = !showGroupPerms"
+                      class="text-[11px] text-primary hover:underline">
+                      {{ showGroupPerms ? 'إخفاء' : 'عرض' }}
+                    </button>
+                  </div>
+                  <div v-if="showGroupPerms" class="max-h-48 overflow-y-auto px-3 py-2">
+                    <template v-for="cat in selectedGroupPermCats" :key="cat">
+                      <p class="text-[10px] font-bold text-gray-400 uppercase mt-2 mb-1">{{ cat }}</p>
+                      <div class="flex flex-wrap gap-1">
+                        <span v-for="pk in selectedGroupPermsInCat(cat)" :key="pk"
+                          class="inline-flex items-center gap-1 text-[11px] bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded-md">
+                          <i class="fas fa-check text-green-500 text-[9px]"></i>
+                          {{ permLabel(pk) }}
+                        </span>
+                      </div>
+                    </template>
+                  </div>
+                  <div v-else class="px-3 py-1.5 flex flex-wrap gap-1">
+                    <span v-for="pk in selectedGroupPerms.slice(0,8)" :key="pk"
+                      class="text-[11px] bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded-md">
+                      {{ permLabel(pk) }}
+                    </span>
+                    <span v-if="selectedGroupPerms.length > 8"
+                      class="text-[11px] text-gray-400 px-1 py-0.5">+{{ selectedGroupPerms.length - 8 }} أخرى</span>
+                  </div>
+                </div>
+                <div v-else-if="form.groupId && !selectedGroupPerms.length" class="mt-1.5 text-[11px] text-amber-500 flex items-center gap-1">
+                  <i class="fas fa-exclamation-triangle text-[10px]"></i>
+                  هذه المجموعة لا تحتوي على صلاحيات بعد — يمكنك تعيينها من صفحة الصلاحيات
+                </div>
               </div>
 
               <!-- تابع الى -->
@@ -368,6 +406,28 @@ const form = ref({
 
 const formErrors = ref<Record<string, string>>({});
 
+// ── Permission labels (matches PermissionsView ALL_PERMS) ─────────────────────
+const PERM_LABELS: Record<string, string> = {
+  'prm_managers_sub_sysadmin':'prm_managers_sub_sysadmin','managers.sysadmin':'مدراء - مدير نظام','managers.edit':'مدراء - تعديل','managers.edit_personal':'مدراء - تعديل المعلومات الشخصية','managers.withdraw':'مدراء - سحب نقود','managers.2fa':'مدراء - استخدام المصادقة الثنائية','managers.change_password':'مدراء - تغيير كلمة السر','managers.add':'مدراء - اضافة','managers.delete':'مدراء - حذف','managers.deposit':'مدراء - ايداع نقود','managers.export':'مدراء - تصدير الى اكسل','managers.view':'مدراء - عرض','managers.index':'Managers - Index (All Managers)','managers.invoices':'مدراء - عرض الفواتير','managers.journal':'مدراء - عرض السجل المالي','prm_managers_journal_comment':'prm_managers_journal_comment','managers.login_as':'مدراء - الدخول بأسم مدير ثاني (خطر)','managers.ppp_lock':'ppp service - قفل مدير على الاتصالات','managers.connections':'مدراء - عرض الاتصالات','managers.rename':'مدراء - تغيير الاسم',
+  'users.add':'العملاء - اضافة','users.delete':'العملاء - حذف','users.delete_active':'العملاء - حذف العملاء الفعاليين','users.enable':'العملاء - تفعيل','users.enable_card':'العملاء - تفعيل بالبطاقة','users.enable_mgr_bal':'العملاء - تفعيل برصيد المدير','users.enable_usr_bal':'العملاء - تفعيل برصيد المشترك','users.vas':'شراء خدمات القيمة المضافة','users.deposit':'العملاء - ايداع نقود','users.withdraw':'العملاء - سحب الاموال','users.disconnect':'العملاء - قطع الاتصال','users.export':'العملاء - تصدير الى اكسل','users.extend':'العملاء - تمديد الاشتراك','users.cancel':'العملاء - الغاء الاشتراك','users.cancel_profile':'العملاء - الغاء طلب تغيير البروفايل','users.view':'العملاء - عرض','users.view_all':'العملاء - عرض الجميع','users.list_group':'Users - List All Group Users','users.add_data':'العملاء - اضافة بيانات','users.update_data':'العملاء - تحديث البيانات','users.edit_sensitive':'العملاء - تعديل البيانات الحساسة (خطر)','users.change_manager':'العملاء - تغيير المدير','users.change_profile':'العملاء - تغيير البروفايل','users.change_profile_active':'العملاء - تغيير البروفايل للمستخدمين الفعاليين','users.toggle_autorenew':'العملاء - ايقاف وتشغيل التجديد التلقائي','users.rename':'العملاء - تغيير اسم الدخول','users.mac':'العملاء - تعديل الماك','users.mac_lock':'العملاء - قفل على الماك','users.ping':'العملاء - Ping','users.pos':'العملاء - نقطة بيع','users.free_zone':'العملاء - اظهار بيانات استهلاك المنطقة الحرة','users.operations_log':'العملاء - اظهار سجل العمليات','users.invoices':'العملاء - اضهار الفواتير','users.journal':'العملاء - اضهار السجل المالي','users.monitor':'العملاء - مراقبة الاستهلاك الحالي','users.sessions':'العملاء - اضهار الجلسات','users.show_password':'العملاء - اظهار كلمة السر','users.reset_quota':'العملاء - تصفير الكوتا اليومية','users.points_system':'العملاء - نظام انقاط التشجيعية','users.compensate':'العملاء - تعويض','users.approve_comp':'العملاء - الموافقة على التعويضات','users.upload_comp':'Users - Upload Compensations File','prm_users_support_admin':'prm_users_support_admin','users.support':'العملاء - رسائل الدعم الفني',
+};
+function permLabel(key: string): string { return PERM_LABELS[key] ?? key; }
+function permCat(key: string): string {
+  if (key.startsWith('managers.') || key === 'prm_managers_sub_sysadmin' || key === 'prm_managers_journal_comment') return 'managers';
+  if (key.startsWith('users.') || key === 'prm_users_support_admin') return 'users';
+  return 'أخرى';
+}
+
+const showGroupPerms = ref(false);
+const selectedGroupPerms = computed<string[]>(() => {
+  if (!form.value.groupId) return [];
+  const g = groups.value.find(x => x.id === form.value.groupId);
+  if (!g?.permissions) return [];
+  try { const arr = JSON.parse(g.permissions); return Array.isArray(arr) ? arr : []; } catch { return []; }
+});
+const selectedGroupPermCats = computed(() => [...new Set(selectedGroupPerms.value.map(permCat))]);
+function selectedGroupPermsInCat(cat: string) { return selectedGroupPerms.value.filter(k => permCat(k) === cat); }
+
 function fmtNum(v: any): string {
   const n = parseFloat(v);
   if (!v && v !== 0) return '—';
@@ -464,6 +524,7 @@ async function loadData() {
 function openAdd() {
   editingId.value = null;
   formErrors.value = {};
+  showGroupPerms.value = false;
   form.value = { username: '', name: '', balance: 0, loans: 0, permissions: '', groupId: null, parentId: null, points: 0, phone: '', email: '', position: '', notes: '', active: true, password: '', confirmPassword: '' };
   showModal.value = true;
 }
@@ -471,6 +532,7 @@ function openAdd() {
 function openEdit(m: any) {
   editingId.value = m.id;
   formErrors.value = {};
+  showGroupPerms.value = false;
   form.value = {
     username: m.username || '',
     name: m.name || '',
