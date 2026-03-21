@@ -12,8 +12,23 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
-        <h2 class="text-lg font-bold text-secondary">الراوترات</h2>
-        <p class="text-xs text-gray-400 mt-0.5">{{ onlineCount }} متصل من أصل {{ routers.length }}</p>
+        <h2 class="text-lg font-bold text-secondary flex items-center gap-2">
+          حالة الراوترات ({{ onlineCount }}/{{ routers.length }} متصل)
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+            :class="liveEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+            <span v-if="liveEnabled" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            <span v-else class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+            {{ liveEnabled ? 'LIVE' : 'متوقف' }}
+          </span>
+        </h2>
+        <p class="text-xs text-gray-400 mt-0.5 flex items-center gap-2">
+          <span>آخر تحديث: {{ formatLastUpdated(lastUpdated) }}</span>
+          <button @click="toggleLive"
+            class="text-[10px] px-1.5 py-0.5 rounded border transition"
+            :class="liveEnabled ? 'border-green-200 text-green-600 hover:bg-green-50' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
+            {{ liveEnabled ? 'تحديث بعد 2ث' : 'تحديث الآن' }}
+          </button>
+        </p>
       </div>
       <div class="flex items-center gap-2">
         <button @click="checkAllStatus" :disabled="checkingAll" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-primary border border-gray-200 hover:border-primary rounded-xl transition">
@@ -431,7 +446,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import api from '../../api';
 import { logActivity } from '../../utils/activityLog';
 
@@ -476,6 +491,9 @@ const statusData = ref<Record<number, RouterStatus>>({});
 const checkingAll = ref(false);
 const pingingId = ref<number | null>(null);
 const saving = ref(false);
+const lastUpdated = ref<Date | null>(null);
+const liveEnabled = ref(true);
+let liveTimer: ReturnType<typeof setInterval> | null = null;
 
 // Toast notification
 const toast = ref<{ show: boolean; online: boolean; name: string }>({ show: false, online: false, name: '' });
@@ -572,6 +590,22 @@ async function checkAllStatus() {
   checkingAll.value = true;
   await Promise.all(routers.value.map(r => checkStatus(r)));
   checkingAll.value = false;
+  lastUpdated.value = new Date();
+}
+
+async function liveRefresh() {
+  if (!liveEnabled.value || !routers.value.length) return;
+  await Promise.all(routers.value.map(r => checkStatus(r)));
+  lastUpdated.value = new Date();
+}
+
+function formatLastUpdated(d: Date | null): string {
+  if (!d) return '—';
+  return d.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function toggleLive() {
+  liveEnabled.value = !liveEnabled.value;
 }
 
 async function pingRouter(r: any) {
@@ -713,7 +747,12 @@ async function remove(id: number) {
 
 onMounted(async () => {
   await loadData();
-  checkAllStatus();
+  await checkAllStatus();
+  liveTimer = setInterval(liveRefresh, 2000);
+});
+
+onUnmounted(() => {
+  if (liveTimer) clearInterval(liveTimer);
 });
 </script>
 
