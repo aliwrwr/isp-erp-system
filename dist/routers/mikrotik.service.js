@@ -311,6 +311,26 @@ let MikrotikService = MikrotikService_1 = class MikrotikService {
             return false;
         }
     }
+    async ensurePppoeProfile(router, profileName, rateLimit = '1k/1k') {
+        const conn = this.routerConn(router);
+        try {
+            await conn.connect();
+            const existing = await conn.write('/ppp/profile/print', [`?name=${profileName}`]);
+            if (!existing || existing.length === 0) {
+                await conn.write('/ppp/profile/add', [
+                    `=name=${profileName}`,
+                    `=rate-limit=${rateLimit}`,
+                    `=session-timeout=00:00:00`,
+                ]);
+                this.logger.log(`PPPoE profile '${profileName}' created on ${router.ipAddress}`);
+            }
+            conn.close();
+        }
+        catch (err) {
+            this.logger.warn(`ensurePppoeProfile failed on ${router.ipAddress}: ${err.message}`);
+            conn.close();
+        }
+    }
     async deletePppoeSecret(router, name) {
         const conn = this.routerConn(router);
         try {

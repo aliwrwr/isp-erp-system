@@ -21,19 +21,22 @@ const typeorm_2 = require("typeorm");
 const subscription_entity_1 = require("../subscriptions/entities/subscription.entity");
 const subscriber_entity_1 = require("../subscribers/entities/subscriber.entity");
 const router_entity_1 = require("../routers/entities/router.entity");
+const package_entity_1 = require("../packages/entities/package.entity");
 const whatsapp_service_1 = require("./whatsapp.service");
 const mikrotik_service_1 = require("../routers/mikrotik.service");
 let NotificationSchedulerService = NotificationSchedulerService_1 = class NotificationSchedulerService {
     subscriptionsRepository;
     subscriberRepository;
     routerRepository;
+    packagesRepository;
     whatsappService;
     mikrotikService;
     logger = new common_1.Logger(NotificationSchedulerService_1.name);
-    constructor(subscriptionsRepository, subscriberRepository, routerRepository, whatsappService, mikrotikService) {
+    constructor(subscriptionsRepository, subscriberRepository, routerRepository, packagesRepository, whatsappService, mikrotikService) {
         this.subscriptionsRepository = subscriptionsRepository;
         this.subscriberRepository = subscriberRepository;
         this.routerRepository = routerRepository;
+        this.packagesRepository = packagesRepository;
         this.whatsappService = whatsappService;
         this.mikrotikService = mikrotikService;
     }
@@ -180,18 +183,25 @@ let NotificationSchedulerService = NotificationSchedulerService_1 = class Notifi
         }));
     }
     async autoExpireSubscriptions() {
-        this.logger.log('Running auto-expire check for subscriptions...');
         const now = new Date();
-        now.setHours(0, 0, 0, 0);
         const expired = await this.subscriptionsRepository.find({
             where: { endDate: (0, typeorm_2.LessThan)(now), status: 'active' },
             relations: ['subscriber', 'subscriber.router'],
         });
-        if (expired.length === 0) {
-            this.logger.log('No expired subscriptions found.');
+        if (expired.length === 0)
             return;
+        let expiredPackage = await this.packagesRepository.findOne({ where: { name: 'expired' } });
+        if (!expiredPackage) {
+            expiredPackage = await this.packagesRepository.save(this.packagesRepository.create({
+                name: 'expired',
+                downloadSpeed: 0,
+                uploadSpeed: 0,
+                price: 0,
+                duration: 0,
+                routerProfile: 'expired',
+            }));
+            this.logger.log('Auto-created \'expired\' package');
         }
-        this.logger.log(`Found ${expired.length} expired subscription(s). Processing...`);
         const processedSubscribers = new Set();
         for (const sub of expired) {
             await this.subscriptionsRepository.update(sub.id, { status: 'expired' }).catch(() => { });
@@ -199,16 +209,22 @@ let NotificationSchedulerService = NotificationSchedulerService_1 = class Notifi
             if (!subscriber?.id || processedSubscribers.has(subscriber.id))
                 continue;
             processedSubscribers.add(subscriber.id);
-            await this.subscriberRepository.update(subscriber.id, { isEnabled: false }).catch(() => { });
-            this.logger.log(`Disabled subscriber: ${subscriber.name} (id=${subscriber.id})`);
+            await this.subscriberRepository.update(subscriber.id, {
+                isEnabled: false,
+                package: { id: expiredPackage.id },
+            }).catch(() => { });
+            this.logger.log(`Auto-expire: disabled subscriber ${subscriber.name} (id=${subscriber.id}) at ${new Date().toISOString()}`);
             if (this.mikrotikService && subscriber.router) {
                 const router = subscriber.router;
+                const profileName = expiredPackage.routerProfile || 'expired';
+                await this.mikrotikService.ensurePppoeProfile(router, profileName, '1k/1k').catch(() => { });
+                await this.mikrotikService.updatePppoeSecret(router, subscriber.username, {
+                    profile: profileName,
+                }).catch(() => { });
                 await this.mikrotikService.setPppoeSecretEnabled(router, subscriber.username, false).catch(() => { });
                 await this.mikrotikService.disconnectByUsername(router, subscriber.username).catch(() => { });
-                this.logger.log(`MikroTik: disabled+disconnected ${subscriber.username} on ${router.ipAddress}`);
             }
         }
-        this.logger.log(`Auto-expire complete. Processed ${processedSubscribers.size} subscriber(s).`);
     }
     formatDate(date) {
         const d = new Date(date);
@@ -227,7 +243,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], NotificationSchedulerService.prototype, "sendDailyNotifications", null);
 __decorate([
-    (0, schedule_1.Cron)('1 0 * * *'),
+    (0, schedule_1.Cron)('* * * * *'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
@@ -237,8 +253,10 @@ exports.NotificationSchedulerService = NotificationSchedulerService = Notificati
     __param(0, (0, typeorm_1.InjectRepository)(subscription_entity_1.Subscription)),
     __param(1, (0, typeorm_1.InjectRepository)(subscriber_entity_1.Subscriber)),
     __param(2, (0, typeorm_1.InjectRepository)(router_entity_1.Router)),
-    __param(4, (0, common_1.Optional)()),
+    __param(3, (0, typeorm_1.InjectRepository)(package_entity_1.Package)),
+    __param(5, (0, common_1.Optional)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         whatsapp_service_1.WhatsappService,

@@ -136,6 +136,13 @@ export declare class MikrotikService {
         password?: string;
         profile?: string;
     }): Promise<boolean>;
+    ensurePppoeProfile(router: {
+        ipAddress: string;
+        username: string;
+        password: string;
+        port?: number;
+        connectionType?: string;
+    }, profileName: string, rateLimit?: string): Promise<void>;
     deletePppoeSecret(router: {
         ipAddress: string;
         username: string;

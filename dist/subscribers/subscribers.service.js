@@ -99,9 +99,10 @@ let SubscribersService = class SubscribersService {
         }
         if (subStartDate && packageId) {
             const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
+            const startDt = new Date(subStartDate);
             let endDate = subEndDate ? new Date(subEndDate) : null;
             if (!endDate && pkg?.duration) {
-                endDate = new Date(subStartDate);
+                endDate = new Date(startDt.getTime());
                 endDate.setDate(endDate.getDate() + pkg.duration);
             }
             if (endDate) {
@@ -110,7 +111,7 @@ let SubscribersService = class SubscribersService {
                 const subscription = this.subscriptionsRepository.create({
                     subscriber: { id: saved.id },
                     package: { id: packageId },
-                    startDate: new Date(subStartDate),
+                    startDate: startDt,
                     endDate,
                     price: Number(pkg?.price || 0),
                     paymentMethod: createPm,
@@ -165,9 +166,10 @@ let SubscribersService = class SubscribersService {
         let activationNotificationSent = false;
         if (subStartDate && packageId) {
             const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
+            const startDt = new Date(subStartDate);
             let endDate = subEndDate ? new Date(subEndDate) : null;
             if (!endDate && pkg?.duration) {
-                endDate = new Date(subStartDate);
+                endDate = new Date(startDt.getTime());
                 endDate.setDate(endDate.getDate() + pkg.duration);
             }
             if (endDate) {
@@ -176,7 +178,7 @@ let SubscribersService = class SubscribersService {
                 const subscription = this.subscriptionsRepository.create({
                     subscriber: { id },
                     package: { id: packageId },
-                    startDate: new Date(subStartDate),
+                    startDate: startDt,
                     endDate,
                     price: Number(pkg?.price || 0),
                     paymentMethod,
