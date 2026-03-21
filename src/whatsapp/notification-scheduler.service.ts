@@ -5,6 +5,7 @@ import { Repository, Between, LessThan } from 'typeorm';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Subscriber } from '../subscribers/entities/subscriber.entity';
 import { Router } from '../routers/entities/router.entity';
+import { Package } from '../packages/entities/package.entity';
 import { WhatsappService } from './whatsapp.service';
 import { MikrotikService } from '../routers/mikrotik.service';
 
@@ -19,6 +20,8 @@ export class NotificationSchedulerService {
     private subscriberRepository: Repository<Subscriber>,
     @InjectRepository(Router)
     private routerRepository: Repository<Router>,
+    @InjectRepository(Package)
+    private packagesRepository: Repository<Package>,
     private whatsappService: WhatsappService,
     @Optional() private readonly mikrotikService: MikrotikService,
   ) {}
@@ -233,7 +236,21 @@ export class NotificationSchedulerService {
 
     if (expired.length === 0) return;
 
-    if (expired.length === 0) return;
+    // Get or create the 'expired' package (zero-speed quarantine package)
+    let expiredPackage = await this.packagesRepository.findOne({ where: { name: 'expired' } });
+    if (!expiredPackage) {
+      expiredPackage = await this.packagesRepository.save(
+        this.packagesRepository.create({
+          name: 'expired',
+          downloadSpeed: 0,
+          uploadSpeed: 0,
+          price: 0,
+          duration: 0,
+          routerProfile: 'expired',
+        }),
+      );
+      this.logger.log('Auto-created \'expired\' package');
+    }
 
     const processedSubscribers = new Set<number>();
 
@@ -245,14 +262,23 @@ export class NotificationSchedulerService {
       if (!subscriber?.id || processedSubscribers.has(subscriber.id)) continue;
       processedSubscribers.add(subscriber.id);
 
-      // Disable subscriber in DB
-      await this.subscriberRepository.update(subscriber.id, { isEnabled: false } as any).catch(() => {});
+      // Switch subscriber to 'expired' package + disable in DB
+      await this.subscriberRepository.update(subscriber.id, {
+        isEnabled: false,
+        package: { id: expiredPackage.id } as any,
+      } as any).catch(() => {});
       this.logger.log(`Auto-expire: disabled subscriber ${subscriber.name} (id=${subscriber.id}) at ${new Date().toISOString()}`);
 
-      // Disable on MikroTik + kick active session
+      // Update MikroTik: switch profile to 'expired', then kick session
       if (this.mikrotikService && subscriber.router) {
         const router = subscriber.router;
+        // Set PPPoE profile to 'expired' (zero-speed profile on router)
+        await this.mikrotikService.updatePppoeSecret(router, subscriber.username, {
+          profile: expiredPackage.routerProfile || 'expired',
+        }).catch(() => {});
+        // Disable the secret so it cannot reconnect
         await this.mikrotikService.setPppoeSecretEnabled(router, subscriber.username, false).catch(() => {});
+        // Kick any active session
         await this.mikrotikService.disconnectByUsername(router, subscriber.username).catch(() => {});
       }
     }

@@ -10,11 +10,12 @@ import { NotificationSchedulerService } from './notification-scheduler.service';
 import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { Subscriber } from '../subscribers/entities/subscriber.entity';
 import { Router } from '../routers/entities/router.entity';
+import { Package } from '../packages/entities/package.entity';
 import { RoutersModule } from '../routers/routers.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([WhatsappSettings, WhatsappLog, WhatsappInstallmentsSettings, WhatsappSupportSettings, Subscription, Subscriber, Router]),
+    TypeOrmModule.forFeature([WhatsappSettings, WhatsappLog, WhatsappInstallmentsSettings, WhatsappSupportSettings, Subscription, Subscriber, Router, Package]),
     RoutersModule,
   ],
   controllers: [WhatsappController],
