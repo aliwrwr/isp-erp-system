@@ -263,8 +263,16 @@ const subscriptionsData = ref<any[]>([]);
 const managersData = ref<any[]>([]);
 
 const totalSub = computed(() => subscribersData.value.length);
-const activeSub = computed(() => subscribersData.value.filter(s => s.status === 'active' && s.isEnabled !== false).length);
-const expiredSub = computed(() => subscribersData.value.filter(s => s.status !== 'active' || s.isEnabled === false).length);
+const activeSub = computed(() => {
+  const now = Date.now();
+  return subscribersData.value.filter(s => {
+    if (s.status === 'suspended' || s.isEnabled === false) return false;
+    return s.subscriptions?.some((sub: any) =>
+      sub.status === 'active' && (!sub.endDate || new Date(sub.endDate).getTime() >= now)
+    );
+  }).length;
+});
+const expiredSub = computed(() => totalSub.value - activeSub.value);
 const monthlyRevenue = computed(() => {
   const sum = subscriptionsData.value.reduce((s, x) => s + Number(x.price || 0), 0);
   return '$' + sum.toLocaleString();
