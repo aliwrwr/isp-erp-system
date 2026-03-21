@@ -5,6 +5,8 @@ export declare class Manager {
     balance: number;
     loans: number;
     permissions: string;
+    groupId: number;
+    password: string;
     parentId: number;
     points: number;
     phone: string;

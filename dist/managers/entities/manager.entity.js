@@ -18,6 +18,8 @@ let Manager = class Manager {
     balance;
     loans;
     permissions;
+    groupId;
+    password;
     parentId;
     points;
     phone;
@@ -51,6 +53,14 @@ __decorate([
     (0, typeorm_1.Column)('text', { nullable: true }),
     __metadata("design:type", String)
 ], Manager.prototype, "permissions", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], Manager.prototype, "groupId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Manager.prototype, "password", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
