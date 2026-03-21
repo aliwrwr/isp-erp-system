@@ -13,7 +13,13 @@ exports.Manager = void 0;
 const typeorm_1 = require("typeorm");
 let Manager = class Manager {
     id;
+    username;
     name;
+    balance;
+    loans;
+    permissions;
+    parentId;
+    points;
     phone;
     email;
     position;
@@ -26,9 +32,33 @@ __decorate([
     __metadata("design:type", Number)
 ], Manager.prototype, "id", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true, unique: true }),
+    __metadata("design:type", String)
+], Manager.prototype, "username", void 0);
+__decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], Manager.prototype, "name", void 0);
+__decorate([
+    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Manager.prototype, "balance", void 0);
+__decorate([
+    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Manager.prototype, "loans", void 0);
+__decorate([
+    (0, typeorm_1.Column)('text', { nullable: true }),
+    __metadata("design:type", String)
+], Manager.prototype, "permissions", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], Manager.prototype, "parentId", void 0);
+__decorate([
+    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Manager.prototype, "points", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)

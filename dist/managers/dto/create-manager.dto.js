@@ -12,7 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateManagerDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateManagerDto {
+    username;
     name;
+    balance;
+    loans;
+    permissions;
+    parentId;
+    points;
     phone;
     email;
     position;
@@ -21,9 +27,39 @@ class CreateManagerDto {
 }
 exports.CreateManagerDto = CreateManagerDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateManagerDto.prototype, "username", void 0);
+__decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateManagerDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateManagerDto.prototype, "balance", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateManagerDto.prototype, "loans", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateManagerDto.prototype, "permissions", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateManagerDto.prototype, "parentId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateManagerDto.prototype, "points", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

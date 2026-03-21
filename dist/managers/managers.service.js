@@ -25,8 +25,11 @@ let ManagersService = class ManagersService {
     create(dto) {
         return this.managersRepository.save(this.managersRepository.create(dto));
     }
-    findAll() {
-        return this.managersRepository.find({ order: { name: 'ASC' } });
+    async findAll() {
+        const managers = await this.managersRepository.find({ order: { name: 'ASC' } });
+        const counts = await this.managersRepository.manager.query(`SELECT "managerId", COUNT(*) as count FROM "subscriber" WHERE "managerId" IS NOT NULL GROUP BY "managerId"`);
+        const countMap = new Map(counts.map(r => [r.managerId, parseInt(r.count, 10)]));
+        return managers.map(m => ({ ...m, subscriberCount: countMap.get(m.id) ?? 0 }));
     }
     findOne(id) {
         return this.managersRepository.findOneBy({ id });
