@@ -146,90 +146,197 @@
 
     <!-- Modal -->
     <div v-if="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showModal = false">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl">
-        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
-          <h3 class="font-bold text-lg text-secondary">{{ editingId ? 'تعديل مدير' : 'إضافة مدير جديد' }}</h3>
-          <button @click="showModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl" dir="rtl">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 class="font-bold text-base text-secondary flex items-center gap-2">
+            <i class="fas fa-user-shield text-primary text-sm"></i>
+            {{ editingId ? 'تعديل مدير' : 'إضافة مدير جديد' }}
+          </h3>
+          <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+            <i class="fas fa-times text-xs"></i>
+          </button>
         </div>
-        <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-          <div class="grid grid-cols-2 gap-4">
-            <!-- اسم الدخول -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">اسم الدخول</label>
-              <input v-model="form.username" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono" placeholder="username" />
+
+        <div class="overflow-y-auto" style="max-height:72vh">
+          <!-- ── قسم 1: معلومات عامة ─────────────────────────────── -->
+          <div class="px-6 pt-5 pb-2">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span class="flex-1 border-t border-gray-100"></span>
+              معلومات عامة
+              <span class="flex-1 border-t border-gray-100"></span>
+            </p>
+            <div class="grid grid-cols-2 gap-x-5 gap-y-4">
+
+              <!-- اسم الدخول -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                  اسم الدخول <span class="text-red-400">*</span>
+                </label>
+                <input v-model="form.username"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono"
+                  placeholder="اسم الدخول" />
+                <p v-if="formErrors.username" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.username }}</p>
+              </div>
+
+              <!-- فعال toggle -->
+              <div class="flex items-center gap-3 pt-6">
+                <button type="button"
+                  @click="form.active = !form.active"
+                  :class="form.active ? 'bg-primary' : 'bg-gray-300'"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition flex-shrink-0">
+                  <span :class="form.active ? 'translate-x-5' : 'translate-x-1'"
+                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition"></span>
+                </button>
+                <span class="text-sm text-gray-600 font-medium">فعال</span>
+              </div>
+
+              <!-- كلمة الدخول -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                  كلمة الدخول <span v-if="!editingId" class="text-red-400">*</span>
+                  <span v-else class="text-xs text-gray-400 font-normal">(اتركها فارغة للإبقاء)</span>
+                </label>
+                <input v-model="form.password" type="password"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="كلمة الدخول" />
+              </div>
+
+              <!-- تأكيد كلمة الدخول -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                  تأكيد كلمة الدخول <span v-if="!editingId" class="text-red-400">*</span>
+                </label>
+                <input v-model="form.confirmPassword" type="password"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  :class="form.confirmPassword && form.password !== form.confirmPassword ? 'border-red-300 ring-1 ring-red-300' : ''"
+                  placeholder="تأكيد كلمة الدخول" />
+                <p v-if="form.confirmPassword && form.password !== form.confirmPassword" class="text-red-500 text-[11px] mt-0.5">كلمتا الدخول غير متطابقتين</p>
+              </div>
+
+              <!-- المجموعة (security group) -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                  المجموعة <span class="text-red-400">*</span>
+                </label>
+                <select v-model="form.groupId"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
+                  <option :value="null">— اختر المجموعة —</option>
+                  <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                </select>
+                <p v-if="formErrors.groupId" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.groupId }}</p>
+              </div>
+
+              <!-- تابع الى -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">
+                  تابع الى <span class="text-red-400">*</span>
+                </label>
+                <select v-model="form.parentId"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
+                  <option :value="null">— بدون —</option>
+                  <option v-for="mgr in managers.filter(mg => mg.id !== editingId)" :key="mgr.id" :value="mgr.id">
+                    {{ mgr.name }}{{ mgr.username ? ` (${mgr.username})` : '' }}
+                  </option>
+                </select>
+                <p v-if="formErrors.parentId" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.parentId }}</p>
+              </div>
+
             </div>
-            <!-- الاسم الكامل -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">الاسم الكامل <span class="text-red-500">*</span></label>
-              <input v-model="form.name" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+
+          <!-- ── قسم 2: معلومات شخصية ────────────────────────────── -->
+          <div class="px-6 pt-4 pb-2">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span class="flex-1 border-t border-gray-100"></span>
+              معلومات شخصية
+              <span class="flex-1 border-t border-gray-100"></span>
+            </p>
+            <div class="grid grid-cols-2 gap-x-5 gap-y-4">
+
+              <!-- الاسم الكامل -->
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-600 mb-1">الاسم الكامل</label>
+                <input v-model="form.name"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="الاسم الكامل" />
+              </div>
+
+              <!-- الهاتف -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">الهاتف</label>
+                <input v-model="form.phone" type="tel"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="+964 7XX XXX XXXX" />
+              </div>
+
+              <!-- البريد -->
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">البريد الإلكتروني</label>
+                <input v-model="form.email" type="email"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="email@example.com" />
+              </div>
+
             </div>
-            <!-- الرصيد -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">الرصيد</label>
-              <input v-model.number="form.balance" type="number" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-            </div>
-            <!-- القروض -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">القروض</label>
-              <input v-model.number="form.loans" type="number" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-            </div>
-            <!-- الصلاحيات -->
-            <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-600 mb-1">الصلاحيات</label>
-              <input v-model="form.permissions" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="مثال: internet.subscribers, internet.managers" />
-            </div>
-            <!-- تابع الى -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">تابع الى</label>
-              <select v-model="form.parentId" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                <option :value="null">— بدون —</option>
-                <option v-for="mgr in managers.filter(mg => mg.id !== editingId)" :key="mgr.id" :value="mgr.id">
-                  {{ mgr.name }}{{ mgr.username ? ` (${mgr.username})` : '' }}
-                </option>
-              </select>
-            </div>
-            <!-- النقاط -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">النقاط</label>
-              <input v-model.number="form.points" type="number" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-            </div>
-            <!-- الهاتف -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">الهاتف</label>
-              <input v-model="form.phone" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-            </div>
-            <!-- البريد -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">البريد الإلكتروني</label>
-              <input v-model="form.email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-            </div>
-            <!-- المنصب -->
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">المنصب</label>
-              <input v-model="form.position" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-            </div>
-            <!-- نشط -->
-            <div class="flex items-center gap-2 mt-2">
-              <input v-model="form.active" type="checkbox" id="activeCheck" class="w-4 h-4 accent-primary" />
-              <label for="activeCheck" class="text-sm text-gray-600">نشط</label>
-            </div>
-            <!-- ملاحظات -->
-            <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-600 mb-1">ملاحظات</label>
-              <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+          </div>
+
+          <!-- ── قسم 3: معلومات مالية ────────────────────────────── -->
+          <div class="px-6 pt-4 pb-5">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span class="flex-1 border-t border-gray-100"></span>
+              معلومات مالية
+              <span class="flex-1 border-t border-gray-100"></span>
+            </p>
+            <div class="grid grid-cols-3 gap-x-5 gap-y-4">
+
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">الرصيد</label>
+                <input v-model.number="form.balance" type="number" step="0.01"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">القروض</label>
+                <input v-model.number="form.loans" type="number" step="0.01"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">النقاط</label>
+                <input v-model.number="form.points" type="number" step="0.01"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">المنصب</label>
+                <input v-model="form.position"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="مثال: موزع" />
+              </div>
+              <div class="col-span-2">
+                <label class="block text-sm font-medium text-gray-600 mb-1">ملاحظات</label>
+                <textarea v-model="form.notes" rows="1"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+              </div>
+
             </div>
           </div>
         </div>
-        <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
-          <button @click="showModal = false" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700">إلغاء</button>
-          <button
-            @click="save"
-            :disabled="saving"
-            class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-60"
-          >
-            <i v-if="saving" class="fas fa-spinner fa-spin"></i>
-            حفظ
-          </button>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+          <span v-if="formErrors.general" class="text-red-500 text-xs">{{ formErrors.general }}</span>
+          <span v-else></span>
+          <div class="flex gap-2">
+            <button @click="showModal = false" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition">إلغاء</button>
+            <button
+              @click="save"
+              :disabled="saving"
+              class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-60"
+            >
+              <i v-if="saving" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fas fa-save"></i>
+              حفظ
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -242,6 +349,7 @@ import api from '../../api';
 import { logActivity } from '../../utils/activityLog';
 
 const managers = ref<any[]>([]);
+const groups   = ref<any[]>([]);
 const showModal = ref(false);
 const editingId = ref<number | null>(null);
 const saving = ref(false);
@@ -253,9 +361,12 @@ const selectedIds = ref<Set<number>>(new Set());
 
 const form = ref({
   username: '', name: '', balance: 0, loans: 0,
-  permissions: '', parentId: null as number | null, points: 0,
-  phone: '', email: '', position: '', notes: '', active: true,
+  permissions: '', groupId: null as number | null, parentId: null as number | null,
+  points: 0, phone: '', email: '', position: '', notes: '', active: true,
+  password: '', confirmPassword: '',
 });
+
+const formErrors = ref<Record<string, string>>({});
 
 function fmtNum(v: any): string {
   const n = parseFloat(v);
@@ -344,25 +455,29 @@ const visiblePages = computed(() => {
 
 async function loadData() {
   try {
-    const { data } = await api.get('/managers');
-    managers.value = data;
+    const [mgr, grp] = await Promise.all([api.get('/managers'), api.get('/groups')]);
+    managers.value = mgr.data;
+    groups.value   = grp.data;
   } catch {}
 }
 
 function openAdd() {
   editingId.value = null;
-  form.value = { username: '', name: '', balance: 0, loans: 0, permissions: '', parentId: null, points: 0, phone: '', email: '', position: '', notes: '', active: true };
+  formErrors.value = {};
+  form.value = { username: '', name: '', balance: 0, loans: 0, permissions: '', groupId: null, parentId: null, points: 0, phone: '', email: '', position: '', notes: '', active: true, password: '', confirmPassword: '' };
   showModal.value = true;
 }
 
 function openEdit(m: any) {
   editingId.value = m.id;
+  formErrors.value = {};
   form.value = {
     username: m.username || '',
     name: m.name || '',
     balance: parseFloat(m.balance) || 0,
     loans: parseFloat(m.loans) || 0,
     permissions: m.permissions || '',
+    groupId: m.groupId || null,
     parentId: m.parentId || null,
     points: parseFloat(m.points) || 0,
     phone: m.phone || '',
@@ -370,18 +485,27 @@ function openEdit(m: any) {
     position: m.position || '',
     notes: m.notes || '',
     active: m.active !== false,
+    password: '', confirmPassword: '',
   };
   showModal.value = true;
 }
 
 async function save() {
-  if (!form.value.name.trim()) {
-    showToast('الاسم مطلوب', 'error');
-    return;
+  formErrors.value = {};
+  // Validation
+  if (!form.value.username.trim()) { formErrors.value.username = 'اسم الدخول is required'; }
+  if (!form.value.groupId)         { formErrors.value.groupId  = 'المجموعة is required'; }
+  if (!editingId.value && !form.value.password) { formErrors.value.general = 'كلمة الدخول مطلوبة'; }
+  if (form.value.password && form.value.password !== form.value.confirmPassword) {
+    formErrors.value.general = 'كلمتا الدخول غير متطابقتين';
   }
+  if (Object.keys(formErrors.value).length) return;
+
   saving.value = true;
   try {
-    const payload = { ...form.value };
+    const { confirmPassword, ...rest } = form.value;
+    const payload: any = { ...rest };
+    if (!payload.password) delete payload.password;
     if (editingId.value) {
       await api.patch(`/managers/${editingId.value}`, payload);
       logActivity({ action: 'edit_manager', module: 'manager', subscriberName: form.value.name, details: `تعديل بيانات المدير: ${form.value.name}` });
@@ -395,7 +519,7 @@ async function save() {
     await loadData();
   } catch (err: any) {
     const msg = err?.response?.data?.message;
-    showToast(Array.isArray(msg) ? msg[0] : (msg || 'حدث خطأ'), 'error');
+    formErrors.value.general = Array.isArray(msg) ? msg[0] : (msg || 'حدث خطأ');
   } finally {
     saving.value = false;
   }

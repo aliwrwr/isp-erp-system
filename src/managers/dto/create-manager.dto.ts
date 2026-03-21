@@ -22,6 +22,14 @@ export class CreateManagerDto {
 
   @IsOptional()
   @IsNumber()
+  groupId?: number;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @IsOptional()
+  @IsNumber()
   parentId?: number;
 
   @IsOptional()

@@ -21,6 +21,12 @@ export class Manager {
   permissions: string;
 
   @Column({ nullable: true })
+  groupId: number;
+
+  @Column({ nullable: true })
+  password: string;
+
+  @Column({ nullable: true })
   parentId: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
