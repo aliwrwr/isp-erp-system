@@ -319,17 +319,17 @@
       <Transition name="modal">
         <div v-if="detailsModal.visible" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
           <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="detailsModal.visible = false"></div>
-          <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" dir="rtl">
+          <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" dir="rtl">
 
             <!-- Gradient Header -->
             <div class="relative bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 px-5 pt-5 pb-8 overflow-hidden">
               <!-- Decorative circles -->
-              <div class="absolute -top-6 -left-6 w-28 h-28 bg-white/10 rounded-full"></div>
-              <div class="absolute -bottom-8 -right-4 w-36 h-36 bg-white/10 rounded-full"></div>
-              <div class="absolute top-2 right-16 w-12 h-12 bg-white/5 rounded-full"></div>
+              <div class="absolute -top-6 -left-6 w-28 h-28 bg-white/10 rounded-full pointer-events-none"></div>
+              <div class="absolute -bottom-8 -right-4 w-36 h-36 bg-white/10 rounded-full pointer-events-none"></div>
+              <div class="absolute top-2 right-16 w-12 h-12 bg-white/5 rounded-full pointer-events-none"></div>
               <!-- Close button -->
-              <button @click="detailsModal.visible = false"
-                class="absolute top-3 left-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition z-10">
+              <button @click.stop="detailsModal.visible = false"
+                class="absolute top-3 left-3 w-7 h-7 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition z-20">
                 <i class="fas fa-times text-xs"></i>
               </button>
               <!-- Avatar + Info -->
