@@ -38,14 +38,26 @@
                   @change="toggleSelectAll" />
               </th>
               <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">#</th>
-              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">اسم الدخول</th>
-              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الاسم الكامل</th>
-              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الرصيد</th>
-              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">القروض</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs cursor-pointer select-none hover:text-primary" @click="setSort('username')">
+                <span class="inline-flex items-center gap-1">اسم الدخول<span class="inline-flex flex-col leading-none text-[9px]"><span :class="sortKey==='username'&&sortDir==='asc'?'text-primary':'text-gray-300'">▲</span><span :class="sortKey==='username'&&sortDir==='desc'?'text-primary':'text-gray-300'">▼</span></span></span>
+              </th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs cursor-pointer select-none hover:text-primary" @click="setSort('name')">
+                <span class="inline-flex items-center gap-1">الاسم الكامل<span class="inline-flex flex-col leading-none text-[9px]"><span :class="sortKey==='name'&&sortDir==='asc'?'text-primary':'text-gray-300'">▲</span><span :class="sortKey==='name'&&sortDir==='desc'?'text-primary':'text-gray-300'">▼</span></span></span>
+              </th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs cursor-pointer select-none hover:text-primary" @click="setSort('balance')">
+                <span class="inline-flex items-center gap-1">الرصيد<span class="inline-flex flex-col leading-none text-[9px]"><span :class="sortKey==='balance'&&sortDir==='asc'?'text-primary':'text-gray-300'">▲</span><span :class="sortKey==='balance'&&sortDir==='desc'?'text-primary':'text-gray-300'">▼</span></span></span>
+              </th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs cursor-pointer select-none hover:text-primary" @click="setSort('loans')">
+                <span class="inline-flex items-center gap-1">القروض<span class="inline-flex flex-col leading-none text-[9px]"><span :class="sortKey==='loans'&&sortDir==='asc'?'text-primary':'text-gray-300'">▲</span><span :class="sortKey==='loans'&&sortDir==='desc'?'text-primary':'text-gray-300'">▼</span></span></span>
+              </th>
               <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الصلاحيات</th>
               <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">تابع الى</th>
-              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">عدد المشتركين</th>
-              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">النقاط</th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs cursor-pointer select-none hover:text-primary" @click="setSort('subscriberCount')">
+                <span class="inline-flex items-center gap-1">عدد المشتركين<span class="inline-flex flex-col leading-none text-[9px]"><span :class="sortKey==='subscriberCount'&&sortDir==='asc'?'text-primary':'text-gray-300'">▲</span><span :class="sortKey==='subscriberCount'&&sortDir==='desc'?'text-primary':'text-gray-300'">▼</span></span></span>
+              </th>
+              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs cursor-pointer select-none hover:text-primary" @click="setSort('points')">
+                <span class="inline-flex items-center gap-1">النقاط<span class="inline-flex flex-col leading-none text-[9px]"><span :class="sortKey==='points'&&sortDir==='asc'?'text-primary':'text-gray-300'">▲</span><span :class="sortKey==='points'&&sortDir==='desc'?'text-primary':'text-gray-300'">▼</span></span></span>
+              </th>
               <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الإجراءات</th>
             </tr>
           </thead>
@@ -278,14 +290,41 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
   setTimeout(() => { toast.value.show = false; }, 3000);
 }
 
+const sortKey = ref<string>('');
+const sortDir = ref<'asc' | 'desc'>('asc');
+
+function setSort(key: string) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = key;
+    sortDir.value = 'asc';
+  }
+  currentPage.value = 1;
+}
+
 const filteredManagers = computed(() => {
   const q = search.value.trim().toLowerCase();
-  if (!q) return managers.value;
-  return managers.value.filter(m =>
-    m.name?.toLowerCase().includes(q) ||
-    m.phone?.toLowerCase().includes(q) ||
-    m.position?.toLowerCase().includes(q)
-  );
+  let list = q
+    ? managers.value.filter(m =>
+        m.name?.toLowerCase().includes(q) ||
+        m.username?.toLowerCase().includes(q) ||
+        m.phone?.toLowerCase().includes(q) ||
+        m.position?.toLowerCase().includes(q)
+      )
+    : [...managers.value];
+
+  if (sortKey.value) {
+    const key = sortKey.value;
+    const dir = sortDir.value === 'asc' ? 1 : -1;
+    list = list.slice().sort((a, b) => {
+      const av = a[key] ?? '';
+      const bv = b[key] ?? '';
+      if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir;
+      return String(av).localeCompare(String(bv), 'ar') * dir;
+    });
+  }
+  return list;
 });
 
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredManagers.value.length / pageSize.value)));
