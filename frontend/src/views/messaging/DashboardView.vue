@@ -112,13 +112,51 @@
             </tbody>
           </table>
         </div>
-        <!-- Pagination -->
-        <div v-if="totalLogs > logsPerPage" class="flex items-center justify-between px-5 py-3 border-t border-gray-100 text-sm">
-          <span class="text-gray-400 text-xs">{{ totalLogs.toLocaleString('ar-IQ') }} رسالة إجمالاً</span>
-          <div class="flex items-center gap-2">
-            <button @click="changePage(-1)" :disabled="currentPage === 1" class="px-3 py-1 rounded-lg border border-gray-200 text-xs disabled:opacity-40 hover:bg-gray-50">السابق</button>
-            <span class="text-xs text-gray-600">{{ currentPage }} / {{ totalPages }}</span>
-            <button @click="changePage(1)" :disabled="currentPage >= totalPages" class="px-3 py-1 rounded-lg border border-gray-200 text-xs disabled:opacity-40 hover:bg-gray-50">التالي</button>
+        <!-- Pagination Bar -->
+        <div v-if="totalLogs > 0" class="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+          <!-- Page numbers -->
+          <div class="flex items-center gap-1">
+            <!-- First -->
+            <button @click="gotoPage(1)" :disabled="currentPage === 1"
+              class="w-8 h-8 rounded border border-gray-200 text-xs font-medium flex items-center justify-center transition hover:bg-gray-50 disabled:opacity-30">
+              «‏«
+            </button>
+            <!-- Prev -->
+            <button @click="gotoPage(currentPage - 1)" :disabled="currentPage === 1"
+              class="w-8 h-8 rounded border border-gray-200 text-xs font-medium flex items-center justify-center transition hover:bg-gray-50 disabled:opacity-30">
+              «
+            </button>
+            <!-- Numbered pages -->
+            <template v-for="p in visiblePages" :key="p">
+              <button @click="gotoPage(p)"
+                class="w-8 h-8 rounded border text-xs font-medium flex items-center justify-center transition"
+                :class="p === currentPage
+                  ? 'bg-indigo-500 border-indigo-500 text-white shadow-sm'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+                {{ p }}
+              </button>
+            </template>
+            <!-- Next -->
+            <button @click="gotoPage(currentPage + 1)" :disabled="currentPage >= totalPages"
+              class="w-8 h-8 rounded border border-gray-200 text-xs font-medium flex items-center justify-center transition hover:bg-gray-50 disabled:opacity-30">
+              »
+            </button>
+            <!-- Last -->
+            <button @click="gotoPage(totalPages)" :disabled="currentPage >= totalPages"
+              class="w-8 h-8 rounded border border-gray-200 text-xs font-medium flex items-center justify-center transition hover:bg-gray-50 disabled:opacity-30">
+              »‏»
+            </button>
+          </div>
+          <!-- Per page -->
+          <div class="flex items-center gap-1">
+            <button v-for="size in [500, 100, 50, 10, 5]" :key="size"
+              @click="changePerPage(size)"
+              class="w-10 h-8 rounded border text-xs font-medium transition"
+              :class="logsPerPage === size
+                ? 'bg-gray-300 border-gray-300 text-gray-600'
+                : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
+              {{ size }}
+            </button>
           </div>
         </div>
       </div>
@@ -135,10 +173,17 @@ const stats = ref({ total: 0, success: 0, failed: 0 });
 const logs = ref<any[]>([]);
 const totalLogs = ref(0);
 const currentPage = ref(1);
-const logsPerPage = 15;
+const logsPerPage = ref(10);
 const loadingLogs = ref(false);
 
-const totalPages = computed(() => Math.ceil(totalLogs.value / logsPerPage));
+const totalPages = computed(() => Math.max(1, Math.ceil(totalLogs.value / logsPerPage.value)));
+const visiblePages = computed(() => {
+  const pages: number[] = [];
+  const start = Math.max(1, currentPage.value - 2);
+  const end = Math.min(totalPages.value, start + 4);
+  for (let i = start; i <= end; i++) pages.push(i);
+  return pages;
+});
 
 // Quick send
 const quickPhone = ref('');
@@ -179,7 +224,7 @@ function formatTime(dt: string) {
 async function loadLogs() {
   loadingLogs.value = true;
   try {
-    const { data } = await api.get('/whatsapp/logs', { params: { page: currentPage.value, limit: logsPerPage } });
+    const { data } = await api.get('/whatsapp/logs', { params: { page: currentPage.value, limit: logsPerPage.value } });
     logs.value = data.data;
     totalLogs.value = data.total;
   } catch {} finally {
@@ -187,9 +232,20 @@ async function loadLogs() {
   }
 }
 
-function changePage(dir: number) {
-  currentPage.value += dir;
+function gotoPage(p: number) {
+  if (p < 1 || p > totalPages.value) return;
+  currentPage.value = p;
   loadLogs();
+}
+
+function changePerPage(size: number) {
+  logsPerPage.value = size;
+  currentPage.value = 1;
+  loadLogs();
+}
+
+function changePage(dir: number) {
+  gotoPage(currentPage.value + dir);
 }
 
 async function sendQuick() {
