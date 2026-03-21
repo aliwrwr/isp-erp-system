@@ -33,6 +33,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { CashboxModule } from './cashbox/cashbox.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { InstallmentsModule } from './installments/installments.module';
+import { GroupsModule } from './groups/groups.module';
 import config from './config/config';
 
 @Module({
@@ -77,6 +78,7 @@ import config from './config/config';
     CashboxModule,
     SystemSettingsModule,
     InstallmentsModule,
+    GroupsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
