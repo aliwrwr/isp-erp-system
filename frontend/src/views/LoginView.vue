@@ -81,7 +81,12 @@ async function handleLogin() {
   error.value = '';
   try {
     await auth.login(email.value, password.value);
-    router.push('/select-system');
+    // Managers belong to the internet system — skip system selection
+    if (auth.user?.type === 'manager') {
+      router.push('/internet');
+    } else {
+      router.push('/select-system');
+    }
   } catch (e: any) {
     error.value = e.response?.data?.message || 'خطأ في البريد الإلكتروني أو كلمة المرور';
   } finally {

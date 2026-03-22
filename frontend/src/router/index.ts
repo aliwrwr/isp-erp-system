@@ -179,7 +179,8 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresAuth && !token) {
     next('/login');
   } else if (to.name === 'Login' && token) {
-    next('/select-system');
+    const auth = useAuthStore();
+    next(auth.user?.type === 'manager' ? '/internet' : '/select-system');
   } else if (to.meta.requiresAuth && token && to.name) {
     const auth = useAuthStore();
     // Check permission for this route
