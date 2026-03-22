@@ -154,8 +154,8 @@
         <div v-if="showDepositModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeDepositModal">
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 class="font-bold text-base">إيداع مبلغ</h3>
-              <button @click="closeDepositModal" class="text-gray-500 hover:text-gray-700 rounded-lg p-1">
+              <h3 class="font-bold text-base">{{ amountMode === 'deposit' ? 'إيداع مبلغ' : 'سحب مبلغ' }}</h3>
+              <button @click="closeAmountModal" class="text-gray-500 hover:text-gray-700 rounded-lg p-1">
                 <i class="fas fa-times"></i>
               </button>
             </div>
@@ -182,8 +182,8 @@
               </div>
             </div>
             <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-              <button @click="closeDepositModal" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-100">إلغاء</button>
-              <button @click="confirmDeposit" class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-dark">موافق</button>
+              <button @click="closeAmountModal" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-100">إلغاء</button>
+              <button @click="confirmAmount" class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-dark">موافق</button>
             </div>
           </div>
         </div>
@@ -544,18 +544,20 @@ async function ctxEdit() {
   closeContextMenu();
 }
 
-const showDepositModal = ref(false);
+const showAmountModal = ref(false);
 const selectedDepositManager = ref<any>(null);
 const depositForm = ref({ amount: 0, isDebt: false, notes: '' });
+const amountMode = ref<'deposit' | 'withdraw' | 'payDebt'>('deposit');
 
-function openDepositModal(manager: any) {
+function openAmountModal(manager: any, mode: 'deposit' | 'withdraw') {
   if (!manager) return;
   selectedDepositManager.value = manager;
   depositForm.value = { amount: 0, isDebt: false, notes: '' };
-  showDepositModal.value = true;
+  amountMode.value = mode;
+  showAmountModal.value = true;
 }
 
-async function confirmDeposit() {
+async function confirmAmount() {
   if (!selectedDepositManager.value) return;
   const amount = Number(depositForm.value.amount);
   if (!amount || Number.isNaN(amount) || amount <= 0) {
@@ -565,22 +567,31 @@ async function confirmDeposit() {
 
   const manager = selectedDepositManager.value;
   try {
-    if (depositForm.value.isDebt) {
-      // إضافة دين (القروض)
-      const loans = Number(manager.loans) || 0;
-      await api.patch(`/managers/${manager.id}`, { loans: loans + amount });
-    } else {
-      // إيداع في الرصيد
+    if (amountMode.value === 'deposit') {
+      if (depositForm.value.isDebt) {
+        // إضافة دين (القروض)
+        const loans = Number(manager.loans) || 0;
+        await api.patch(`/managers/${manager.id}`, { loans: loans + amount });
+      } else {
+        // إيداع في الرصيد
+        const balance = Number(manager.balance) || 0;
+        await api.patch(`/managers/${manager.id}`, { balance: balance + amount });
+      }
+    } else if (amountMode.value === 'withdraw') {
+      // سحب من الرصيد
       const balance = Number(manager.balance) || 0;
-      await api.patch(`/managers/${manager.id}`, { balance: balance + amount });
-    }
-    if (depositForm.value.notes) {
-      logActivity({ action: 'manager_deposit', module: 'manager', subscriberName: manager.name, details: `${depositForm.value.isDebt ? 'دين' : 'إيداع'} ${amount} على ${manager.name} - ${depositForm.value.notes}`, amount });
+      await api.patch(`/managers/${manager.id}`, { balance: Math.max(0, balance - amount) });
     } else {
-      logActivity({ action: 'manager_deposit', module: 'manager', subscriberName: manager.name, details: `${depositForm.value.isDebt ? 'دين' : 'إيداع'} ${amount} على ${manager.name}`, amount });
+      // تسديد دين
+      const loans = Number(manager.loans) || 0;
+      await api.patch(`/managers/${manager.id}`, { loans: Math.max(0, loans - amount) });
     }
+
+    const actionText = amountMode.value === 'deposit' ? (depositForm.value.isDebt ? 'دين' : 'إيداع') : 'سحب';
+    logActivity({ action: `manager_${amountMode.value}`, module: 'manager', subscriberName: manager.name, details: `${actionText} ${amount} على ${manager.name}${depositForm.value.notes ? ' - ' + depositForm.value.notes : ''}`, amount });
+
     showToast('تم تنفيذ العملية بنجاح');
-    showDepositModal.value = false;
+    showAmountModal.value = false;
     closeContextMenu();
     await loadData();
   } catch (err: any) {
@@ -589,37 +600,24 @@ async function confirmDeposit() {
   }
 }
 
-function closeDepositModal() {
-  showDepositModal.value = false;
+function closeAmountModal() {
+  showAmountModal.value = false;
   selectedDepositManager.value = null;
 }
 
 async function ctxDeposit() {
   if (!contextMenuManager.value) return;
-  openDepositModal(contextMenuManager.value);
+  openAmountModal(contextMenuManager.value, 'deposit');
 }
 
 async function ctxWithdraw() {
   if (!contextMenuManager.value) return;
-  const amount = Number(prompt('أدخل مبلغ السحب (د.ع)'));
-  if (!amount || Number.isNaN(amount)) return;
-  const mgr = contextMenuManager.value;
-  await api.patch(`/managers/${mgr.id}`, { balance: Math.max(0, (Number(mgr.balance) || 0) - amount) });
-  showToast('تم سحب المبلغ بنجاح');
-  closeContextMenu();
-  await loadData();
+  openAmountModal(contextMenuManager.value, 'withdraw');
 }
 
 async function ctxPayDebt() {
   if (!contextMenuManager.value) return;
-  const amount = Number(prompt('أدخل مبلغ تسديد الديون (د.ع)'));
-  if (!amount || Number.isNaN(amount)) return;
-  const mgr = contextMenuManager.value;
-  const currentLoans = Number(mgr.loans) || 0;
-  await api.patch(`/managers/${mgr.id}`, { loans: Math.max(0, currentLoans - amount) });
-  showToast('تم تسديد الدين بنجاح');
-  closeContextMenu();
-  await loadData();
+  openAmountModal(contextMenuManager.value, 'payDebt');
 }
 
 async function ctxAddPoints() {
