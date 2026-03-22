@@ -10,4 +10,5 @@ export declare class ManagersService {
     findOne(id: number): Promise<Manager | null>;
     update(id: number, dto: UpdateManagerDto): Promise<Manager | null>;
     remove(id: number): Promise<void>;
+    findByUsername(username: string): Promise<Manager | null>;
 }

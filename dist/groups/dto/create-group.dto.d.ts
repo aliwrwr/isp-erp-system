@@ -3,5 +3,6 @@ export declare class CreateGroupDto {
     description?: string;
     layout?: string;
     permissions?: string;
+    dashboardId?: number;
     active?: boolean;
 }

@@ -32,6 +32,9 @@ let ManagersController = class ManagersController {
     findAll() {
         return this.managersService.findAll();
     }
+    findByUsername(username) {
+        return this.managersService.findByUsername(username);
+    }
     findOne(id) {
         return this.managersService.findOne(+id);
     }
@@ -57,6 +60,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], ManagersController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('by-username/:username'),
+    __param(0, (0, common_1.Param)('username')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ManagersController.prototype, "findByUsername", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

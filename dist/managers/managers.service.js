@@ -41,6 +41,9 @@ let ManagersService = class ManagersService {
     async remove(id) {
         await this.managersRepository.delete(id);
     }
+    findByUsername(username) {
+        return this.managersRepository.findOneBy({ username });
+    }
 };
 exports.ManagersService = ManagersService;
 exports.ManagersService = ManagersService = __decorate([

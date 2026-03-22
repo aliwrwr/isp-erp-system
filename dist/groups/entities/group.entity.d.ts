@@ -4,5 +4,6 @@ export declare class Group {
     description: string;
     layout: string;
     permissions: string;
+    dashboardId: number;
     active: boolean;
 }

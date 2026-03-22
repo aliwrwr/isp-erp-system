@@ -17,6 +17,7 @@ let Group = class Group {
     description;
     layout;
     permissions;
+    dashboardId;
     active;
 };
 exports.Group = Group;
@@ -40,6 +41,10 @@ __decorate([
     (0, typeorm_1.Column)('text', { nullable: true }),
     __metadata("design:type", String)
 ], Group.prototype, "permissions", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], Group.prototype, "dashboardId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)
