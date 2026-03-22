@@ -291,7 +291,7 @@ const WIDGET_DEFS: WDef[] = [
   { type: 'active_subs',  label: 'المشتركين الفعالين',    sub: 'مشتركين متصلين حالياً',   icon: 'fas fa-user-check',          color: '#10B981' },
   { type: 'connected',    label: 'المتصلين',              sub: 'مشتركين متصلين حالياً',   icon: 'fas fa-signal',              color: '#06B6D4' },
   { type: 'managers',     label: 'المدراء',               sub: 'عدد المدراء المفوّضين',    icon: 'fas fa-user-shield',         color: '#6366F1' },
-  { type: 'cancelled',    label: 'الملغى اشتراكاتهم',                                     icon: 'fas fa-user-times',          color: '#EF4444' },
+  { type: 'cancelled',    label: 'منتهي اشتراكاتهم',                                     icon: 'fas fa-user-times',          color: '#EF4444' },
   { type: 'exp_soon',     label: 'تنتهي اشتراكاتهم',     sub: 'ختى اشتراكهم بـ 3 أيام', icon: 'fas fa-clock',               color: '#F59E0B' },
   { type: 'exp_today',    label: 'ينتهي اشتراكهم اليوم',                                  icon: 'fas fa-calendar-day',        color: '#8B5CF6' },
   { type: 'balance',      label: 'الرصيد',                sub: 'الرصيد الإجمالي',         icon: 'fas fa-wallet',              color: '#059669' },
@@ -318,10 +318,26 @@ function widgetVal(type: string): string {
     case 'cancelled':   return String(expiredSub.value);
     case 'exp_soon':    return String(almostExpiring.value);
     case 'exp_today':   return String(expiringToday.value);
-    case 'ram':         return serverStats.value.ram + '%';
-    case 'storage':     return serverStats.value.disk + '%';
-    case 'network':     return serverStats.value.cpu + '%';
+    case 'ram':         return serverStats.value.ram ? `${serverStats.value.ram}%` : '—';
+    case 'storage':     return serverStats.value.disk ? `${serverStats.value.disk}%` : '—';
+    case 'network':
+      if (routers.value.length) {
+        const online = routerOnlineCount.value;
+        const total = routers.value.length;
+        return `${online}/${total}`;
+      }
+      return serverStats.value.cpu ? `${serverStats.value.cpu}%` : '—';
     case 'system_time': return new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    case 'dns_ping':
+    case 'google_ping':
+      return '—';
+    case 'points':
+      return '—';
+    case 'online_fup':
+      return '—';
+    case 'debts':
+    case 'financial':
+      return '—';
     default:            return '—';
   }
 }
