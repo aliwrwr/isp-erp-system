@@ -458,41 +458,12 @@ onMounted(async () => {
 
   // Load personalized dashboard for current manager
   try {
-    // If logged in as manager, groupId is available directly on the profile
-    const groupId = authStore.user?.groupId;
-    if (groupId) {
-      const secRes = await api.get(`/groups/${groupId}`).catch(() => null);
-      const secGrp = secRes?.data;
-      if (secGrp?.dashboardId) {
-        const dashRes = await api.get(`/groups/${secGrp.dashboardId}`).catch(() => null);
-        const dash = dashRes?.data;
-        if (dash?.layout) {
-          try { personalLayout.value = JSON.parse(dash.layout); } catch { /* ignore */ }
-        }
-      } else if (secGrp?.layout) {
-        // The group itself has a layout (single group used for both dashboard + permissions)
-        try { personalLayout.value = JSON.parse(secGrp.layout); } catch { /* ignore */ }
-      }
-    } else {
-      // Fallback: look up by username for backward compat
-      const userEmail = authStore.user?.email;
-      if (userEmail) {
-        const mgrRes = await api.get(`/managers/by-username/${encodeURIComponent(userEmail)}`).catch(() => null);
-        const mgr = mgrRes?.data;
-        if (mgr?.groupId) {
-          const secRes = await api.get(`/groups/${mgr.groupId}`).catch(() => null);
-          const secGrp = secRes?.data;
-          if (secGrp?.dashboardId) {
-            const dashRes = await api.get(`/groups/${secGrp.dashboardId}`).catch(() => null);
-            const dash = dashRes?.data;
-            if (dash?.layout) {
-              try { personalLayout.value = JSON.parse(dash.layout); } catch { /* ignore */ }
-            }
-          } else if (secGrp?.layout) {
-            try { personalLayout.value = JSON.parse(secGrp.layout); } catch { /* ignore */ }
-          }
-        }
-      }
+    // Use dashboardLayout from the user's profile (already loaded during login)
+    const dashboardLayout = authStore.user?.dashboardLayout;
+    if (dashboardLayout) {
+      try {
+        personalLayout.value = JSON.parse(dashboardLayout);
+      } catch { /* ignore */ }
     }
   } catch { /* ignore */ }
 
