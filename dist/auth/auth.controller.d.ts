@@ -17,6 +17,7 @@ export declare class AuthController {
         type: string;
         managerId: number;
         groupId: number;
+        dashboardLayout: string | null;
     } | {
         id: number;
         name: string;
@@ -38,6 +39,7 @@ export declare class AuthController {
         type?: undefined;
         managerId?: undefined;
         groupId?: undefined;
+        dashboardLayout?: undefined;
     }>;
     register(createUserDto: CreateUserDto): Promise<import("../users/entities/user.entity").User>;
 }

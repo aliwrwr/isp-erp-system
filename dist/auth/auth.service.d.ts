@@ -28,6 +28,7 @@ export declare class AuthService {
         type: string;
         managerId: number;
         groupId: number;
+        dashboardLayout: string | null;
     } | {
         id: number;
         name: string;
@@ -49,5 +50,6 @@ export declare class AuthService {
         type?: undefined;
         managerId?: undefined;
         groupId?: undefined;
+        dashboardLayout?: undefined;
     }>;
 }

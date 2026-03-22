@@ -118,13 +118,22 @@ let AuthService = class AuthService {
             if (!manager)
                 throw new common_1.UnauthorizedException();
             let permissions = [];
+            let dashboardLayout = null;
             if (manager.groupId) {
-                const group = await this.groupsService.findOne(manager.groupId);
-                if (group?.permissions) {
-                    try {
-                        permissions = JSON.parse(group.permissions);
+                const securityGroup = await this.groupsService.findOne(manager.groupId);
+                if (securityGroup) {
+                    if (securityGroup.permissions) {
+                        try {
+                            permissions = JSON.parse(securityGroup.permissions);
+                        }
+                        catch { }
                     }
-                    catch { }
+                    if (securityGroup.dashboardId) {
+                        const dashboardGroup = await this.groupsService.findOne(securityGroup.dashboardId);
+                        if (dashboardGroup?.layout) {
+                            dashboardLayout = dashboardGroup.layout;
+                        }
+                    }
                 }
             }
             return {
@@ -137,6 +146,7 @@ let AuthService = class AuthService {
                 type: 'manager',
                 managerId: manager.id,
                 groupId: manager.groupId,
+                dashboardLayout,
             };
         }
         const user = await this.usersService.findOne(reqUser.userId);

@@ -20,6 +20,7 @@ interface User {
   type?: 'user' | 'manager';
   managerId?: number;
   groupId?: number;
+  dashboardLayout?: string;
 }
 
 interface AuthState {

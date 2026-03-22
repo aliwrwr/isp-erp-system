@@ -74,13 +74,27 @@ export class AuthService {
     if (reqUser?.type === 'manager') {
       const manager = await this.managersService.findOne(reqUser.managerId);
       if (!manager) throw new UnauthorizedException();
+      
       let permissions: string[] = [];
+      let dashboardLayout: string | null = null;
+
       if (manager.groupId) {
-        const group = await this.groupsService.findOne(manager.groupId);
-        if (group?.permissions) {
-          try { permissions = JSON.parse(group.permissions); } catch { /* ignore */ }
+        const securityGroup = await this.groupsService.findOne(manager.groupId);
+        if (securityGroup) {
+          // Get permissions from the security group
+          if (securityGroup.permissions) {
+            try { permissions = JSON.parse(securityGroup.permissions); } catch { /* ignore */ }
+          }
+          // Get dashboard layout from the linked dashboard group
+          if (securityGroup.dashboardId) {
+            const dashboardGroup = await this.groupsService.findOne(securityGroup.dashboardId);
+            if (dashboardGroup?.layout) {
+              dashboardLayout = dashboardGroup.layout;
+            }
+          }
         }
       }
+
       return {
         id: manager.id,
         name: manager.name,
@@ -91,6 +105,7 @@ export class AuthService {
         type: 'manager',
         managerId: manager.id,
         groupId: manager.groupId,
+        dashboardLayout, // <-- Include the layout here
       };
     }
 
