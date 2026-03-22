@@ -224,20 +224,22 @@
                   <option v-for="g in securityGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
                 <p v-if="formErrors.groupId" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.groupId }}</p>
-                <!-- Selected group info: name + linked dashboard -->
-                <div v-if="form.groupId" class="mt-1.5 space-y-1">
-                  <div class="flex items-center gap-1.5 text-[12px] text-primary">
-                    <i class="fas fa-users-cog text-[11px]"></i>
-                    <span>{{ securityGroups.find(g => g.id === form.groupId)?.name }}</span>
+
+                <!-- Selected group info card -->
+                <div v-if="form.groupId" class="mt-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 flex items-center gap-4">
+                  <div class="flex items-center gap-1.5 text-[12px] text-primary font-semibold">
+                    <i class="fas fa-shield-alt text-[11px]"></i>
+                    <span>{{ securityGroups.find((g: any) => g.id === form.groupId)?.name }}</span>
                   </div>
-                  <div v-if="securityGroups.find(g => g.id === form.groupId)?.dashboardId"
+                  <div class="w-px h-4 bg-gray-200"></div>
+                  <div v-if="securityGroups.find((g: any) => g.id === form.groupId)?.dashboardId"
                     class="flex items-center gap-1.5 text-[11px] text-indigo-600">
                     <i class="fas fa-columns text-[10px]"></i>
-                    <span>لوحة التحكم: {{ dashboardGroups.find(d => d.id === securityGroups.find((g: any) => g.id === form.groupId)?.dashboardId)?.name || '—' }}</span>
+                    <span>{{ dashboardGroups.find((d: any) => d.id === securityGroups.find((g: any) => g.id === form.groupId)?.dashboardId)?.name }}</span>
                   </div>
-                  <div v-else class="text-[11px] text-gray-400 flex items-center gap-1">
+                  <div v-else class="flex items-center gap-1 text-[11px] text-gray-400">
                     <i class="fas fa-columns text-[10px]"></i>
-                    <span>لا توجد لوحة تحكم مرتبطة بهذه المجموعة</span>
+                    <span>بدون لوحة</span>
                   </div>
                 </div>
               </div>
