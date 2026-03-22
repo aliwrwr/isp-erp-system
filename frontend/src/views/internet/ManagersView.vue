@@ -589,8 +589,7 @@ const amountMode = ref<'deposit' | 'withdraw' | 'payDebt'>('deposit');
 const pointsMode = ref<'add' | 'withdraw'>('add');
 
 function openAmountModal(manager: any, mode: 'deposit' | 'withdraw') {
-  if (!manager) return;
-  selectedDepositManager.value = manager;
+  if (!manager) return;  closeContextMenu();  selectedDepositManager.value = manager;
   depositForm.value = { amount: 0, isDebt: false, notes: '' };
   amountMode.value = mode;
   showAmountModal.value = true;
@@ -661,6 +660,7 @@ async function ctxPayDebt() {
 
 function openPointsModal(manager: any, mode: 'add' | 'withdraw') {
   if (!manager) return;
+  closeContextMenu();
   selectedPointsManager.value = manager;
   pointsForm.value = { amount: 0, notes: '' };
   pointsMode.value = mode;
