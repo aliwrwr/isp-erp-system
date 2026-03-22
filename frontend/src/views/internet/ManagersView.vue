@@ -121,7 +121,7 @@
               <span>تعديل</span>
               <i class="fas fa-pen text-orange-500"></i>
             </button>
-            <button @click="ctxDeposit" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+            <button @click="openDepositModal(contextMenuManager)" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
               <span>إيداع</span>
               <i class="fas fa-wallet text-green-500"></i>
             </button>
@@ -148,6 +148,46 @@
           </div>
         </div>
       </teleport>
+
+      <!-- Deposit Modal -->
+      <transition name="modal">
+        <div v-if="showDepositModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeDepositModal">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 class="font-bold text-base">إيداع مبلغ</h3>
+              <button @click="closeDepositModal" class="text-gray-500 hover:text-gray-700 rounded-lg p-1">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="px-6 py-4 space-y-3">
+              <div class="text-sm text-gray-700 space-y-1">
+                <div><strong>المدير:</strong> {{ selectedDepositManager?.name || '—' }}</div>
+                <div><strong>اسم المستخدم:</strong> {{ selectedDepositManager?.username || '—' }}</div>
+                <div><strong>الرصيد الحالي:</strong> {{ Number(selectedDepositManager?.balance || 0).toLocaleString('ar-IQ') }} د.ع</div>
+                <div><strong>القروض الحالية:</strong> {{ Number(selectedDepositManager?.loans || 0).toLocaleString('ar-IQ') }} د.ع</div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">المبلغ</label>
+                <input v-model.number="depositForm.amount" type="number" min="1"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div class="flex items-center gap-2 text-sm">
+                <input id="depositDebt" type="checkbox" v-model="depositForm.isDebt" class="accent-primary" />
+                <label for="depositDebt" class="text-gray-700">قرض</label>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
+                <textarea v-model="depositForm.notes" rows="2"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+              </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+              <button @click="closeDepositModal" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-100">إلغاء</button>
+              <button @click="confirmDeposit" class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-dark">موافق</button>
+            </div>
+          </div>
+        </div>
+      </transition>
 
       <!-- Pagination Bar -->
       <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
@@ -348,46 +388,6 @@
 
             </div>
           </div>
-
-          <!-- ── قسم 3: معلومات مالية ────────────────────────────── -->
-          <div class="px-6 pt-4 pb-5">
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span class="flex-1 border-t border-gray-100"></span>
-              معلومات مالية
-              <span class="flex-1 border-t border-gray-100"></span>
-            </p>
-            <div class="grid grid-cols-3 gap-x-5 gap-y-4">
-
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">الرصيد</label>
-                <input v-model.number="form.balance" type="number" step="0.01"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">القروض</label>
-                <input v-model.number="form.loans" type="number" step="0.01"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">النقاط</label>
-                <input v-model.number="form.points" type="number" step="0.01"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-600 mb-1">المنصب</label>
-                <input v-model="form.position"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="مثال: موزع" />
-              </div>
-              <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-600 mb-1">ملاحظات</label>
-                <textarea v-model="form.notes" rows="1"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
-              </div>
-
-            </div>
-          </div>
         </div>
 
         <!-- Footer -->
@@ -433,9 +433,9 @@ const toast = ref({ show: false, message: '', type: 'success' });
 const selectedIds = ref<Set<number>>(new Set());
 
 const form = ref({
-  username: '', name: '', balance: 0, loans: 0,
+  username: '', name: '',
   permissions: '', groupId: null as number | null, parentId: null as number | null,
-  points: 0, phone: '', email: '', position: '', notes: '', active: true,
+  phone: '', email: '', position: '', notes: '', active: true,
   password: '', confirmPassword: '',
 });
 
@@ -544,15 +544,59 @@ async function ctxEdit() {
   closeContextMenu();
 }
 
+const showDepositModal = ref(false);
+const selectedDepositManager = ref<any>(null);
+const depositForm = ref({ amount: 0, isDebt: false, notes: '' });
+
+function openDepositModal(manager: any) {
+  if (!manager) return;
+  selectedDepositManager.value = manager;
+  depositForm.value = { amount: 0, isDebt: false, notes: '' };
+  showDepositModal.value = true;
+}
+
+async function confirmDeposit() {
+  if (!selectedDepositManager.value) return;
+  const amount = Number(depositForm.value.amount);
+  if (!amount || Number.isNaN(amount) || amount <= 0) {
+    showToast('يرجى إدخال مبلغ صالح', 'error');
+    return;
+  }
+
+  const manager = selectedDepositManager.value;
+  try {
+    if (depositForm.value.isDebt) {
+      // إضافة دين (القروض)
+      const loans = Number(manager.loans) || 0;
+      await api.patch(`/managers/${manager.id}`, { loans: loans + amount });
+    } else {
+      // إيداع في الرصيد
+      const balance = Number(manager.balance) || 0;
+      await api.patch(`/managers/${manager.id}`, { balance: balance + amount });
+    }
+    if (depositForm.value.notes) {
+      logActivity({ action: 'manager_deposit', module: 'manager', subscriberName: manager.name, details: `${depositForm.value.isDebt ? 'دين' : 'إيداع'} ${amount} على ${manager.name} - ${depositForm.value.notes}`, amount });
+    } else {
+      logActivity({ action: 'manager_deposit', module: 'manager', subscriberName: manager.name, details: `${depositForm.value.isDebt ? 'دين' : 'إيداع'} ${amount} على ${manager.name}`, amount });
+    }
+    showToast('تم تنفيذ العملية بنجاح');
+    showDepositModal.value = false;
+    closeContextMenu();
+    await loadData();
+  } catch (err: any) {
+    const msg = err?.response?.data?.message;
+    showToast(Array.isArray(msg) ? msg[0] : (msg || 'حدث خطأ'), 'error');
+  }
+}
+
+function closeDepositModal() {
+  showDepositModal.value = false;
+  selectedDepositManager.value = null;
+}
+
 async function ctxDeposit() {
   if (!contextMenuManager.value) return;
-  const amount = Number(prompt('أدخل مبلغ الإيداع (د.ع)'));
-  if (!amount || Number.isNaN(amount)) return;
-  const mgr = contextMenuManager.value;
-  await api.patch(`/managers/${mgr.id}`, { balance: (Number(mgr.balance) || 0) + amount });
-  showToast('تم إيداع المبلغ بنجاح');
-  closeContextMenu();
-  await loadData();
+  openDepositModal(contextMenuManager.value);
 }
 
 async function ctxWithdraw() {
