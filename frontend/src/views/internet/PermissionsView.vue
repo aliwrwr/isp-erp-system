@@ -213,12 +213,19 @@
         <strong class="text-gray-800">{{ selectedGroup.name }}</strong>
         <span class="ml-2 text-gray-400">({{ givenPerms.length }} صلاحية)</span>
       </span>
-      <button @click="savePermissions" :disabled="saving"
-        class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6 py-1.5 rounded font-semibold flex items-center gap-1.5 disabled:opacity-60 transition">
-        <i v-if="saving" class="fas fa-spinner fa-spin"></i>
-        <i v-else class="fas fa-save"></i>
-        حفظ الصلاحيات
-      </button>
+      <div class="flex items-center gap-2">
+        <button @click="givenPerms.value = []; selAvail.value = new Set(); selGiven.value = new Set()"
+          class="text-xs text-red-500 hover:bg-red-50 border border-red-200 px-4 py-1.5 rounded font-medium flex items-center gap-1.5 transition">
+          <i class="fas fa-trash-alt text-[11px]"></i>
+          مسح الكل
+        </button>
+        <button @click="savePermissions" :disabled="saving"
+          class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-6 py-1.5 rounded font-semibold flex items-center gap-1.5 disabled:opacity-60 transition">
+          <i v-if="saving" class="fas fa-spinner fa-spin"></i>
+          <i v-else class="fas fa-save"></i>
+          حفظ الصلاحيات
+        </button>
+      </div>
     </div>
 
     <!-- ══ New Group Modal ═══════════════════════════════════════════════════ -->
