@@ -10,4 +10,5 @@ export declare class GroupsService {
     findOne(id: number): Promise<Group | null>;
     update(id: number, dto: UpdateGroupDto): Promise<Group | null>;
     remove(id: number): Promise<void>;
+    removeAll(): Promise<void>;
 }

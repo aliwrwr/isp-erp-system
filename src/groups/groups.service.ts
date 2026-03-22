@@ -32,4 +32,8 @@ export class GroupsService {
   async remove(id: number): Promise<void> {
     await this.repo.delete(id);
   }
+
+  async removeAll(): Promise<void> {
+    await this.repo.clear();
+  }
 }

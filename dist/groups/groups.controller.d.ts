@@ -8,5 +8,6 @@ export declare class GroupsController {
     findAll(): Promise<import("./entities/group.entity").Group[]>;
     findOne(id: string): Promise<import("./entities/group.entity").Group | null>;
     update(id: string, dto: UpdateGroupDto): Promise<import("./entities/group.entity").Group | null>;
+    removeAll(): Promise<void>;
     remove(id: string): Promise<void>;
 }

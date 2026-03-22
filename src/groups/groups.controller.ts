@@ -33,6 +33,13 @@ export class GroupsController {
     return this.groupsService.update(+id, dto);
   }
 
+  // Must be before @Delete(':id') to avoid route conflict
+  @Delete('all')
+  @Permissions('internet.groups')
+  removeAll() {
+    return this.groupsService.removeAll();
+  }
+
   @Delete(':id')
   @Permissions('internet.groups')
   remove(@Param('id') id: string) {

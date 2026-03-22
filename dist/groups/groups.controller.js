@@ -37,6 +37,9 @@ let GroupsController = class GroupsController {
     update(id, dto) {
         return this.groupsService.update(+id, dto);
     }
+    removeAll() {
+        return this.groupsService.removeAll();
+    }
     remove(id) {
         return this.groupsService.remove(+id);
     }
@@ -72,6 +75,13 @@ __decorate([
     __metadata("design:paramtypes", [String, update_group_dto_1.UpdateGroupDto]),
     __metadata("design:returntype", void 0)
 ], GroupsController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)('all'),
+    (0, permissions_decorator_1.Permissions)('internet.groups'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], GroupsController.prototype, "removeAll", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, permissions_decorator_1.Permissions)('internet.groups'),

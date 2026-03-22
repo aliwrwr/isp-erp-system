@@ -38,6 +38,9 @@ let GroupsService = class GroupsService {
     async remove(id) {
         await this.repo.delete(id);
     }
+    async removeAll() {
+        await this.repo.clear();
+    }
 };
 exports.GroupsService = GroupsService;
 exports.GroupsService = GroupsService = __decorate([
