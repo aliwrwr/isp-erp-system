@@ -87,7 +87,7 @@
               <td class="px-3 py-3 font-medium text-secondary">{{ m.name }}</td>
               <td class="px-3 py-3 text-green-700 font-semibold">{{ fmtNum(m.balance) }}</td>
               <td class="px-3 py-3 text-red-600 font-semibold">{{ fmtNum(m.loans) }}</td>
-              <td class="px-3 py-3 text-gray-600 max-w-[140px] truncate" :title="m.permissions || ''">{{ m.permissions || '—' }}</td>
+              <td class="px-3 py-3 text-gray-600 max-w-[140px] truncate" :title="getGroupName(m.groupId)">{{ getGroupName(m.groupId) }}</td>
               <td class="px-3 py-3 text-gray-600">{{ getParentName(m.parentId) }}</td>
               <td class="px-3 py-3">
                 <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ m.subscriberCount ?? 0 }}</span>
@@ -517,6 +517,12 @@ function getParentName(parentId: number | null): string {
   if (!parentId) return '—';
   const p = managers.value.find(m => m.id === parentId);
   return p ? (p.name + (p.username ? ` (${p.username})` : '')) : '—';
+}
+
+function getGroupName(groupId: number | null): string {
+  if (!groupId) return '—';
+  const g = groups.value.find(g => g.id === groupId);
+  return g ? g.name : '—';
 }
 
 function toggleSelect(id: number) {
