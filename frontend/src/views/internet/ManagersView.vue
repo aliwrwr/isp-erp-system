@@ -537,6 +537,9 @@ async function save() {
     const { confirmPassword, ...rest } = form.value;
     const payload: any = { ...rest };
     if (!payload.password) delete payload.password;
+    // Send null instead of empty string for unique fields
+    if (!payload.username?.trim()) payload.username = null;
+    if (!payload.email?.trim()) payload.email = null;
     if (editingId.value) {
       await api.patch(`/managers/${editingId.value}`, payload);
       logActivity({ action: 'edit_manager', module: 'manager', subscriberName: form.value.name, details: `تعديل بيانات المدير: ${form.value.name}` });

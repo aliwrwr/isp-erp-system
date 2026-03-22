@@ -22,11 +22,16 @@ export class ManagersService {
 
   async findAll(): Promise<any[]> {
     const managers = await this.managersRepository.find({ order: { name: 'ASC' } });
-    const counts: { managerId: number; count: string }[] = await this.managersRepository.manager.query(
-      `SELECT "managerId", COUNT(*) as count FROM "subscriber" WHERE "managerId" IS NOT NULL GROUP BY "managerId"`,
-    );
-    const countMap = new Map(counts.map(r => [r.managerId, parseInt(r.count, 10)]));
-    return managers.map(m => ({ ...m, subscriberCount: countMap.get(m.id) ?? 0 }));
+    try {
+      const counts: { managerId: number; count: string }[] = await this.managersRepository.manager.query(
+        `SELECT "managerId", COUNT(*) as count FROM "subscriber" WHERE "managerId" IS NOT NULL GROUP BY "managerId"`,
+      );
+      const countMap = new Map(counts.map(r => [r.managerId, parseInt(r.count, 10)]));
+      return managers.map(m => ({ ...m, subscriberCount: countMap.get(m.id) ?? 0 }));
+    } catch {
+      // subscriber count is optional — return managers without it if query fails
+      return managers.map(m => ({ ...m, subscriberCount: 0 }));
+    }
   }
 
   findOne(id: number): Promise<Manager | null> {
