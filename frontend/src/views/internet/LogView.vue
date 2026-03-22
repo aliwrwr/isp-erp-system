@@ -92,6 +92,11 @@
             <option value="add_manager" class="text-gray-800">إضافة مدير</option>
             <option value="edit_manager" class="text-gray-800">تعديل مدير</option>
             <option value="delete_manager" class="text-gray-800">حذف مدير</option>
+            <option value="manager_deposit" class="text-gray-800">إيداع مدير</option>
+            <option value="manager_withdraw" class="text-gray-800">سحب مدير</option>
+            <option value="manager_payDebt" class="text-gray-800">تسديد دين مدير</option>
+            <option value="manager_points_add" class="text-gray-800">إضافة نقاط مدير</option>
+            <option value="manager_points_withdraw" class="text-gray-800">سحب نقاط مدير</option>
           </select>
         </div>
 

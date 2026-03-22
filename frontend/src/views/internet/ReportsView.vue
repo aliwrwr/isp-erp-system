@@ -307,6 +307,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { getActivityLog } from '../../utils/activityLog';
 import { Bar, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS, Title, Tooltip, Legend, BarElement,
@@ -384,6 +385,48 @@ const filteredSubs = computed(() => {
   });
 });
 
+const managerLogs = ref<any[]>([]);
+const filteredManagerLogs = computed(() => {
+  return managerLogs.value.filter(l => {
+    if (l.module !== 'manager') return false;
+    if (!l.timestamp) return false;
+    const d = new Date(l.timestamp);
+    if (quickDateFrom.value && quickDateTo.value) {
+      return d >= quickDateFrom.value && d <= quickDateTo.value;
+    }
+    if (d.getFullYear() !== filterYear.value) return false;
+    if (filterMonth.value && d.getMonth() + 1 !== filterMonth.value) return false;
+    return true;
+  });
+});
+
+const totalManagerDeposits = computed(() =>
+  filteredManagerLogs.value
+    .filter(l => l.action === 'manager_deposit')
+    .reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+);
+const totalManagerWithdrawals = computed(() =>
+  filteredManagerLogs.value
+    .filter(l => l.action === 'manager_withdraw')
+    .reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+);
+const totalManagerDebtPayments = computed(() =>
+  filteredManagerLogs.value
+    .filter(l => l.action === 'manager_payDebt')
+    .reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+);
+const totalManagerPointsAdded = computed(() =>
+  filteredManagerLogs.value
+    .filter(l => l.action === 'manager_points_add')
+    .reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+);
+const totalManagerPointsWithdrawn = computed(() =>
+  filteredManagerLogs.value
+    .filter(l => l.action === 'manager_points_withdraw')
+    .reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+);
+
+
 // ─── Summary Metrics ──────────────────────────────────────
 const totalRevenue = computed(() => filteredSubs.value.reduce((s, x) => s + Number(x.price || 0), 0));
 const totalCollected = computed(() => filteredSubs.value.reduce((s, x) => s + Number(x.paidAmount || 0), 0));
@@ -407,6 +450,11 @@ const summaryCards = computed(() => [
   { label: 'إجمالي الإيرادات', value: totalRevenue.value.toLocaleString() + ' د.ع', icon: 'fas fa-coins', color: '#27AE60' },
   { label: 'إجمالي المحصّل', value: totalCollected.value.toLocaleString() + ' د.ع', icon: 'fas fa-hand-holding-usd', color: '#1ABC9C' },
   { label: 'إجمالي الديون', value: totalDebt.value.toLocaleString() + ' د.ع', icon: 'fas fa-exclamation-triangle', color: '#E74C3C', sub: totalDebt.value > 0 ? (filteredSubs.value.filter(s => Math.max(0, Number(s.price||0) + Number(s.debtAmount||0) - Number(s.paidAmount||0)) > 0).length + ' مشترك') : '', subColor: 'text-red-400' },
+  { label: 'إجمالي إيداعات المدراء', value: totalManagerDeposits.value.toLocaleString() + ' د.ع', icon: 'fas fa-university', color: '#22C55E' },
+  { label: 'إجمالي سحوبات المدراء', value: totalManagerWithdrawals.value.toLocaleString() + ' د.ع', icon: 'fas fa-wallet', color: '#F59E0B' },
+  { label: 'إجمالي تسديد ديون المدراء', value: totalManagerDebtPayments.value.toLocaleString() + ' د.ع', icon: 'fas fa-hand-holding-medical', color: '#3B82F6' },
+  { label: 'نقاط المدراء المضافة', value: totalManagerPointsAdded.value.toLocaleString(), icon: 'fas fa-star', color: '#8B5CF6' },
+  { label: 'نقاط المدراء المسحوبة', value: totalManagerPointsWithdrawn.value.toLocaleString(), icon: 'fas fa-star-half-alt', color: '#A855F7' },
   { label: 'نسبة التحصيل', value: overallRate.value + '%', icon: 'fas fa-percentage', color: '#F39C12', sub: 'من الإيرادات' },
 ]);
 
@@ -572,6 +620,7 @@ async function loadData() {
   } catch {
     allSubs.value = [];
   } finally {
+    managerLogs.value = getActivityLog();
     loading.value = false;
   }
 }
