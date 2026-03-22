@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
 
 export class CreateGroupDto {
   @IsString()
@@ -15,6 +15,10 @@ export class CreateGroupDto {
   @IsOptional()
   @IsString()
   permissions?: string;
+
+  @IsOptional()
+  @IsNumber()
+  dashboardId?: number;
 
   @IsOptional()
   @IsBoolean()

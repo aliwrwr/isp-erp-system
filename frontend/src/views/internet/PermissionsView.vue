@@ -64,7 +64,13 @@
                 <input type="checkbox" class="accent-blue-500" :checked="selectedGroup?.id === g.id" @click.stop />
               </td>
               <td class="px-3 py-1.5 text-blue-600 font-medium">{{ g.name }}</td>
-              <td class="px-3 py-1.5 text-gray-500 text-xs">{{ g.description || '—' }}</td>
+              <td class="px-3 py-1.5 text-xs">
+                <span v-if="dashboardNameOf(g)" class="inline-flex items-center gap-1 text-indigo-600">
+                  <i class="fas fa-columns text-[10px]"></i>
+                  {{ dashboardNameOf(g) }}
+                </span>
+                <span v-else class="text-gray-400">&mdash;</span>
+              </td>
               <td class="px-3 py-1.5 text-gray-700 font-medium">{{ permCount(g) }}</td>
               <td class="px-3 py-1.5 text-center">
                 <input type="checkbox" class="accent-blue-500" :checked="selectedGroup?.id === g.id" @click.stop />
@@ -94,7 +100,25 @@
       </div>
 
       <!-- ══ Permission Transfer Panel ══════════════════════════════════════ -->
-      <div v-if="selectedGroup" class="flex-1 flex overflow-hidden min-h-0">
+      <div v-if="selectedGroup" class="flex flex-col overflow-hidden min-h-0" style="flex:1">
+
+        <!-- Dashboard Selector Bar -->
+        <div class="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 flex-shrink-0">
+          <i class="fas fa-columns text-gray-400 text-sm"></i>
+          <span class="text-xs font-semibold text-gray-600 whitespace-nowrap">لوحة التحكم:</span>
+          <select v-model="selectedDashboardId"
+            class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary max-w-xs">
+            <option :value="null">&mdash; بدون لوحة &mdash;</option>
+            <option v-for="d in dashboardGroups" :key="d.id" :value="d.id">{{ d.name }}</option>
+          </select>
+          <span v-if="selectedDashboardId" class="text-[11px] text-indigo-500 flex items-center gap-1">
+            <i class="fas fa-link text-[10px]"></i>
+            {{ dashboardGroups.find(d => d.id === selectedDashboardId)?.name }}
+          </span>
+        </div>
+
+        <!-- Three-column transfer -->
+        <div class="flex-1 flex overflow-hidden min-h-0">
 
         <!-- Available Permissions (right in RTL) -->
         <div class="flex-1 flex flex-col overflow-hidden bg-white border-l border-gray-200">
@@ -177,7 +201,9 @@
           </div>
         </div>
 
-      </div>
+        </div><!-- end Three-column transfer -->
+      </div><!-- end Permission Transfer Panel -->
+
     </div>
 
     <!-- ══ Save Bar ══════════════════════════════════════════════════════════ -->
@@ -322,16 +348,23 @@ function catLabel(cat: string): string { return CAT_LABELS[cat] ?? cat; }
 function defOf(key: string): Perm | undefined { return ALL_PERMS.find(p => p.key === key); }
 
 // ── Group Types ──────────────────────────────────────────────────────────────
-interface Group { id: number; name: string; description?: string; permissions?: string; }
+interface Group { id: number; name: string; description?: string; permissions?: string; dashboardId?: number; layout?: string; }
 
 // ── State ────────────────────────────────────────────────────────────────────
-const groups       = ref<Group[]>([]);
-const selectedGroup = ref<Group | null>(null);
+const groups           = ref<Group[]>([]);
+const dashboardGroups  = computed(() => groups.value.filter(g => g.layout && g.layout !== '[]'));
+const selectedGroup    = ref<Group | null>(null);
+const selectedDashboardId = ref<number | null>(null);
 const search       = ref('');
 const sortField    = ref<'name' | 'description' | 'count'>('name');
 const sortDir      = ref<1 | -1>(1);
 const saving       = ref(false);
 const toast        = ref({ show: false, msg: '', ok: true });
+
+function dashboardNameOf(g: Group): string | null {
+  if (!g.dashboardId) return null;
+  return groups.value.find(x => x.id === g.dashboardId)?.name ?? null;
+}
 
 // permissions transfer state
 const givenPerms = ref<string[]>([]);
@@ -402,6 +435,7 @@ function sortIcon(f: string): string {
 // ── Select Group ──────────────────────────────────────────────────────────────
 function selectGroup(g: Group) {
   selectedGroup.value = g;
+  selectedDashboardId.value = g.dashboardId ?? null;
   try {
     const arr = JSON.parse(g.permissions || '[]');
     givenPerms.value = Array.isArray(arr) ? arr.filter((x: any) => typeof x === 'string') : [];
@@ -476,10 +510,13 @@ async function savePermissions() {
   if (!selectedGroup.value) return;
   saving.value = true;
   try {
-    const payload = { permissions: JSON.stringify(givenPerms.value) };
+    const payload: any = {
+      permissions: JSON.stringify(givenPerms.value),
+      dashboardId: selectedDashboardId.value ?? undefined,
+    };
     await api.patch(`/groups/${selectedGroup.value.id}`, payload);
     const g = groups.value.find(x => x.id === selectedGroup.value!.id);
-    if (g) g.permissions = payload.permissions;
+    if (g) { g.permissions = payload.permissions; g.dashboardId = selectedDashboardId.value ?? undefined; }
     showToast(`تم حفظ ${givenPerms.value.length} صلاحية بنجاح`);
   } catch { showToast('حدث خطأ أثناء الحفظ', false); }
   saving.value = false;

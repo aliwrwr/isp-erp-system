@@ -17,6 +17,9 @@ export class Group {
   @Column('text', { nullable: true })
   permissions: string; // security permission keys JSON array
 
+  @Column({ nullable: true })
+  dashboardId: number; // links this security-group to a dashboard-group
+
   @Column({ default: true })
   active: boolean;
 }

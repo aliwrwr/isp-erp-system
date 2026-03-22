@@ -26,6 +26,11 @@ export class ManagersController {
     return this.managersService.findAll();
   }
 
+  @Get('by-username/:username')
+  findByUsername(@Param('username') username: string) {
+    return this.managersService.findByUsername(username);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.managersService.findOne(+id);

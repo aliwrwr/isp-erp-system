@@ -37,4 +37,8 @@ export class ManagersService {
   async remove(id: number): Promise<void> {
     await this.managersRepository.delete(id);
   }
+
+  findByUsername(username: string): Promise<Manager | null> {
+    return this.managersRepository.findOneBy({ username });
+  }
 }

@@ -1,5 +1,31 @@
 ﻿<template>
   <div>
+
+    <!-- ══ Personalized Dashboard (manager has linked dashboard group) ══════ -->
+    <template v-if="personalLayout.length">
+      <div v-for="(row, rIdx) in personalLayout" :key="rIdx" class="grid grid-cols-4 gap-4 mb-4">
+        <template v-for="cIdx in 4" :key="cIdx">
+          <div v-if="row[cIdx - 1]"
+            class="rounded-xl p-4 text-white flex flex-col justify-between min-h-[108px] shadow-md"
+            :style="{ background: wDef(row[cIdx - 1].type)?.color ?? '#888' }">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-sm font-semibold leading-snug">{{ wDef(row[cIdx - 1].type)?.label ?? row[cIdx - 1].type }}</span>
+              <i :class="[wDef(row[cIdx - 1].type)?.icon ?? 'fas fa-chart-bar', 'text-3xl opacity-20 flex-shrink-0 mt-0.5']"></i>
+            </div>
+            <div>
+              <p v-if="wDef(row[cIdx - 1].type)?.sub" class="text-xs opacity-70 mb-0.5 truncate">{{ wDef(row[cIdx - 1].type)?.sub }}</p>
+              <p class="text-2xl font-bold tabular-nums">{{ widgetVal(row[cIdx - 1].type) }}</p>
+            </div>
+          </div>
+          <!-- empty cell placeholder -->
+          <div v-else class="rounded-xl border border-dashed border-gray-200 min-h-[108px] opacity-30"></div>
+        </template>
+      </div>
+    </template>
+
+    <!-- ══ Default Dashboard ══════════════════════════════════════════════════ -->
+    <template v-else>
+
     <!-- Stats -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <StatsCard title="إجمالي المشتركين" :value="totalSub" icon="fas fa-users" color="#2980B9" />
@@ -244,6 +270,8 @@
       </div>
     </div>
 
+    </template><!-- end default dashboard -->
+
   </div>
 </template>
 
@@ -254,8 +282,53 @@ import DataTable from '../../components/DataTable.vue';
 import api from '../../api';
 import { useAuthStore } from '../../stores/auth';
 
-const authStore = useAuthStore();
-const canSeeRouters = computed(() => authStore.hasPermission('internet.routers'));
+// ── Widget Definitions (same as GroupsView) ───────────────────────────────
+interface WDef { type: string; label: string; sub?: string; icon: string; color: string; }
+const WIDGET_DEFS: WDef[] = [
+  { type: 'total_subs',   label: 'عدد المشتركين',         sub: 'العدد الكلي للمشتركين',   icon: 'fas fa-users',               color: '#3B82F6' },
+  { type: 'active_subs',  label: 'المشتركين الفعالين',    sub: 'مشتركين متصلين حالياً',   icon: 'fas fa-user-check',          color: '#10B981' },
+  { type: 'connected',    label: 'المتصلين',              sub: 'مشتركين متصلين حالياً',   icon: 'fas fa-signal',              color: '#06B6D4' },
+  { type: 'managers',     label: 'المدراء',               sub: 'عدد المدراء المفوّضين',    icon: 'fas fa-user-shield',         color: '#6366F1' },
+  { type: 'cancelled',    label: 'الملغى اشتراكاتهم',                                     icon: 'fas fa-user-times',          color: '#EF4444' },
+  { type: 'exp_soon',     label: 'تنتهي اشتراكاتهم',     sub: 'ختى اشتراكهم بـ 3 أيام', icon: 'fas fa-clock',               color: '#F59E0B' },
+  { type: 'exp_today',    label: 'ينتهي اشتراكهم اليوم',                                  icon: 'fas fa-calendar-day',        color: '#8B5CF6' },
+  { type: 'balance',      label: 'الرصيد',                sub: 'الرصيد الإجمالي',         icon: 'fas fa-wallet',              color: '#059669' },
+  { type: 'uptime',       label: 'مدة عمل النظام',        sub: 'الفترة المستمرة',         icon: 'fas fa-server',              color: '#7C3AED' },
+  { type: 'ram',          label: 'ذاكرة النظام',          sub: 'الذاكرة المستخدمة',       icon: 'fas fa-memory',              color: '#7E22CE' },
+  { type: 'storage',      label: 'وحدة الخزن',            sub: 'المساحة المستخدمة',       icon: 'fas fa-hdd',                 color: '#475569' },
+  { type: 'network',      label: 'الشبكة',                sub: 'حالة الشبكة',             icon: 'fas fa-wifi',                color: '#0F172A' },
+  { type: 'dns_ping',     label: 'DNS Ping',              sub: 'Ping on 1.1.1.1',        icon: 'fas fa-satellite-dish',      color: '#0891B2' },
+  { type: 'google_ping',  label: 'Google Ping',           sub: 'Ping on Google.com',     icon: 'fab fa-google',              color: '#16A34A' },
+  { type: 'points',       label: 'النقاط التشجيعية',                                      icon: 'fas fa-star',                color: '#EA580C' },
+  { type: 'online_fup',   label: 'Online FUP',                                           icon: 'fas fa-tachometer-alt',      color: '#0D9488' },
+  { type: 'system_time',  label: 'System Time',                                          icon: 'fas fa-clock',               color: '#4F46E5' },
+  { type: 'debts',        label: 'الديون',                sub: 'ديون مستحقة عليه',        icon: 'fas fa-balance-scale',       color: '#B91C1C' },
+  { type: 'financial',    label: 'المطالبات المالية',     sub: 'ديون مستحقة له',          icon: 'fas fa-file-invoice-dollar', color: '#7C3AED' },
+];
+function wDef(type: string): WDef | undefined { return WIDGET_DEFS.find(w => w.type === type); }
+
+function widgetVal(type: string): string {
+  switch (type) {
+    case 'total_subs':  return String(totalSub.value);
+    case 'active_subs': return String(activeSub.value);
+    case 'connected':   return String(activeSub.value);
+    case 'managers':    return String(adminCount.value);
+    case 'cancelled':   return String(expiredSub.value);
+    case 'exp_soon':    return String(almostExpiring.value);
+    case 'exp_today':   return String(expiringToday.value);
+    case 'ram':         return serverStats.value.ram + '%';
+    case 'storage':     return serverStats.value.disk + '%';
+    case 'network':     return serverStats.value.cpu + '%';
+    case 'system_time': return new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    default:            return '—';
+  }
+}
+
+// ── Personalized Dashboard ────────────────────────────────────────
+type PCell = { type: string } | null;
+const personalLayout = ref<PCell[][]>([]);
+
+
 
 // ── Subscribers / Subscriptions ───────────────────────────────────
 const subscribersData = ref<any[]>([]);
@@ -382,6 +455,27 @@ onMounted(async () => {
     managersData.value = managersRes?.data || [];
     if (routersRes) routers.value = routersRes.data;
   } catch {}
+
+  // Load personalized dashboard for current manager
+  try {
+    const userEmail = authStore.user?.email;
+    if (userEmail) {
+      const mgrRes = await api.get(`/managers/by-username/${encodeURIComponent(userEmail)}`).catch(() => null);
+      const mgr = mgrRes?.data;
+      if (mgr?.groupId) {
+        const secRes = await api.get(`/groups/${mgr.groupId}`).catch(() => null);
+        const secGrp = secRes?.data;
+        if (secGrp?.dashboardId) {
+          const dashRes = await api.get(`/groups/${secGrp.dashboardId}`).catch(() => null);
+          const dash = dashRes?.data;
+          if (dash?.layout) {
+            try { personalLayout.value = JSON.parse(dash.layout); } catch { /* ignore */ }
+          }
+        }
+      }
+    }
+  } catch { /* ignore */ }
+
   fetchServerStats();
   // Check routers status in background (non-blocking)
   if (canSeeRouters.value) {
