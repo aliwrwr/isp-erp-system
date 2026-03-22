@@ -312,10 +312,15 @@ const internetPages = [
 
 // ── Action Types ─────────────────────────────────────────────────────────────
 const actions = [
-  { key: 'view',   label: 'اطلاع', icon: 'fas fa-eye',   color: 'text-blue-500'  },
-  { key: 'add',    label: 'إضافة', icon: 'fas fa-plus',  color: 'text-green-500' },
-  { key: 'edit',   label: 'تعديل', icon: 'fas fa-pen',   color: 'text-amber-500' },
-  { key: 'delete', label: 'حذف',   icon: 'fas fa-trash', color: 'text-red-500'   },
+  { key: 'view',            label: 'اطلاع', icon: 'fas fa-eye',           color: 'text-blue-500'  },
+  { key: 'add',             label: 'إضافة', icon: 'fas fa-plus',          color: 'text-green-500' },
+  { key: 'edit',            label: 'تعديل', icon: 'fas fa-pen',           color: 'text-amber-500' },
+  { key: 'delete',          label: 'حذف',   icon: 'fas fa-trash',         color: 'text-red-500'   },
+  { key: 'sync',            label: 'مزامنة', icon: 'fas fa-sync-alt',      color: 'text-indigo-500' },
+  { key: 'add_debt',        label: 'إضافة ديون', icon: 'fas fa-file-invoice-dollar', color: 'text-rose-500' },
+  { key: 'pay_debt',        label: 'تسديد ديون', icon: 'fas fa-money-bill-wave',    color: 'text-green-500' },
+  { key: 'print_invoice',   label: 'طباعة فاتورة', icon: 'fas fa-print',      color: 'text-gray-500'  },
+  { key: 'send_message',    label: 'إرسال رسالة', icon: 'fas fa-envelope',       color: 'text-teal-500'  },
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────────

@@ -567,7 +567,7 @@
               <span>{{ contextMenuSub?.isEnabled !== false ? 'تعطيل' : 'إلغاء التعطيل' }}</span>
             </button>
             <!-- مزامنة مع الراوتر -->
-            <button @click="syncToRouter" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+            <button v-if="hasSubscriberPermission('sync')" @click="syncToRouter" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
               :title="!contextMenuSub?.router ? 'لم يُحدد راوتر لهذا المشترك' : ''">
               <i class="fas fa-sync-alt w-4 text-center"></i>
               <span>مزامنة مع الراوتر</span>
@@ -586,12 +586,12 @@
               <span>تغيير الباقة</span>
             </button>
             <!-- تسديد ديون -->
-            <button @click="openPayDebt" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button v-if="hasSubscriberPermission('pay_debt')" @click="openPayDebt" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-money-bill-wave w-4 text-center text-green-500"></i>
               <span>تسديد ديون</span>
             </button>
             <!-- إضافة دين -->
-            <button @click="openAddDebt" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button v-if="hasSubscriberPermission('add_debt')" @click="openAddDebt" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-file-invoice-dollar w-4 text-center text-red-400"></i>
               <span>إضافة دين</span>
             </button>
@@ -599,12 +599,12 @@
             <div class="my-1 border-t border-gray-100"></div>
 
             <!-- طباعة فاتورة -->
-            <button @click="printInvoice" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button v-if="hasSubscriberPermission('print_invoice')" @click="printInvoice" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-print w-4 text-center text-gray-400"></i>
               <span>طباعة فاتورة</span>
             </button>
             <!-- إرسال رسالة -->
-            <button @click="openSendMessage" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button v-if="hasSubscriberPermission('send_message')" @click="openSendMessage" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fab fa-whatsapp w-4 text-center text-green-500"></i>
               <span>إرسال رسالة</span>
             </button>
@@ -1112,6 +1112,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../../api';
 import { logActivity } from '../../utils/activityLog';
+import { useAuthStore } from '../../stores/auth';
 
 const search = ref('');
 const filterStatus = ref('');
@@ -1154,6 +1155,12 @@ const managers = ref<any[]>([]);
 const routers = ref<any[]>([]);
 const editingId = ref<number | null>(null);
 const toast = ref({ show: false, message: '', type: 'success' });
+
+const auth = useAuthStore();
+
+function hasSubscriberPermission(action: string) {
+  return auth.hasPermission(`internet.subscribers.${action}`);
+}
 
 const form = ref({
   name: '', phone: '', address: '', username: '', password: '',
