@@ -394,7 +394,7 @@
                 <i :class="editingId ? 'fas fa-pen text-amber-500' : 'fas fa-user-plus text-primary'" class="text-sm"></i>
               </div>
               <div>
-                <h3 class="font-bold text-secondary">{{ editingId ? 'تعديل بيانات المشترك' : 'إضافة مشترك جديد' }}</h3>
+                <h3 class="font-bold text-secondary">{{ editingId ? ' تعديل بيانات المشترك' : 'إضافة مشترك جديد' }}</h3>
                 <p class="text-xs text-gray-400">{{ editingId ? 'قم بتعديل البيانات المطلوبة' : 'أدخل بيانات المشترك الجديد' }}</p>
               </div>
             </div>
@@ -1328,7 +1328,7 @@ async function save() {
 
     if (editingId.value) {
       await api.patch(`/subscribers/${editingId.value}`, payload);
-      logActivity({ action: 'edit_subscriber', module: 'subscriber', subscriberName: form.value.name, details: `تعديل بيانات المشترك: ${form.value.name}` });
+      logActivity({ action: 'edit_subscriber', module: 'subscriber', subscriberName: form.value.name, details: ` تعديل بيانات المشترك: ${form.value.name}` });
       showToast('تم تحديث بيانات المشترك');
     } else {
       await api.post('/subscribers', payload);
@@ -1976,7 +1976,7 @@ body{
   padding:7px 0 3px;
   border-top:2px solid currentColor;
   margin-top:6px;
-}
+ }
 
 /* ── End date highlight ── */
 .end-date-box{
@@ -2011,7 +2011,7 @@ body{
     width:100%!important;
     max-width:100%!important;
   }
-}
+ }
 
 /* ── Thermal 80mm ── */
 @media print and (max-width:80mm){
@@ -2024,7 +2024,7 @@ body{
   .pay-box{padding:8px 10px}
   .inv-footer{padding:8px 10px 10px}
   .end-date-box{padding:6px 10px}
-}
+ }
 
 /* ── Thermal 58mm ── */
 @media print and (max-width:58mm){
@@ -2039,7 +2039,7 @@ body{
   .inv-footer{padding:6px 8px 8px}
   .end-date-box{padding:5px 8px}
   .sec-label{font-size:.68em}
-}
+ }
 
 /* ── A5 ── */
 @page{margin:8mm}
