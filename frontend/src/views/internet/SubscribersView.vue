@@ -627,76 +627,7 @@
     </teleport>
 
     <!-- ===== Subscriber Details Modal ===== -->
-    <transition name="modal">
-      <div v-if="showDetailsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="closeDetailsModal">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-          <div class="bg-gradient-to-l from-indigo-600 to-blue-600 px-6 py-4 flex items-center justify-between">
-            <div>
-              <h3 class="font-bold text-white text-lg">تفاصيل المشترك</h3>
-              <p class="text-xs text-white/80">عرض كامل لجميع بيانات المشترك والمعلومات المالية</p>
-            </div>
-            <button @click="closeDetailsModal" class="text-white hover:text-gray-200 transition">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">الاسم</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.name || '—' }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">اسم الدخول</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.username || '—' }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">الهاتف</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.phone || '—' }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">العنوان</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.address || '—' }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">الباقة</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.package?.name || '—' }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">الراوتر</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.router?.name || '—' }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">المدير</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.manager?.name || detailSub?.manager?.position || '—' }}</p>
-            </div>
-            <div class="space-y-2">
-              <p class="text-xs text-gray-500">الحالة</p>
-              <p class="font-semibold text-gray-700">{{ detailSub?.status || '—' }}</p>
-            </div>
-          </div>
-          <div class="border-t border-gray-100 p-6 bg-gray-50">
-            <h4 class="font-semibold text-gray-700 mb-3">البيانات المالية والاشتراكات</h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="bg-white rounded-xl border border-gray-100 p-3">
-                <p class="text-xs text-gray-400">الرصيد</p>
-                <p class="font-bold text-gray-800">{{ detailSub?.balance ? Number(detailSub.balance).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</p>
-              </div>
-              <div class="bg-white rounded-xl border border-gray-100 p-3">
-                <p class="text-xs text-gray-400">الديون</p>
-                <p class="font-bold text-gray-800">{{ detailSub?.debt ? Number(detailSub.debt).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</p>
-              </div>
-              <div class="bg-white rounded-xl border border-gray-100 p-3">
-                <p class="text-xs text-gray-400">عدد الاشتراكات</p>
-                <p class="font-bold text-gray-800">{{ detailSub?.subscriptions?.length || 0 }}</p>
-              </div>
-              <div class="bg-white rounded-xl border border-gray-100 p-3">
-                <p class="text-xs text-gray-400">آخر اشتراك</p>
-                <p class="font-bold text-gray-800">{{ detailSub?.subscriptions?.[0]?.endDate ? new Date(detailSub.subscriptions[0].endDate).toLocaleDateString('ar-IQ') : '—' }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <SubscriberDetailsModal :show="showDetailsModal" :subscriber="detailSub" @close="closeDetailsModal" />
 
     <!-- ===== Activate Subscriber Modal ===== -->
     <transition name="modal">
@@ -1233,6 +1164,7 @@ const routers = ref<any[]>([]);
 const editingId = ref<number | null>(null);
 const toast = ref({ show: false, message: '', type: 'success' });
 
+import SubscriberDetailsModal from './components/SubscriberDetailsModal.vue';
 const auth = useAuthStore();
 
 function hasSubscriberPermission(action: string) {
