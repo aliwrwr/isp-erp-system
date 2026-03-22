@@ -4,17 +4,31 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { User } from '../users/entities/user.entity';
 import { EmployeesService } from '../employees/employees.service';
+import { ManagersService } from '../managers/managers.service';
+import { GroupsService } from '../groups/groups.service';
 export declare class AuthService {
     private usersService;
     private jwtService;
     private employeesService;
-    constructor(usersService: UsersService, jwtService: JwtService, employeesService: EmployeesService);
+    private managersService;
+    private groupsService;
+    constructor(usersService: UsersService, jwtService: JwtService, employeesService: EmployeesService, managersService: ManagersService, groupsService: GroupsService);
     validateUser(emailOrUsername: string, pass: string): Promise<any>;
     login(loginDto: LoginDto): Promise<{
         access_token: string;
     }>;
     register(createUserDto: CreateUserDto): Promise<User>;
-    getProfile(userId: number): Promise<{
+    getProfile(reqUser: any): Promise<{
+        id: number;
+        name: string;
+        email: string;
+        roles: never[];
+        employee: null;
+        permissions: string[];
+        type: string;
+        managerId: number;
+        groupId: number;
+    } | {
         id: number;
         name: string;
         email: string;
@@ -32,5 +46,8 @@ export declare class AuthService {
             } | null;
         } | null;
         permissions: string[];
+        type?: undefined;
+        managerId?: undefined;
+        groupId?: undefined;
     }>;
 }

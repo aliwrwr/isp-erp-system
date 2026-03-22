@@ -20,6 +20,7 @@ exports.ManagersModule = ManagersModule = __decorate([
         imports: [typeorm_1.TypeOrmModule.forFeature([manager_entity_1.Manager])],
         controllers: [managers_controller_1.ManagersController],
         providers: [managers_service_1.ManagersService],
+        exports: [managers_service_1.ManagersService],
     })
 ], ManagersModule);
 //# sourceMappingURL=managers.module.js.map

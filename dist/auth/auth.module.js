@@ -16,6 +16,8 @@ const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const employees_module_1 = require("../employees/employees.module");
+const managers_module_1 = require("../managers/managers.module");
+const groups_module_1 = require("../groups/groups.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -24,6 +26,8 @@ exports.AuthModule = AuthModule = __decorate([
         imports: [
             users_module_1.UsersModule,
             employees_module_1.EmployeesModule,
+            managers_module_1.ManagersModule,
+            groups_module_1.GroupsModule,
             passport_1.PassportModule,
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],

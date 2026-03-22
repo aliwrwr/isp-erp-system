@@ -28,7 +28,7 @@ let AuthController = class AuthController {
         return this.authService.login(loginDto);
     }
     async getProfile(req) {
-        return this.authService.getProfile(req.user.userId);
+        return this.authService.getProfile(req.user);
     }
     async register(createUserDto) {
         return this.authService.register(createUserDto);

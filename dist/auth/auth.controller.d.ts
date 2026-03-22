@@ -11,6 +11,16 @@ export declare class AuthController {
         id: number;
         name: string;
         email: string;
+        roles: never[];
+        employee: null;
+        permissions: string[];
+        type: string;
+        managerId: number;
+        groupId: number;
+    } | {
+        id: number;
+        name: string;
+        email: string;
         roles: {
             id: number;
             name: string;
@@ -25,6 +35,9 @@ export declare class AuthController {
             } | null;
         } | null;
         permissions: string[];
+        type?: undefined;
+        managerId?: undefined;
+        groupId?: undefined;
     }>;
     register(createUserDto: CreateUserDto): Promise<import("../users/entities/user.entity").User>;
 }

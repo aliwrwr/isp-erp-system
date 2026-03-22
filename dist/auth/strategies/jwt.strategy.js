@@ -31,15 +31,26 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         this.employeesService = employeesService;
     }
     async validate(payload) {
-        const user = await this.usersService.findOne(payload.sub);
-        if (!user) {
-            return null;
+        if (payload.type === 'manager') {
+            return {
+                userId: payload.sub,
+                username: payload.email,
+                name: payload.name,
+                type: 'manager',
+                managerId: payload.sub,
+                isSuperAdmin: false,
+                permissions: payload.permissions || [],
+            };
         }
+        const user = await this.usersService.findOne(payload.sub);
+        if (!user)
+            return null;
         const employee = await this.employeesService.findByUsername(user.email);
         const isSuperAdmin = user.roles?.some(r => r.name === 'Super Admin');
         return {
             userId: user.id,
             username: user.email,
+            type: 'user',
             roles: user.roles,
             isSuperAdmin,
             employeeId: employee?.id || null,

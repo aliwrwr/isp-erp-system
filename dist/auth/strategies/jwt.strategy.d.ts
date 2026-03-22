@@ -11,13 +11,27 @@ export declare class JwtStrategy extends JwtStrategy_base {
     private employeesService;
     constructor(configService: ConfigService, usersService: UsersService, employeesService: EmployeesService);
     validate(payload: any): Promise<{
+        userId: any;
+        username: any;
+        name: any;
+        type: string;
+        managerId: any;
+        isSuperAdmin: boolean;
+        permissions: any;
+        roles?: undefined;
+        employeeId?: undefined;
+        departmentId?: undefined;
+    } | {
         userId: number;
         username: string;
+        type: string;
         roles: import("../../users/entities/role.entity").Role[];
         isSuperAdmin: boolean;
         employeeId: number | null;
         departmentId: number | null;
         permissions: string[];
+        name?: undefined;
+        managerId?: undefined;
     } | null>;
 }
 export {};

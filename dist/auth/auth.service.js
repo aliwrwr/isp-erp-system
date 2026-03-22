@@ -48,14 +48,20 @@ const users_service_1 = require("../users/users.service");
 const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcryptjs"));
 const employees_service_1 = require("../employees/employees.service");
+const managers_service_1 = require("../managers/managers.service");
+const groups_service_1 = require("../groups/groups.service");
 let AuthService = class AuthService {
     usersService;
     jwtService;
     employeesService;
-    constructor(usersService, jwtService, employeesService) {
+    managersService;
+    groupsService;
+    constructor(usersService, jwtService, employeesService, managersService, groupsService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
         this.employeesService = employeesService;
+        this.managersService = managersService;
+        this.groupsService = groupsService;
     }
     async validateUser(emailOrUsername, pass) {
         const user = await this.usersService.findByEmail(emailOrUsername);
@@ -69,23 +75,71 @@ let AuthService = class AuthService {
     }
     async login(loginDto) {
         const user = await this.usersService.findByEmail(loginDto.email);
-        if (!user) {
-            throw new common_1.UnauthorizedException('البريد الإلكتروني غير مسجل في النظام');
+        if (user) {
+            const passwordMatch = await bcrypt.compare(loginDto.password, user.password);
+            if (!passwordMatch)
+                throw new common_1.UnauthorizedException('كلمة المرور غير صحيحة');
+            const payload = { email: user.email, sub: user.id, type: 'user', roles: user.roles.map(r => r.name) };
+            return { access_token: this.jwtService.sign(payload) };
         }
-        const passwordMatch = await bcrypt.compare(loginDto.password, user.password);
-        if (!passwordMatch) {
+        const manager = await this.managersService.findByUsername(loginDto.email);
+        if (!manager)
+            throw new common_1.UnauthorizedException('اسم الدخول غير مسجل في النظام');
+        if (!manager.password)
+            throw new common_1.UnauthorizedException('كلمة المرور غير محددة لهذا الحساب');
+        const passwordMatch = await bcrypt.compare(loginDto.password, manager.password);
+        if (!passwordMatch)
             throw new common_1.UnauthorizedException('كلمة المرور غير صحيحة');
+        let permissions = [];
+        if (manager.groupId) {
+            const group = await this.groupsService.findOne(manager.groupId);
+            if (group?.permissions) {
+                try {
+                    permissions = JSON.parse(group.permissions);
+                }
+                catch { }
+            }
         }
-        const payload = { email: user.email, sub: user.id, roles: user.roles.map(role => role.name) };
-        return {
-            access_token: this.jwtService.sign(payload),
+        const payload = {
+            email: manager.username,
+            sub: manager.id,
+            type: 'manager',
+            name: manager.name,
+            permissions,
         };
+        return { access_token: this.jwtService.sign(payload) };
     }
     async register(createUserDto) {
         return this.usersService.create(createUserDto);
     }
-    async getProfile(userId) {
-        const user = await this.usersService.findOne(userId);
+    async getProfile(reqUser) {
+        if (reqUser?.type === 'manager') {
+            const manager = await this.managersService.findOne(reqUser.managerId);
+            if (!manager)
+                throw new common_1.UnauthorizedException();
+            let permissions = [];
+            if (manager.groupId) {
+                const group = await this.groupsService.findOne(manager.groupId);
+                if (group?.permissions) {
+                    try {
+                        permissions = JSON.parse(group.permissions);
+                    }
+                    catch { }
+                }
+            }
+            return {
+                id: manager.id,
+                name: manager.name,
+                email: manager.username,
+                roles: [],
+                employee: null,
+                permissions,
+                type: 'manager',
+                managerId: manager.id,
+                groupId: manager.groupId,
+            };
+        }
+        const user = await this.usersService.findOne(reqUser.userId);
         if (!user)
             throw new common_1.UnauthorizedException();
         const employee = await this.employeesService.findByUsername(user.email);
@@ -113,6 +167,8 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [users_service_1.UsersService,
         jwt_1.JwtService,
-        employees_service_1.EmployeesService])
+        employees_service_1.EmployeesService,
+        managers_service_1.ManagersService,
+        groups_service_1.GroupsService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
