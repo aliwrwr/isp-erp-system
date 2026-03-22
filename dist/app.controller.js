@@ -41,15 +41,27 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const app_service_1 = require("./app.service");
+const groups_service_1 = require("./groups/groups.service");
 const os = __importStar(require("os"));
 let AppController = class AppController {
     appService;
-    constructor(appService) {
+    groupsService;
+    constructor(appService, groupsService) {
         this.appService = appService;
+        this.groupsService = groupsService;
+    }
+    async clearGroupsTemp(secret) {
+        if (secret !== 'isp-clear-7x9z2026')
+            return { error: 'forbidden' };
+        await this.groupsService.removeAll();
+        return { cleared: true };
     }
     getHello() {
         return this.appService.getHello();
@@ -92,6 +104,13 @@ let AppController = class AppController {
 };
 exports.AppController = AppController;
 __decorate([
+    (0, common_1.Delete)('_temp/clear-groups/:secret'),
+    __param(0, (0, common_1.Param)('secret')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "clearGroupsTemp", null);
+__decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
@@ -105,6 +124,7 @@ __decorate([
 ], AppController.prototype, "getSystemStats", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [app_service_1.AppService])
+    __metadata("design:paramtypes", [app_service_1.AppService,
+        groups_service_1.GroupsService])
 ], AppController);
 //# sourceMappingURL=app.controller.js.map

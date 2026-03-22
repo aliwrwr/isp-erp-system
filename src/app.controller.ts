@@ -1,10 +1,22 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Delete, Param } from '@nestjs/common';
 import { AppService } from './app.service';
+import { GroupsService } from './groups/groups.service';
 import * as os from 'os';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly groupsService: GroupsService,
+  ) {}
+
+  // TEMPORARY one-time clear — will be removed after use
+  @Delete('_temp/clear-groups/:secret')
+  async clearGroupsTemp(@Param('secret') secret: string) {
+    if (secret !== 'isp-clear-7x9z2026') return { error: 'forbidden' };
+    await this.groupsService.removeAll();
+    return { cleared: true };
+  }
 
   @Get()
   getHello(): string {
