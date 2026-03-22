@@ -160,7 +160,6 @@
               <th class="px-5 py-3.5 text-center text-xs font-bold text-gray-400">الأيام المتبقية</th>
               <th class="px-5 py-3.5 text-right text-xs font-bold text-gray-400">العنوان</th>
               <th class="px-5 py-3.5 text-right text-xs font-bold text-gray-400">الملاحظات</th>
-              <th class="px-5 py-3.5 text-center text-xs font-bold text-gray-400">الإجراءات</th>
             </tr>
           </thead>
           <tbody>

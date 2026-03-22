@@ -58,7 +58,6 @@
               <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs cursor-pointer select-none hover:text-primary" @click="setSort('points')">
                 <span class="inline-flex items-center gap-1">النقاط<span class="inline-flex flex-col leading-none text-[9px]"><span :class="sortKey==='points'&&sortDir==='asc'?'text-primary':'text-gray-300'">▲</span><span :class="sortKey==='points'&&sortDir==='desc'?'text-primary':'text-gray-300'">▼</span></span></span>
               </th>
-              <th class="text-right px-3 py-3 font-semibold text-gray-500 text-xs">الإجراءات</th>
             </tr>
           </thead>
           <tbody>
@@ -87,12 +86,7 @@
                 <span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">{{ m.subscriberCount ?? 0 }}</span>
               </td>
               <td class="px-3 py-3 text-amber-600 font-semibold">{{ fmtNum(m.points) }}</td>
-              <td class="px-3 py-3">
-                <div class="flex gap-1">
-                  <button @click="openEdit(m)" class="text-primary hover:bg-primary/10 px-2.5 py-1 rounded-lg text-xs transition">تعديل</button>
-                  <button @click="remove(m.id)" class="text-danger hover:bg-danger/10 px-2.5 py-1 rounded-lg text-xs transition">حذف</button>
-                </div>
-              </td>
+
             </tr>
           </tbody>
         </table>

@@ -97,7 +97,6 @@
               <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">تاريخ الاشتراك</th>
               <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">انتهاء الاشتراك</th>
               <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">الملاحظات</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">الإجراءات</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -183,19 +182,7 @@
                 <span v-if="s.notes" class="text-xs text-gray-500 whitespace-pre-line line-clamp-3" :title="s.notes">{{ s.notes }}</span>
                 <span v-else class="text-gray-300 text-xs">—</span>
               </td>
-              <td class="px-4 py-3 text-center">
-                <div class="flex items-center justify-center gap-1">
-                  <button @click="openView(s)" title="عرض التفاصيل" class="w-7 h-7 rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-100 hover:text-blue-700 transition flex items-center justify-center">
-                    <i class="fas fa-eye text-xs"></i>
-                  </button>
-                  <button @click="printSubscription(s)" title="طباعة" class="w-7 h-7 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-800 transition flex items-center justify-center">
-                    <i class="fas fa-print text-xs"></i>
-                  </button>
-                  <button @click="confirmDelete(s)" title="حذف" class="w-7 h-7 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition flex items-center justify-center">
-                    <i class="fas fa-trash text-xs"></i>
-                  </button>
-                </div>
-              </td>
+
             </tr>
             <!-- Empty -->
             <tr v-if="!loading && filteredRows.length === 0">
@@ -329,7 +316,7 @@
 
   <!-- View Modal -->
   <transition name="modal">
-    <div v-if="showViewModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showViewModal = false">
+    <div v-if="showViewModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeViewModal()" tabindex="-1" @keydown.escape.prevent="closeViewModal()">
       <div v-if="selectedSub" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]" dir="rtl">
 
         <!-- ═══ HEADER ═══ -->
@@ -339,7 +326,7 @@
           <div class="absolute top-4 left-20 w-16 h-16 bg-white/5 rounded-full"></div>
           <div class="absolute -bottom-6 right-8 w-28 h-28 bg-white/10 rounded-full"></div>
 
-          <button @click="showViewModal = false"
+          <button @click="closeViewModal()"
             class="absolute top-4 left-4 w-8 h-8 rounded-xl bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition z-10">
             <i class="fas fa-times text-xs"></i>
           </button>
@@ -948,6 +935,11 @@ function openContextMenu(event: MouseEvent | TouchEvent, s: any) {
   y = Math.min(y, window.innerHeight - 280);
   contextMenuPos.value = { x: Math.max(4, x), y: Math.max(4, y) };
   showContextMenu.value = true;
+}
+
+function closeViewModal() {
+  showViewModal.value = false;
+  selectedSub.value = null;
 }
 
 function closeContextMenu() {
