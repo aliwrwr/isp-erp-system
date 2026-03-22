@@ -50,7 +50,14 @@
               <div class="min-w-0">
                 <div class="text-sm font-semibold truncate"
                   :class="selectedGroup?.id === g.id ? 'text-blue-700' : 'text-gray-700'">{{ g.name }}</div>
-                <div class="text-[10px] text-gray-400">{{ permCount(g) }} صلاحية</div>
+                <div class="text-[10px] flex items-center gap-1 mt-0.5">
+                  <span class="text-gray-400">{{ permCount(g) }} صلاحية</span>
+                  <template v-if="g.dashboardId && dashboardGroups.find(d => d.id === g.dashboardId)">
+                    <span class="text-gray-300">·</span>
+                    <i class="fas fa-columns text-indigo-400 text-[9px]"></i>
+                    <span class="text-indigo-500 truncate">{{ dashboardGroups.find(d => d.id === g.dashboardId)?.name }}</span>
+                  </template>
+                </div>
               </div>
             </div>
             <button @click.stop="confirmDelete(g)"
@@ -75,31 +82,52 @@
         <!-- Matrix Panel -->
         <template v-else>
           <!-- Panel Header -->
-          <div class="bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between flex-shrink-0">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                {{ selectedGroup.name.charAt(0).toUpperCase() }}
+          <div class="bg-white border-b border-gray-200 px-5 py-3 flex-shrink-0">
+            <!-- Top row: group info + action buttons -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
+                  {{ selectedGroup.name.charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <h3 class="font-bold text-gray-800 text-sm">{{ selectedGroup.name }}</h3>
+                  <p class="text-[11px] text-gray-400">{{ givenPerms.length }} صلاحية محددة</p>
+                </div>
               </div>
-              <div>
-                <h3 class="font-bold text-gray-800 text-sm">{{ selectedGroup.name }}</h3>
-                <p class="text-[11px] text-gray-400">{{ givenPerms.length }} صلاحية محددة</p>
+              <div class="flex items-center gap-2">
+                <button @click="givenPerms = []"
+                  class="text-xs text-red-500 hover:bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                  <i class="fas fa-times text-[10px]"></i>مسح الكل
+                </button>
+                <button @click="selectAll"
+                  class="text-xs text-blue-600 hover:bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                  <i class="fas fa-check-double text-[10px]"></i>تحديد الكل
+                </button>
+                <button @click="savePermissions" :disabled="saving"
+                  class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-5 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 disabled:opacity-60 transition">
+                  <i v-if="saving" class="fas fa-spinner fa-spin"></i>
+                  <i v-else class="fas fa-save"></i>
+                  حفظ
+                </button>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <button @click="givenPerms = []"
-                class="text-xs text-red-500 hover:bg-red-50 border border-red-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
-                <i class="fas fa-times text-[10px]"></i>مسح الكل
-              </button>
-              <button @click="selectAll"
-                class="text-xs text-blue-600 hover:bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
-                <i class="fas fa-check-double text-[10px]"></i>تحديد الكل
-              </button>
-              <button @click="savePermissions" :disabled="saving"
-                class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-5 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 disabled:opacity-60 transition">
-                <i v-if="saving" class="fas fa-spinner fa-spin"></i>
-                <i v-else class="fas fa-save"></i>
-                حفظ
-              </button>
+            <!-- Dashboard Selector Row -->
+            <div class="mt-2.5 flex items-center gap-2.5 pt-2.5 border-t border-gray-100">
+              <i class="fas fa-columns text-indigo-400 text-sm flex-shrink-0"></i>
+              <span class="text-xs font-semibold text-gray-500 whitespace-nowrap">لوحة التحكم:</span>
+              <select v-model="selectedDashId"
+                class="flex-1 text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400/30 max-w-xs">
+                <option :value="null">&mdash; بدون لوحة &mdash;</option>
+                <option v-for="d in dashboardGroups" :key="d.id" :value="d.id">{{ d.name }}</option>
+              </select>
+              <span v-if="selectedDashId && dashboardGroups.find(d => d.id === selectedDashId)"
+                class="text-[11px] text-indigo-600 flex items-center gap-1 whitespace-nowrap">
+                <i class="fas fa-link text-[10px]"></i>
+                {{ dashboardGroups.find(d => d.id === selectedDashId)?.name }}
+              </span>
+              <span v-else-if="!dashboardGroups.length" class="text-[10px] text-amber-500">
+                لا توجد لوحات
+              </span>
             </div>
           </div>
 
@@ -183,6 +211,25 @@
         <input v-model="newName" @keyup.enter="createGroup" ref="newNameRef"
           class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
           placeholder="مثال: مدير النظام" />
+
+        <!-- Dashboard Group Selector -->
+        <div class="mt-3">
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
+            <i class="fas fa-columns text-indigo-400 text-[11px]"></i>
+            لوحة التحكم (اختيارية)
+          </label>
+          <select v-model="newDashboardId"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400">
+            <option :value="null">&mdash; بدون لوحة &mdash;</option>
+            <option v-for="d in dashboardGroups" :key="d.id" :value="d.id">
+              {{ d.name }}
+            </option>
+          </select>
+          <p v-if="!dashboardGroups.length" class="text-[10px] text-amber-500 mt-1 flex items-center gap-1">
+            <i class="fas fa-info-circle"></i>
+            لا توجد لوحات محفوظة. انشئ لوحة أولاً من صفحة المجموعات.
+          </p>
+        </div>
         <div class="flex gap-2 mt-5">
           <button @click="createGroup" :disabled="!newName.trim() || saving"
             class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-1.5 transition">
@@ -259,20 +306,25 @@ const actions = [
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────────
-interface Group { id: number; name: string; permissions?: string; }
+interface Group { id: number; name: string; permissions?: string; dashboardId?: number | null; layout?: string | null; }
 
 // ── State ────────────────────────────────────────────────────────────────────
-const groups        = ref<Group[]>([]);
-const selectedGroup = ref<Group | null>(null);
-const givenPerms    = ref<string[]>([]);
-const search        = ref('');
-const loading       = ref(false);
-const saving        = ref(false);
-const showAddModal  = ref(false);
-const newName       = ref('');
-const newNameRef    = ref<HTMLInputElement | null>(null);
-const deleteTarget  = ref<Group | null>(null);
-const toast         = ref({ show: false, msg: '', ok: true });
+const groups           = ref<Group[]>([]);
+const selectedGroup    = ref<Group | null>(null);
+const selectedDashId   = ref<number | null>(null); // dashboardId for selected security group
+const givenPerms       = ref<string[]>([]);
+const search           = ref('');
+const loading          = ref(false);
+const saving           = ref(false);
+const showAddModal     = ref(false);
+const newName          = ref('');
+const newDashboardId   = ref<number | null>(null);
+const newNameRef       = ref<HTMLInputElement | null>(null);
+const deleteTarget     = ref<Group | null>(null);
+const toast            = ref({ show: false, msg: '', ok: true });
+
+// Dashboard groups = groups that have a saved layout
+const dashboardGroups = computed(() => groups.value.filter(g => g.layout && g.layout !== '[]' && g.layout !== 'null'));
 
 // ── Computed ─────────────────────────────────────────────────────────────────
 const sortedGroups = computed(() => {
@@ -332,6 +384,7 @@ function selectAll() {
 // ── Select Group ──────────────────────────────────────────────────────────────
 function selectGroup(g: Group) {
   selectedGroup.value = g;
+  selectedDashId.value = g.dashboardId ?? null;
   try {
     const arr = JSON.parse(g.permissions || '[]');
     givenPerms.value = Array.isArray(arr) ? arr.filter((x: any) => typeof x === 'string') : [];
@@ -357,6 +410,7 @@ async function loadGroups() {
 
 function openAdd() {
   newName.value = '';
+  newDashboardId.value = null;
   showAddModal.value = true;
   nextTick(() => newNameRef.value?.focus());
 }
@@ -365,7 +419,9 @@ async function createGroup() {
   if (!newName.value.trim()) return;
   saving.value = true;
   try {
-    const { data } = await api.post('/groups', { name: newName.value.trim(), permissions: '[]' });
+    const payload: any = { name: newName.value.trim(), permissions: '[]' };
+    if (newDashboardId.value) payload.dashboardId = newDashboardId.value;
+    const { data } = await api.post('/groups', payload);
     groups.value.push(data);
     groups.value.sort((a, b) => a.name.localeCompare(b.name));
     showAddModal.value = false;
@@ -399,11 +455,11 @@ async function savePermissions() {
   if (!selectedGroup.value) return;
   saving.value = true;
   try {
-    await api.patch(`/groups/${selectedGroup.value.id}`, {
-      permissions: JSON.stringify(givenPerms.value),
-    });
+    const payload: any = { permissions: JSON.stringify(givenPerms.value) };
+    if (selectedDashId.value !== undefined) payload.dashboardId = selectedDashId.value ?? null;
+    await api.patch(`/groups/${selectedGroup.value.id}`, payload);
     const g = groups.value.find(x => x.id === selectedGroup.value!.id);
-    if (g) g.permissions = JSON.stringify(givenPerms.value);
+    if (g) { g.permissions = JSON.stringify(givenPerms.value); g.dashboardId = selectedDashId.value; }
     showToast(`تم حفظ ${givenPerms.value.length} صلاحية بنجاح`);
   } catch {
     showToast('حدث خطأ أثناء الحفظ', false);

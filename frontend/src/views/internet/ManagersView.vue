@@ -224,10 +224,21 @@
                   <option v-for="g in securityGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
                 <p v-if="formErrors.groupId" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.groupId }}</p>
-                <!-- Selected group confirmation -->
-                <div v-if="form.groupId" class="mt-1.5 flex items-center gap-1.5 text-[12px] text-primary">
-                  <i class="fas fa-users-cog text-[11px]"></i>
-                  <span>{{ securityGroups.find(g => g.id === form.groupId)?.name }}</span>
+                <!-- Selected group info: name + linked dashboard -->
+                <div v-if="form.groupId" class="mt-1.5 space-y-1">
+                  <div class="flex items-center gap-1.5 text-[12px] text-primary">
+                    <i class="fas fa-users-cog text-[11px]"></i>
+                    <span>{{ securityGroups.find(g => g.id === form.groupId)?.name }}</span>
+                  </div>
+                  <div v-if="securityGroups.find(g => g.id === form.groupId)?.dashboardId"
+                    class="flex items-center gap-1.5 text-[11px] text-indigo-600">
+                    <i class="fas fa-columns text-[10px]"></i>
+                    <span>لوحة التحكم: {{ dashboardGroups.find(d => d.id === securityGroups.find((g: any) => g.id === form.groupId)?.dashboardId)?.name || '—' }}</span>
+                  </div>
+                  <div v-else class="text-[11px] text-gray-400 flex items-center gap-1">
+                    <i class="fas fa-columns text-[10px]"></i>
+                    <span>لا توجد لوحة تحكم مرتبطة بهذه المجموعة</span>
+                  </div>
                 </div>
               </div>
 
@@ -355,8 +366,10 @@ import { logActivity } from '../../utils/activityLog';
 
 const managers = ref<any[]>([]);
 const groups   = ref<any[]>([]);
-// All groups are shown — user picks the one configured with permissions in PermissionsView
-const securityGroups = computed(() => groups.value);
+// Security groups = groups WITHOUT a layout (those are dashboard groups)
+const securityGroups = computed(() => groups.value.filter((g: any) => !g.layout || g.layout === '[]' || g.layout === 'null'));
+// Dashboard groups = groups WITH a layout
+const dashboardGroups = computed(() => groups.value.filter((g: any) => g.layout && g.layout !== '[]' && g.layout !== 'null'));
 const showModal = ref(false);
 const editingId = ref<number | null>(null);
 const saving = ref(false);
