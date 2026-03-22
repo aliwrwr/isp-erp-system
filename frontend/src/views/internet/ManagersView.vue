@@ -121,7 +121,7 @@
               <span>تعديل</span>
               <i class="fas fa-pen text-orange-500"></i>
             </button>
-            <button @click="openDepositModal(contextMenuManager)" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+            <button @click="openAmountModal(contextMenuManager, 'deposit')" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
               <span>إيداع</span>
               <i class="fas fa-wallet text-green-500"></i>
             </button>
