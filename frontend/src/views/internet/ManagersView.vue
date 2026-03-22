@@ -388,8 +388,8 @@ import { logActivity } from '../../utils/activityLog';
 
 const managers = ref<any[]>([]);
 const groups   = ref<any[]>([]);
-// Security groups = groups without a dashboard layout (created from PermissionsView)
-const securityGroups = computed(() => groups.value.filter(g => !g.layout || g.layout === '[]' || g.layout === 'null'));
+// All groups are shown — user picks the one configured with permissions in PermissionsView
+const securityGroups = computed(() => groups.value);
 const showModal = ref(false);
 const editingId = ref<number | null>(null);
 const saving = ref(false);
