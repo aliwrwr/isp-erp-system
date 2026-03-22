@@ -20,15 +20,28 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.usersService.findOne(payload.sub);
-    if (!user) {
-      return null;
+    // Manager token — permissions are embedded in the JWT to avoid extra DB round-trip
+    if (payload.type === 'manager') {
+      return {
+        userId: payload.sub,
+        username: payload.email,
+        name: payload.name,
+        type: 'manager',
+        managerId: payload.sub,
+        isSuperAdmin: false,
+        permissions: payload.permissions || [],
+      };
     }
+
+    // Regular user token
+    const user = await this.usersService.findOne(payload.sub);
+    if (!user) return null;
     const employee = await this.employeesService.findByUsername(user.email);
     const isSuperAdmin = user.roles?.some(r => r.name === 'Super Admin');
     return {
       userId: user.id,
       username: user.email,
+      type: 'user',
       roles: user.roles,
       isSuperAdmin,
       employeeId: employee?.id || null,

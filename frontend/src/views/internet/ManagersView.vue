@@ -224,7 +224,7 @@
                 <select v-model="form.groupId"
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
                   <option :value="null">— اختر المجموعة —</option>
-                  <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                  <option v-for="g in securityGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
                 <p v-if="formErrors.groupId" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.groupId }}</p>
 
@@ -388,6 +388,11 @@ import { logActivity } from '../../utils/activityLog';
 
 const managers = ref<any[]>([]);
 const groups   = ref<any[]>([]);
+// Only show groups that have been configured with permissions (security groups from PermissionsView)
+const securityGroups = computed(() => groups.value.filter(g => {
+  if (!g.permissions) return false;
+  try { const arr = JSON.parse(g.permissions); return Array.isArray(arr) && arr.length > 0; } catch { return false; }
+}));
 const showModal = ref(false);
 const editingId = ref<number | null>(null);
 const saving = ref(false);

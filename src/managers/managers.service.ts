@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { Manager } from './entities/manager.entity';
 import { CreateManagerDto } from './dto/create-manager.dto';
 import { UpdateManagerDto } from './dto/update-manager.dto';
@@ -12,8 +13,10 @@ export class ManagersService {
     private managersRepository: Repository<Manager>,
   ) {}
 
-  create(dto: CreateManagerDto): Promise<Manager> {
-    return this.managersRepository.save(this.managersRepository.create(dto));
+  async create(dto: CreateManagerDto): Promise<Manager> {
+    const data: any = { ...dto };
+    if (data.password) data.password = await bcrypt.hash(data.password, 10);
+    return this.managersRepository.save(this.managersRepository.create(data));
   }
 
   async findAll(): Promise<any[]> {
@@ -30,7 +33,9 @@ export class ManagersService {
   }
 
   async update(id: number, dto: UpdateManagerDto): Promise<Manager | null> {
-    await this.managersRepository.update(id, dto as any);
+    const data: any = { ...dto };
+    if (data.password) data.password = await bcrypt.hash(data.password, 10);
+    await this.managersRepository.update(id, data);
     return this.findOne(id);
   }
 
