@@ -282,6 +282,8 @@ import DataTable from '../../components/DataTable.vue';
 import api from '../../api';
 import { useAuthStore } from '../../stores/auth';
 
+const authStore = useAuthStore();
+
 // ── Widget Definitions (same as GroupsView) ───────────────────────────────
 interface WDef { type: string; label: string; sub?: string; icon: string; color: string; }
 const WIDGET_DEFS: WDef[] = [
@@ -327,6 +329,8 @@ function widgetVal(type: string): string {
 // ── Personalized Dashboard ────────────────────────────────────────
 type PCell = { type: string } | null;
 const personalLayout = ref<PCell[][]>([]);
+
+const canSeeRouters = computed(() => authStore.hasPermission('internet.routers'));
 
 
 
@@ -458,14 +462,38 @@ onMounted(async () => {
 
   // Load personalized dashboard for current manager
   try {
-    // Use dashboardLayout from the user's profile (already loaded during login)
+    // First try the layout from profile (via authStore.user.dashboardLayout)
     const dashboardLayout = authStore.user?.dashboardLayout;
     if (dashboardLayout) {
       try {
         personalLayout.value = JSON.parse(dashboardLayout);
-      } catch { /* ignore */ }
+        console.log('[DashboardView] personalLayout loaded from profile:', personalLayout.value);
+      } catch (err) {
+        console.warn('[DashboardView] failed to parse dashboardLayout:', err);
+      }
+    } else if (authStore.user?.groupId) {
+      // Fallback: look up group and its dashboard connection
+      const secRes = await api.get(`/groups/${authStore.user.groupId}`).catch(() => null);
+      const secGrp = secRes?.data;
+      if (secGrp) {
+        let layout = secGrp.layout;
+        if (!layout && secGrp.dashboardId) {
+          const dashRes = await api.get(`/groups/${secGrp.dashboardId}`).catch(() => null);
+          layout = dashRes?.data?.layout;
+        }
+        if (layout) {
+          try {
+            personalLayout.value = JSON.parse(layout);
+            console.log('[DashboardView] personalLayout loaded from (fallback) group:', personalLayout.value);
+          } catch (err) {
+            console.warn('[DashboardView] failed to parse fallback layout:', err);
+          }
+        }
+      }
     }
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[DashboardView] failed while loading personal layout:', err);
+  }
 
   fetchServerStats();
   // Check routers status in background (non-blocking)
