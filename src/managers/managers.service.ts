@@ -16,7 +16,8 @@ export class ManagersService {
   async create(dto: CreateManagerDto): Promise<Manager> {
     const data: any = { ...dto };
     if (data.password) data.password = await bcrypt.hash(data.password, 10);
-    return this.managersRepository.save(this.managersRepository.create(data));
+    const entity = this.managersRepository.create(data as Manager);
+    return this.managersRepository.save(entity);
   }
 
   async findAll(): Promise<any[]> {
