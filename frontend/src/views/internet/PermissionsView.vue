@@ -6,7 +6,7 @@
       <div class="flex items-center gap-3 text-sm">
         <i class="fas fa-shield-alt text-blue-400"></i>
         <span class="font-semibold tracking-wide">Security Groups</span>
-        <span class="text-[11px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{{ groups.length }} مجموعة</span>
+        <span class="text-[11px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{{ securityGroups.length }} مجموعة</span>
       </div>
       <button @click="loadGroups" class="text-gray-400 hover:text-white transition text-sm" title="تحديث">
         <i class="fas fa-sync" :class="loading ? 'fa-spin' : ''"></i>
@@ -327,9 +327,12 @@ const toast            = ref({ show: false, msg: '', ok: true });
 const dashboardGroups = computed(() => groups.value.filter(g => g.layout && g.layout !== '[]' && g.layout !== 'null'));
 
 // ── Computed ─────────────────────────────────────────────────────────────────
+// Security groups only (no layout) — these are the ones that can be assigned to managers
+const securityGroups = computed(() => groups.value.filter(g => !g.layout || g.layout === '[]' || g.layout === 'null'));
+
 const sortedGroups = computed(() => {
   const q = search.value.trim().toLowerCase();
-  return groups.value
+  return securityGroups.value
     .filter(g => !q || g.name.toLowerCase().includes(q))
     .sort((a, b) => a.name.localeCompare(b.name));
 });
