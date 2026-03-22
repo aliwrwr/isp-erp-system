@@ -217,9 +217,6 @@
               <div class="col-span-2">
                 <label class="block text-sm font-medium text-gray-600 mb-1">
                   المجموعة <span class="text-red-400">*</span>
-                  <span v-if="selectedGroupPerms.length" class="mr-2 text-[11px] font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                    {{ selectedGroupPerms.length }} صلاحية
-                  </span>
                 </label>
                 <select v-model="form.groupId"
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white">
@@ -227,40 +224,10 @@
                   <option v-for="g in securityGroups" :key="g.id" :value="g.id">{{ g.name }}</option>
                 </select>
                 <p v-if="formErrors.groupId" class="text-red-500 text-[11px] mt-0.5">{{ formErrors.groupId }}</p>
-
-                <!-- Permissions Preview from selected group -->
-                <div v-if="form.groupId && selectedGroupPerms.length" class="mt-2 border border-gray-100 rounded-lg bg-gray-50 overflow-hidden">
-                  <div class="flex items-center justify-between px-3 py-1.5 bg-gray-100 border-b border-gray-200">
-                    <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">الصلاحيات الممنوحة من هذه المجموعة</span>
-                    <button type="button" @click="showGroupPerms = !showGroupPerms"
-                      class="text-[11px] text-primary hover:underline">
-                      {{ showGroupPerms ? 'إخفاء' : 'عرض' }}
-                    </button>
-                  </div>
-                  <div v-if="showGroupPerms" class="max-h-48 overflow-y-auto px-3 py-2">
-                    <template v-for="cat in selectedGroupPermCats" :key="cat">
-                      <p class="text-[10px] font-bold text-gray-400 uppercase mt-2 mb-1">{{ cat }}</p>
-                      <div class="flex flex-wrap gap-1">
-                        <span v-for="pk in selectedGroupPermsInCat(cat)" :key="pk"
-                          class="inline-flex items-center gap-1 text-[11px] bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded-md">
-                          <i class="fas fa-check text-green-500 text-[9px]"></i>
-                          {{ permLabel(pk) }}
-                        </span>
-                      </div>
-                    </template>
-                  </div>
-                  <div v-else class="px-3 py-1.5 flex flex-wrap gap-1">
-                    <span v-for="pk in selectedGroupPerms.slice(0,8)" :key="pk"
-                      class="text-[11px] bg-white border border-gray-200 text-gray-600 px-2 py-0.5 rounded-md">
-                      {{ permLabel(pk) }}
-                    </span>
-                    <span v-if="selectedGroupPerms.length > 8"
-                      class="text-[11px] text-gray-400 px-1 py-0.5">+{{ selectedGroupPerms.length - 8 }} أخرى</span>
-                  </div>
-                </div>
-                <div v-else-if="form.groupId && !selectedGroupPerms.length" class="mt-1.5 text-[11px] text-amber-500 flex items-center gap-1">
-                  <i class="fas fa-exclamation-triangle text-[10px]"></i>
-                  هذه المجموعة لا تحتوي على صلاحيات بعد — يمكنك تعيينها من صفحة الصلاحيات
+                <!-- Selected group confirmation -->
+                <div v-if="form.groupId" class="mt-1.5 flex items-center gap-1.5 text-[12px] text-primary">
+                  <i class="fas fa-users-cog text-[11px]"></i>
+                  <span>{{ securityGroups.find(g => g.id === form.groupId)?.name }}</span>
                 </div>
               </div>
 
