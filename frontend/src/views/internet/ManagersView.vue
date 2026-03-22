@@ -69,11 +69,11 @@
               :key="m.id"
               :class="selectedIds.has(m.id) ? 'bg-primary/5' : 'hover:bg-gray-50'"
               class="border-b border-gray-50 transition"
-              @contextmenu.prevent
-              @mousedown.prevent="startLongPress($event)"
+              @contextmenu.prevent="showContextMenu($event, m)"
+              @mousedown.prevent="startLongPress($event, m)"
               @mouseup="cancelLongPress"
               @mouseleave="cancelLongPress"
-              @touchstart.passive="startLongPress($event)"
+              @touchstart.passive="startLongPress($event, m)"
               @touchend="cancelLongPress"
               @touchmove="cancelLongPress"
             >
@@ -98,6 +98,56 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Context Menu Overlay -->
+      <div v-if="contextMenu.show" class="fixed inset-0 z-[300]" @click="closeContextMenu" @contextmenu.prevent></div>
+      <teleport to="body">
+        <div
+          v-if="contextMenu.show"
+          class="fixed z-[301] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden w-56"
+          :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+          @click.stop
+        >
+          <div class="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+            <p class="text-xs font-bold text-gray-700 truncate">{{ contextMenuManager?.name }}</p>
+            <p class="text-[10px] text-gray-400 font-mono">{{ contextMenuManager?.username }}</p>
+          </div>
+          <div class="py-1">
+            <button @click="ctxViewDetails" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+              <span>عرض التفاصيل</span>
+              <i class="fas fa-eye text-blue-500"></i>
+            </button>
+            <button @click="ctxEdit" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+              <span>تعديل</span>
+              <i class="fas fa-pen text-orange-500"></i>
+            </button>
+            <button @click="ctxDeposit" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+              <span>إيداع</span>
+              <i class="fas fa-wallet text-green-500"></i>
+            </button>
+            <button @click="ctxWithdraw" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+              <span>سحب</span>
+              <i class="fas fa-hand-holding-usd text-red-500"></i>
+            </button>
+            <button @click="ctxPayDebt" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+              <span>تسديد</span>
+              <i class="fas fa-money-bill-wave text-emerald-500"></i>
+            </button>
+            <button @click="ctxAddPoints" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+              <span>إضافة نقاط تجريبية</span>
+              <i class="fas fa-star text-amber-500"></i>
+            </button>
+            <button @click="ctxWithdrawPoints" class="w-full text-right px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-end gap-2">
+              <span>سحب نقاط تجريبية</span>
+              <i class="fas fa-star-half-alt text-indigo-600"></i>
+            </button>
+            <button @click="ctxDelete" class="w-full text-right px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center justify-end gap-2">
+              <span>حذف</span>
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </teleport>
 
       <!-- Pagination Bar -->
       <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
@@ -441,15 +491,32 @@ function toggleSelectAll(e: Event) {
   selectedIds.value = s;
 }
 
+const contextMenu = ref({ show: false, x: 0, y: 0 });
+const contextMenuManager = ref<any>(null);
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
-function startLongPress(event: MouseEvent | TouchEvent) {
+function showContextMenu(event: MouseEvent, manager: any) {
+  event.preventDefault();
+  contextMenuManager.value = manager;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let x = event.clientX;
+  let y = event.clientY;
+  if (x + 220 > vw) x = vw - 230;
+  if (y + 320 > vh) y = Math.max(8, vh - 330);
+  contextMenu.value = { show: true, x, y };
+}
+
+function startLongPress(event: MouseEvent | TouchEvent, manager: any) {
+  if ((event as MouseEvent).button === 2) return;
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
   }
-  // Do nothing on long press, just prevent default context-menu flow for managers rows.
   longPressTimer = setTimeout(() => {
+    if (event instanceof MouseEvent) {
+      showContextMenu(event, manager);
+    }
     longPressTimer = null;
   }, 700);
 }
@@ -459,6 +526,84 @@ function cancelLongPress() {
     clearTimeout(longPressTimer);
     longPressTimer = null;
   }
+}
+
+function closeContextMenu() {
+  contextMenu.value.show = false;
+}
+
+async function ctxViewDetails() {
+  if (!contextMenuManager.value) return;
+  openEdit(contextMenuManager.value);
+  closeContextMenu();
+}
+
+async function ctxEdit() {
+  if (!contextMenuManager.value) return;
+  openEdit(contextMenuManager.value);
+  closeContextMenu();
+}
+
+async function ctxDeposit() {
+  if (!contextMenuManager.value) return;
+  const amount = Number(prompt('أدخل مبلغ الإيداع (د.ع)'));
+  if (!amount || Number.isNaN(amount)) return;
+  const mgr = contextMenuManager.value;
+  await api.patch(`/managers/${mgr.id}`, { balance: (Number(mgr.balance) || 0) + amount });
+  showToast('تم إيداع المبلغ بنجاح');
+  closeContextMenu();
+  await loadData();
+}
+
+async function ctxWithdraw() {
+  if (!contextMenuManager.value) return;
+  const amount = Number(prompt('أدخل مبلغ السحب (د.ع)'));
+  if (!amount || Number.isNaN(amount)) return;
+  const mgr = contextMenuManager.value;
+  await api.patch(`/managers/${mgr.id}`, { balance: Math.max(0, (Number(mgr.balance) || 0) - amount) });
+  showToast('تم سحب المبلغ بنجاح');
+  closeContextMenu();
+  await loadData();
+}
+
+async function ctxPayDebt() {
+  if (!contextMenuManager.value) return;
+  const amount = Number(prompt('أدخل مبلغ تسديد الديون (د.ع)'));
+  if (!amount || Number.isNaN(amount)) return;
+  const mgr = contextMenuManager.value;
+  const currentLoans = Number(mgr.loans) || 0;
+  await api.patch(`/managers/${mgr.id}`, { loans: Math.max(0, currentLoans - amount) });
+  showToast('تم تسديد الدين بنجاح');
+  closeContextMenu();
+  await loadData();
+}
+
+async function ctxAddPoints() {
+  if (!contextMenuManager.value) return;
+  const amount = Number(prompt('أدخل عدد النقاط المطلوب إضافتها'));
+  if (!amount || Number.isNaN(amount)) return;
+  const mgr = contextMenuManager.value;
+  await api.patch(`/managers/${mgr.id}`, { points: (Number(mgr.points) || 0) + amount });
+  showToast('تم إضافة النقاط بنجاح');
+  closeContextMenu();
+  await loadData();
+}
+
+async function ctxWithdrawPoints() {
+  if (!contextMenuManager.value) return;
+  const amount = Number(prompt('أدخل عدد النقاط المطلوب سحبها'));
+  if (!amount || Number.isNaN(amount)) return;
+  const mgr = contextMenuManager.value;
+  await api.patch(`/managers/${mgr.id}`, { points: Math.max(0, (Number(mgr.points) || 0) - amount) });
+  showToast('تم سحب النقاط بنجاح');
+  closeContextMenu();
+  await loadData();
+}
+
+async function ctxDelete() {
+  if (!contextMenuManager.value) return;
+  await remove(contextMenuManager.value.id);
+  closeContextMenu();
 }
 
 onUnmounted(() => {
