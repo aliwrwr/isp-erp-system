@@ -306,40 +306,6 @@
                 <span v-else class="text-gray-300 text-xs">—</span>
               </td>
 
-              <!-- الإجراءات -->
-              <td class="px-5 py-3.5">
-                <div class="flex items-center justify-center gap-1.5">
-                  <button
-                    @click="openEdit(sub)"
-                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-primary/5 text-primary hover:bg-primary hover:text-white transition-all duration-150 shadow-sm"
-                    title="تعديل"
-                  >
-                    <i class="fas fa-pen text-xs"></i>
-                  </button>
-                  <button
-                    @click.stop="openPayDebtFor(sub)"
-                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-green-50 text-green-600 hover:bg-green-500 hover:text-white transition-all duration-150 shadow-sm"
-                    title="تسديد"
-                  >
-                    <i class="fas fa-money-bill-wave text-xs"></i>
-                  </button>
-                  <button
-                    @click.stop="openAddDebtFor(sub)"
-                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all duration-150 shadow-sm"
-                    title="إضافة دين"
-                  >
-                    <i class="fas fa-file-invoice-dollar text-xs"></i>
-                  </button>
-                  <button
-                    @click="deleteTargetSub = sub; showDeleteConfirmModal = true"
-                    class="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all duration-150 shadow-sm"
-                    title="حذف"
-                  >
-                    <i class="fas fa-trash text-xs"></i>
-                  </button>
-                </div>
-              </td>
-
             </tr>
           </tbody>
         </table>
