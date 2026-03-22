@@ -129,6 +129,19 @@
                 لا توجد لوحات
               </span>
             </div>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button @click="selectedSection = 'all'"
+                :class="selectedSection === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                الكل
+              </button>
+              <button v-for="page in internetPages" :key="page.key" @click="selectedSection = page.key"
+                :class="selectedSection === page.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+                {{ page.label }}
+              </button>
+            </div>
           </div>
 
           <!-- Matrix Body -->
@@ -155,7 +168,7 @@
               </div>
 
               <!-- Page Rows -->
-              <div v-for="(item, idx) in internetPages" :key="item.key"
+              <div v-for="(item, idx) in displayedPages" :key="item.key"
                 class="grid px-4 py-2 border-b border-gray-50 hover:bg-blue-50/30 transition items-center"
                 :class="isRowAny(item.key) ? 'bg-blue-50/50 hover:bg-blue-50/70' : (idx % 2 === 1 ? 'bg-gray-50/50' : '')"
                 style="grid-template-columns: 1fr repeat(4, 76px)">
@@ -335,6 +348,13 @@ const sortedGroups = computed(() => {
   return securityGroups.value
     .filter(g => !q || g.name.toLowerCase().includes(q))
     .sort((a, b) => a.name.localeCompare(b.name));
+});
+
+const selectedSection = ref('all');
+const displayedPages = computed(() => {
+  return selectedSection.value === 'all'
+    ? internetPages
+    : internetPages.filter((p) => p.key === selectedSection.value);
 });
 
 // ── Permission Key ────────────────────────────────────────────────────────────
