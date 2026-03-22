@@ -170,7 +170,7 @@
                   <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
                     <i class="fas fa-users text-3xl text-gray-300"></i>
                   </div>
-                  <p class="font-semibold text-gray-400">لا يوجد مشتركون</p>
+                  <p class="font-semibold text-gray-400">لا يوجد مشتركين</p>
                   <p class="text-xs text-gray-300">ابدأ بإضافة أول مشترك أو عدّل فلتر البحث</p>
                 </div>
               </td>
