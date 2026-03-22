@@ -575,6 +575,11 @@
 
             <div class="my-1 border-t border-gray-100"></div>
 
+            <!-- عرض التفاصيل -->
+            <button @click="openDetailsFromMenu" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+              <i class="fas fa-info-circle w-4 text-center text-indigo-400"></i>
+              <span>عرض التفاصيل</span>
+            </button>
             <!-- تعديل -->
             <button @click="openEditFromMenu" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-pen w-4 text-center text-blue-400"></i>
@@ -620,6 +625,78 @@
         </div>
       </div>
     </teleport>
+
+    <!-- ===== Subscriber Details Modal ===== -->
+    <transition name="modal">
+      <div v-if="showDetailsModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="closeDetailsModal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+          <div class="bg-gradient-to-l from-indigo-600 to-blue-600 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-white text-lg">تفاصيل المشترك</h3>
+              <p class="text-xs text-white/80">عرض كامل لجميع بيانات المشترك والمعلومات المالية</p>
+            </div>
+            <button @click="closeDetailsModal" class="text-white hover:text-gray-200 transition">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">الاسم</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.name || '—' }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">اسم الدخول</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.username || '—' }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">الهاتف</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.phone || '—' }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">العنوان</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.address || '—' }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">الباقة</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.package?.name || '—' }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">الراوتر</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.router?.name || '—' }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">المدير</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.manager?.name || detailSub?.manager?.position || '—' }}</p>
+            </div>
+            <div class="space-y-2">
+              <p class="text-xs text-gray-500">الحالة</p>
+              <p class="font-semibold text-gray-700">{{ detailSub?.status || '—' }}</p>
+            </div>
+          </div>
+          <div class="border-t border-gray-100 p-6 bg-gray-50">
+            <h4 class="font-semibold text-gray-700 mb-3">البيانات المالية والاشتراكات</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="bg-white rounded-xl border border-gray-100 p-3">
+                <p class="text-xs text-gray-400">الرصيد</p>
+                <p class="font-bold text-gray-800">{{ detailSub?.balance ? Number(detailSub.balance).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</p>
+              </div>
+              <div class="bg-white rounded-xl border border-gray-100 p-3">
+                <p class="text-xs text-gray-400">الديون</p>
+                <p class="font-bold text-gray-800">{{ detailSub?.debt ? Number(detailSub.debt).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</p>
+              </div>
+              <div class="bg-white rounded-xl border border-gray-100 p-3">
+                <p class="text-xs text-gray-400">عدد الاشتراكات</p>
+                <p class="font-bold text-gray-800">{{ detailSub?.subscriptions?.length || 0 }}</p>
+              </div>
+              <div class="bg-white rounded-xl border border-gray-100 p-3">
+                <p class="text-xs text-gray-400">آخر اشتراك</p>
+                <p class="font-bold text-gray-800">{{ detailSub?.subscriptions?.[0]?.endDate ? new Date(detailSub.subscriptions[0].endDate).toLocaleDateString('ar-IQ') : '—' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- ===== Activate Subscriber Modal ===== -->
     <transition name="modal">
@@ -1613,6 +1690,23 @@ async function confirmDelete() {
 // ===================== CHANGE PACKAGE MODAL =====================
 const showChangePackageModal = ref(false);
 const changePackageForm = ref({ packageId: '' as any, startDate: '' });
+
+// DETAILS MODAL - عرض التفاصيل
+const showDetailsModal = ref(false);
+const detailSub = ref<any>(null);
+
+function openDetailsFromMenu() {
+  const sub = contextMenuSub.value;
+  closeContextMenu();
+  if (!sub) return;
+  detailSub.value = sub;
+  showDetailsModal.value = true;
+}
+
+function closeDetailsModal() {
+  showDetailsModal.value = false;
+  detailSub.value = null;
+}
 
 function openChangePackage() {
   const sub = contextMenuSub.value;
