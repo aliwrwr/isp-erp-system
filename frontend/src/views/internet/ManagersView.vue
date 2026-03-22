@@ -165,6 +165,10 @@
                 <div><strong>اسم المستخدم:</strong> {{ selectedDepositManager?.username || '—' }}</div>
                 <div><strong>الرصيد الحالي:</strong> {{ Number(selectedDepositManager?.balance || 0).toLocaleString('ar-IQ') }} د.ع</div>
                 <div><strong>القروض الحالية:</strong> {{ Number(selectedDepositManager?.loans || 0).toLocaleString('ar-IQ') }} د.ع</div>
+                <div v-if="amountPreview" class="mt-2 text-xs text-blue-600">
+                  <strong>{{ amountPreview.title }}:</strong> {{ Number(amountPreview.value).toLocaleString('ar-IQ') }} {{ amountPreview.suffix || '' }}
+                </div>
+                <div class="mt-1 text-xs text-gray-400">تاريخ العملية: {{ new Date().toLocaleString('ar-IQ') }}</div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">المبلغ</label>
@@ -204,6 +208,10 @@
                 <div><strong>المدير:</strong> {{ selectedPointsManager?.name || '—' }}</div>
                 <div><strong>اسم المستخدم:</strong> {{ selectedPointsManager?.username || '—' }}</div>
                 <div><strong>النقاط الحالية:</strong> {{ Number(selectedPointsManager?.points || 0).toLocaleString('ar-IQ') }}</div>
+                <div v-if="pointsPreview" class="mt-2 text-xs text-blue-600">
+                  <strong>{{ pointsPreview.title }}:</strong> {{ Number(pointsPreview.value).toLocaleString('ar-IQ') }}
+                </div>
+                <div class="mt-1 text-xs text-gray-400">تاريخ العملية: {{ new Date().toLocaleString('ar-IQ') }}</div>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">الكمية</label>
@@ -731,6 +739,50 @@ function showToast(message: string, type: 'success' | 'error' = 'success') {
   toast.value = { show: true, message, type };
   setTimeout(() => { toast.value.show = false; }, 3000);
 }
+
+const amountPreview = computed(() => {
+  if (!selectedDepositManager.value) return null;
+  const currentBalance = Number(selectedDepositManager.value.balance || 0);
+  const currentLoans = Number(selectedDepositManager.value.loans || 0);
+  const amount = Number(depositForm.value.amount || 0);
+  if (amount <= 0) return null;
+  if (amountMode.value === 'deposit') {
+    return {
+      title: depositForm.value.isDebt ? 'القروض بعد الإضافة' : 'الرصيد بعد الإيداع',
+      value: depositForm.value.isDebt ? currentLoans + amount : currentBalance + amount,
+      suffix: 'د.ع'
+    };
+  } else if (amountMode.value === 'withdraw') {
+    return {
+      title: 'الرصيد بعد السحب',
+      value: Math.max(0, currentBalance - amount),
+      suffix: 'د.ع'
+    };
+  } else {
+    return {
+      title: 'القروض بعد التسديد',
+      value: Math.max(0, currentLoans - amount),
+      suffix: 'د.ع'
+    };
+  }
+});
+
+const pointsPreview = computed(() => {
+  if (!selectedPointsManager.value) return null;
+  const currentPoints = Number(selectedPointsManager.value.points || 0);
+  const amount = Number(pointsForm.value.amount || 0);
+  if (amount <= 0) return null;
+  if (pointsMode.value === 'add') {
+    return {
+      title: 'النقاط بعد الإضافة',
+      value: currentPoints + amount
+    };
+  }
+  return {
+    title: 'النقاط بعد السحب',
+    value: Math.max(0, currentPoints - amount)
+  };
+});
 
 const sortKey = ref<string>('');
 const sortDir = ref<'asc' | 'desc'>('asc');
