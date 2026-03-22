@@ -8,5 +8,7 @@ export declare class AppController {
         ram: number;
         disk: number;
         uptime: number;
+        dnsPing: number | null;
+        googlePing: number | null;
     }>;
 }

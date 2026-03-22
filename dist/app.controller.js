@@ -46,6 +46,27 @@ exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const app_service_1 = require("./app.service");
 const os = __importStar(require("os"));
+const child_process_1 = require("child_process");
+function parsePingOutput(output) {
+    const winMatch = output.match(/Average[=\s]+(\d+)(?:ms)?/i);
+    if (winMatch?.[1])
+        return Number(winMatch[1]);
+    const unixMatch = output.match(/time=(\d+(?:\.\d+)?)\s*ms/i);
+    if (unixMatch?.[1])
+        return Number(Number(unixMatch[1]).toFixed(0));
+    return null;
+}
+function pingHost(host) {
+    return new Promise(resolve => {
+        const count = 1;
+        const cmd = process.platform === 'win32' ? `ping -n ${count} ${host}` : `ping -c ${count} ${host}`;
+        (0, child_process_1.exec)(cmd, { timeout: 5000 }, (err, stdout) => {
+            if (err || !stdout)
+                return resolve(null);
+            resolve(parsePingOutput(stdout));
+        });
+    });
+}
 let AppController = class AppController {
     appService;
     constructor(appService) {
@@ -88,7 +109,11 @@ let AppController = class AppController {
             disk = 0;
         }
         const uptime = Math.round(os.uptime());
-        return { cpu, ram, disk, uptime };
+        const [dnsPing, googlePing] = await Promise.all([
+            pingHost('1.1.1.1').catch(() => null),
+            pingHost('google.com').catch(() => null),
+        ]);
+        return { cpu, ram, disk, uptime, dnsPing, googlePing };
     }
 };
 exports.AppController = AppController;

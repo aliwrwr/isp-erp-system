@@ -330,8 +330,9 @@ function widgetVal(type: string): string {
     case 'system_time':
       return serverStats.value.uptime ? formatUptime(serverStats.value.uptime) : '—';
     case 'dns_ping':
+      return serverStats.value.dnsPing ? `${serverStats.value.dnsPing} ms` : '—';
     case 'google_ping':
-      return '—';
+      return serverStats.value.googlePing ? `${serverStats.value.googlePing} ms` : '—';
     case 'points':
       return '—';
     case 'online_fup':

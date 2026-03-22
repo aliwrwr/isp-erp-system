@@ -373,6 +373,9 @@ async function loadStats() {
       managers:   Array.isArray(mgrs.data) ? mgrs.data.length : 0,
       ram:        sys.data?.ram  ?? 0,
       disk:       sys.data?.disk ?? 0,
+      uptime:     sys.data?.uptime ?? 0,
+      dnsPing:    sys.data?.dnsPing ?? null,
+      googlePing: sys.data?.googlePing ?? null,
       systemTime: new Date().toLocaleString('ar-IQ', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' }),
     };
   } catch {}

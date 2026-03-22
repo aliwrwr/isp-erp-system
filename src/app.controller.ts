@@ -1,6 +1,26 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
 import * as os from 'os';
+import { exec } from 'child_process';
+
+function parsePingOutput(output: string): number | null {
+  const winMatch = output.match(/Average[=\s]+(\d+)(?:ms)?/i);
+  if (winMatch?.[1]) return Number(winMatch[1]);
+  const unixMatch = output.match(/time=(\d+(?:\.\d+)?)\s*ms/i);
+  if (unixMatch?.[1]) return Number(Number(unixMatch[1]).toFixed(0));
+  return null;
+}
+
+function pingHost(host: string): Promise<number | null> {
+  return new Promise(resolve => {
+    const count = 1;
+    const cmd = process.platform === 'win32' ? `ping -n ${count} ${host}` : `ping -c ${count} ${host}`;
+    exec(cmd, { timeout: 5000 }, (err, stdout) => {
+      if (err || !stdout) return resolve(null);
+      resolve(parsePingOutput(stdout));
+    });
+  });
+}
 
 @Controller()
 export class AppController {
@@ -12,7 +32,7 @@ export class AppController {
   }
 
   @Get('system/stats')
-  async getSystemStats(): Promise<{ cpu: number; ram: number; disk: number; uptime: number }> {
+  async getSystemStats(): Promise<{ cpu: number; ram: number; disk: number; uptime: number; dnsPing: number | null; googlePing: number | null }> {
     // RAM
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
@@ -49,6 +69,11 @@ export class AppController {
 
     const uptime = Math.round(os.uptime());
 
-    return { cpu, ram, disk, uptime };
+    const [dnsPing, googlePing] = await Promise.all([
+      pingHost('1.1.1.1').catch(() => null),
+      pingHost('google.com').catch(() => null),
+    ]);
+
+    return { cpu, ram, disk, uptime, dnsPing, googlePing };
   }
 }
