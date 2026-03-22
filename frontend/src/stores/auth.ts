@@ -16,6 +16,10 @@ interface User {
     } | null;
   } | null;
   permissions: string[];
+  // Manager-specific fields
+  type?: 'user' | 'manager';
+  managerId?: number;
+  groupId?: number;
 }
 
 interface AuthState {
