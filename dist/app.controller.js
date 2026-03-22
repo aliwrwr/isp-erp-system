@@ -87,7 +87,8 @@ let AppController = class AppController {
         catch {
             disk = 0;
         }
-        return { cpu, ram, disk };
+        const uptime = Math.round(os.uptime());
+        return { cpu, ram, disk, uptime };
     }
 };
 exports.AppController = AppController;

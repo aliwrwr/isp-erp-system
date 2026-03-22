@@ -7,5 +7,6 @@ export declare class AppController {
         cpu: number;
         ram: number;
         disk: number;
+        uptime: number;
     }>;
 }

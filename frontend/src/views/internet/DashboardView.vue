@@ -327,7 +327,8 @@ function widgetVal(type: string): string {
         return `${online}/${total}`;
       }
       return serverStats.value.cpu ? `${serverStats.value.cpu}%` : '—';
-    case 'system_time': return new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    case 'system_time':
+      return serverStats.value.uptime ? formatUptime(serverStats.value.uptime) : '—';
     case 'dns_ping':
     case 'google_ping':
       return '—';
@@ -386,7 +387,20 @@ const almostExpiring = computed(() => {
 const adminCount = computed(() => managersData.value.length);
 
 // ── Server Resources ──────────────────────────────────────────────
-const serverStats = ref({ cpu: 0, ram: 0, disk: 0 });
+const serverStats = ref({ cpu: 0, ram: 0, disk: 0, uptime: 0 });
+function formatUptime(uptimeSeconds: number): string {
+  const days = Math.floor(uptimeSeconds / 86400);
+  const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+  const seconds = uptimeSeconds % 60;
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  if (minutes) parts.push(`${minutes}m`);
+  if (seconds || !parts.length) parts.push(`${seconds}s`);
+  return parts.join(' ');
+}
+
 async function fetchServerStats() {
   try {
     const { data } = await api.get('/system/stats');

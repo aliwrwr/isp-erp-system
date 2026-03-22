@@ -12,7 +12,7 @@ export class AppController {
   }
 
   @Get('system/stats')
-  async getSystemStats(): Promise<{ cpu: number; ram: number; disk: number }> {
+  async getSystemStats(): Promise<{ cpu: number; ram: number; disk: number; uptime: number }> {
     // RAM
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
@@ -47,6 +47,8 @@ export class AppController {
       disk = Math.round((1 - stat.bfree / stat.blocks) * 100);
     } catch { disk = 0; }
 
-    return { cpu, ram, disk };
+    const uptime = Math.round(os.uptime());
+
+    return { cpu, ram, disk, uptime };
   }
 }
