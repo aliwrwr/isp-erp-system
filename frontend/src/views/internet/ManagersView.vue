@@ -154,7 +154,7 @@
         <div v-if="showDepositModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeDepositModal">
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 class="font-bold text-base">{{ amountMode === 'deposit' ? 'إيداع مبلغ' : 'سحب مبلغ' }}</h3>
+              <h3 class="font-bold text-base">{{ amountMode === 'deposit' ? 'إيداع مبلغ' : amountMode === 'withdraw' ? 'سحب مبلغ' : 'تسديد ديون' }}</h3>
               <button @click="closeAmountModal" class="text-gray-500 hover:text-gray-700 rounded-lg p-1">
                 <i class="fas fa-times"></i>
               </button>
@@ -171,7 +171,7 @@
                 <input v-model.number="depositForm.amount" type="number" min="1"
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
               </div>
-              <div class="flex items-center gap-2 text-sm">
+              <div v-if="amountMode === 'deposit'" class="flex items-center gap-2 text-sm">
                 <input id="depositDebt" type="checkbox" v-model="depositForm.isDebt" class="accent-primary" />
                 <label for="depositDebt" class="text-gray-700">قرض</label>
               </div>
