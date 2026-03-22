@@ -149,9 +149,9 @@
         </div>
       </teleport>
 
-      <!-- Deposit Modal -->
+      <!-- Amount Modal -->
       <transition name="modal">
-        <div v-if="showDepositModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeDepositModal">
+        <div v-if="showAmountModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeAmountModal">
           <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 class="font-bold text-base">{{ amountMode === 'deposit' ? 'إيداع مبلغ' : amountMode === 'withdraw' ? 'سحب مبلغ' : 'تسديد ديون' }}</h3>
@@ -184,6 +184,41 @@
             <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
               <button @click="closeAmountModal" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-100">إلغاء</button>
               <button @click="confirmAmount" class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-dark">موافق</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Points Modal -->
+      <transition name="modal">
+        <div v-if="showPointsModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closePointsModal">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 class="font-bold text-base">{{ pointsMode === 'add' ? 'إضافة نقاط' : 'سحب نقاط' }}</h3>
+              <button @click="closePointsModal" class="text-gray-500 hover:text-gray-700 rounded-lg p-1">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="px-6 py-4 space-y-3">
+              <div class="text-sm text-gray-700 space-y-1">
+                <div><strong>المدير:</strong> {{ selectedPointsManager?.name || '—' }}</div>
+                <div><strong>اسم المستخدم:</strong> {{ selectedPointsManager?.username || '—' }}</div>
+                <div><strong>النقاط الحالية:</strong> {{ Number(selectedPointsManager?.points || 0).toLocaleString('ar-IQ') }}</div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">الكمية</label>
+                <input v-model.number="pointsForm.amount" type="number" min="1"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ملاحظات</label>
+                <textarea v-model="pointsForm.notes" rows="2"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
+              </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+              <button @click="closePointsModal" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-lg hover:bg-gray-100">إلغاء</button>
+              <button @click="confirmPoints" class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-dark">موافق</button>
             </div>
           </div>
         </div>
@@ -545,9 +580,13 @@ async function ctxEdit() {
 }
 
 const showAmountModal = ref(false);
+const showPointsModal = ref(false);
 const selectedDepositManager = ref<any>(null);
+const selectedPointsManager = ref<any>(null);
 const depositForm = ref({ amount: 0, isDebt: false, notes: '' });
+const pointsForm = ref({ amount: 0, notes: '' });
 const amountMode = ref<'deposit' | 'withdraw' | 'payDebt'>('deposit');
+const pointsMode = ref<'add' | 'withdraw'>('add');
 
 function openAmountModal(manager: any, mode: 'deposit' | 'withdraw') {
   if (!manager) return;
@@ -620,26 +659,59 @@ async function ctxPayDebt() {
   openAmountModal(contextMenuManager.value, 'payDebt');
 }
 
+function openPointsModal(manager: any, mode: 'add' | 'withdraw') {
+  if (!manager) return;
+  selectedPointsManager.value = manager;
+  pointsForm.value = { amount: 0, notes: '' };
+  pointsMode.value = mode;
+  showPointsModal.value = true;
+}
+
+async function confirmPoints() {
+  if (!selectedPointsManager.value) return;
+  const amount = Number(pointsForm.value.amount);
+  if (!amount || Number.isNaN(amount) || amount <= 0) {
+    showToast('يرجى إدخال كمية صالحة', 'error');
+    return;
+  }
+
+  const manager = selectedPointsManager.value;
+  try {
+    const currentPoints = Number(manager.points) || 0;
+    let newPoints = currentPoints;
+    if (pointsMode.value === 'add') {
+      newPoints = currentPoints + amount;
+    } else {
+      newPoints = Math.max(0, currentPoints - amount);
+    }
+
+    await api.patch(`/managers/${manager.id}`, { points: newPoints });
+
+    logActivity({ action: `manager_points_${pointsMode.value}`, module: 'manager', subscriberName: manager.name, details: `${pointsMode.value === 'add' ? 'إضافة' : 'سحب'} نقاط ${amount} ${pointsForm.value.notes ? '- ' + pointsForm.value.notes : ''} على ${manager.name}`, amount });
+
+    showToast(pointsMode.value === 'add' ? 'تم إضافة النقاط بنجاح' : 'تم سحب النقاط بنجاح');
+    showPointsModal.value = false;
+    closeContextMenu();
+    await loadData();
+  } catch (err: any) {
+    const msg = err?.response?.data?.message;
+    showToast(Array.isArray(msg) ? msg[0] : (msg || 'حدث خطأ'), 'error');
+  }
+}
+
+function closePointsModal() {
+  showPointsModal.value = false;
+  selectedPointsManager.value = null;
+}
+
 async function ctxAddPoints() {
   if (!contextMenuManager.value) return;
-  const amount = Number(prompt('أدخل عدد النقاط المطلوب إضافتها'));
-  if (!amount || Number.isNaN(amount)) return;
-  const mgr = contextMenuManager.value;
-  await api.patch(`/managers/${mgr.id}`, { points: (Number(mgr.points) || 0) + amount });
-  showToast('تم إضافة النقاط بنجاح');
-  closeContextMenu();
-  await loadData();
+  openPointsModal(contextMenuManager.value, 'add');
 }
 
 async function ctxWithdrawPoints() {
   if (!contextMenuManager.value) return;
-  const amount = Number(prompt('أدخل عدد النقاط المطلوب سحبها'));
-  if (!amount || Number.isNaN(amount)) return;
-  const mgr = contextMenuManager.value;
-  await api.patch(`/managers/${mgr.id}`, { points: Math.max(0, (Number(mgr.points) || 0) - amount) });
-  showToast('تم سحب النقاط بنجاح');
-  closeContextMenu();
-  await loadData();
+  openPointsModal(contextMenuManager.value, 'withdraw');
 }
 
 async function ctxDelete() {
