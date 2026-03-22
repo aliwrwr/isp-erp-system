@@ -69,6 +69,13 @@
               :key="m.id"
               :class="selectedIds.has(m.id) ? 'bg-primary/5' : 'hover:bg-gray-50'"
               class="border-b border-gray-50 transition"
+              @contextmenu.prevent
+              @mousedown.prevent="startLongPress($event)"
+              @mouseup="cancelLongPress"
+              @mouseleave="cancelLongPress"
+              @touchstart.passive="startLongPress($event)"
+              @touchend="cancelLongPress"
+              @touchmove="cancelLongPress"
             >
               <td class="px-3 py-3">
                 <input type="checkbox" class="w-4 h-4 accent-primary rounded cursor-pointer"
@@ -356,7 +363,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import api from '../../api';
 import { logActivity } from '../../utils/activityLog';
 
@@ -433,6 +440,33 @@ function toggleSelectAll(e: Event) {
   }
   selectedIds.value = s;
 }
+
+let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+function startLongPress(event: MouseEvent | TouchEvent) {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+  // Do nothing on long press, just prevent default context-menu flow for managers rows.
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null;
+  }, 700);
+}
+
+function cancelLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+onUnmounted(() => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+});
 
 function showToast(message: string, type: 'success' | 'error' = 'success') {
   toast.value = { show: true, message, type };
