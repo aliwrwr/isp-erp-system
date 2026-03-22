@@ -1637,7 +1637,6 @@ function openDetailsFromMenu() {
 
 function closeDetailsModal() {
   showDetailsModal.value = false;
-  detailSub.value = null;
 }
 
 function openChangePackage() {
