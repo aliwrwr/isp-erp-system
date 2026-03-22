@@ -1,0 +1,1 @@
+import{C as e,u as t}from"./runtime-core.esm-bundler-DJfhPO9U.js";import{t as n}from"./index-B1Kocbrs.js";var r={},i={class:`-m-4 lg:-m-6 flex flex-col bg-white overflow-hidden`,style:{height:`calc(100vh - 56px)`},dir:`rtl`};function a(n,r){return e(),t(`div`,i)}var o=n(r,[[`render`,a]]);export{o as default};
