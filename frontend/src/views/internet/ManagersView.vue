@@ -516,14 +516,14 @@ const visiblePages = computed(() => {
 });
 
 async function loadData() {
-  try {
-    const [mgr, grp] = await Promise.all([api.get('/managers'), api.get('/groups')]);
-    managers.value = mgr.data;
-    groups.value   = grp.data;
-  } catch {}
+  // Load each resource independently so one failure doesn't block the other
+  try { const r = await api.get('/managers'); managers.value = r.data; } catch {}
+  try { const r = await api.get('/groups');   groups.value   = r.data; } catch {}
 }
 
-function openAdd() {
+async function openAdd() {
+  // Refresh groups so newly-created groups always appear
+  try { const r = await api.get('/groups'); groups.value = r.data; } catch {}
   editingId.value = null;
   formErrors.value = {};
   showGroupPerms.value = false;
