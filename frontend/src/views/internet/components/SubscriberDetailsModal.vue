@@ -1,7 +1,7 @@
 <template>
   <transition name="modal-fade">
     <div
-      v-if="show"
+      v-if="show && subscriber"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
       @click.self="close"
     >
@@ -20,11 +20,11 @@
             <div class="lg:col-span-2 space-y-6">
               <div class="flex items-center gap-4">
                 <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-2xl font-bold text-primary">
-                  {{ subscriber.name ? subscriber.name.charAt(0) : '' }}
+                  {{ subscriber?.name ? subscriber.name.charAt(0) : '' }}
                 </div>
                 <div>
-                  <h4 class="text-2xl font-bold text-gray-900">{{ subscriber.name }}</h4>
-                  <p class="text-gray-500">{{ subscriber.username }}</p>
+                  <h4 class="text-2xl font-bold text-gray-900">{{ subscriber?.name }}</h4>
+                  <p class="text-gray-500">{{ subscriber?.username }}</p>
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-6 pt-4 border-t border-gray-100">
@@ -32,28 +32,28 @@
                   <i class="fas fa-phone text-gray-400 mt-1"></i>
                   <div>
                     <p class="text-sm text-gray-500">الهاتف</p>
-                    <p class="font-semibold text-gray-800">{{ subscriber.phone || '—' }}</p>
+                    <p class="font-semibold text-gray-800">{{ subscriber?.phone || '—' }}</p>
                   </div>
                 </div>
                 <div class="flex items-start gap-3">
                   <i class="fas fa-map-marker-alt text-gray-400 mt-1"></i>
                   <div>
                     <p class="text-sm text-gray-500">العنوان</p>
-                    <p class="font-semibold text-gray-800">{{ subscriber.address || '—' }}</p>
+                    <p class="font-semibold text-gray-800">{{ subscriber?.address || '—' }}</p>
                   </div>
                 </div>
                 <div class="flex items-start gap-3">
                   <i class="fas fa-box text-gray-400 mt-1"></i>
                   <div>
                     <p class="text-sm text-gray-500">الباقة</p>
-                    <p class="font-semibold text-gray-800">{{ subscriber.package?.name || '—' }}</p>
+                    <p class="font-semibold text-gray-800">{{ subscriber?.package?.name || '—' }}</p>
                   </div>
                 </div>
                 <div class="flex items-start gap-3">
                   <i class="fas fa-calendar-alt text-gray-400 mt-1"></i>
                   <div>
                     <p class="text-sm text-gray-500">تاريخ الانتهاء</p>
-                    <p class="font-semibold text-gray-800">{{ subscriber.expirationDate ? new Date(subscriber.expirationDate).toLocaleDateString() : '—' }}</p>
+                    <p class="font-semibold text-gray-800">{{ subscriber?.expirationDate ? new Date(subscriber.expirationDate).toLocaleDateString() : '—' }}</p>
                   </div>
                 </div>
               </div>
@@ -63,16 +63,16 @@
               <h5 class="text-lg font-bold text-gray-800 border-b pb-3 mb-3">الوضع المالي</h5>
               <div class="flex justify-between items-center">
                 <p class="text-gray-600">الرصيد</p>
-                <p class="font-bold text-green-600 text-lg">{{ subscriber.balance ? subscriber.balance.toLocaleString() + ' د.ع' : '0 د.ع' }}</p>
+                <p class="font-bold text-green-600 text-lg">{{ subscriber?.balance ? subscriber.balance.toLocaleString() + ' د.ع' : '0 د.ع' }}</p>
               </div>
               <div class="flex justify-between items-center">
                 <p class="text-gray-600">الديون</p>
-                <p class="font-bold text-red-600 text-lg">{{ subscriber.debt ? subscriber.debt.toLocaleString() + ' د.ع' : '0 د.ع' }}</p>
+                <p class="font-bold text-red-600 text-lg">{{ subscriber?.debt ? subscriber.debt.toLocaleString() + ' د.ع' : '0 د.ع' }}</p>
               </div>
               <div class="flex justify-between items-center pt-3 border-t">
                 <p class="text-gray-600">الحالة</p>
-                <span :class="['px-3 py-1 rounded-full text-xs font-semibold', subscriber.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-                  {{ subscriber.status === 'active' ? 'نشط' : 'غير نشط' }}
+                <span :class="['px-3 py-1 rounded-full text-xs font-semibold', subscriber?.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
+                  {{ subscriber?.status === 'active' ? 'نشط' : 'غير نشط' }}
                 </span>
               </div>
             </div>
@@ -91,14 +91,14 @@
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-if="!subscriber.subscriptions || subscriber.subscriptions.length === 0">
+                  <tr v-if="!subscriber?.subscriptions || subscriber.subscriptions.length === 0">
                     <td colspan="4" class="px-6 py-12 text-center text-gray-500">لا يوجد سجل اشتراكات</td>
                   </tr>
-                  <tr v-for="sub in subscriber.subscriptions" :key="sub.id">
-                    <td class="px-6 py-4 whitespace-nowrap">{{ sub.package.name }}</td>
+                  <tr v-for="sub in subscriber?.subscriptions" :key="sub.id">
+                    <td class="px-6 py-4 whitespace-nowrap">{{ sub.package?.name || '—' }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ new Date(sub.startDate).toLocaleDateString() }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ new Date(sub.endDate).toLocaleDateString() }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">{{ sub.price.toLocaleString() }} د.ع</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ sub.price?.toLocaleString?.() || '—' }} د.ع</td>
                   </tr>
                 </tbody>
               </table>
@@ -128,7 +128,8 @@ const props = defineProps({
   },
   subscriber: {
     type: Object,
-    required: true,
+    required: false,
+    default: null,
   },
 })
 
