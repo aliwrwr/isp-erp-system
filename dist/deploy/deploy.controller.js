@@ -106,6 +106,37 @@ let DeployController = class DeployController {
         ], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
         return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
     }
+    fixPm2(secret) {
+        if (!secret || secret !== DEPLOY_SECRET) {
+            throw new common_1.UnauthorizedException('Invalid deploy secret');
+        }
+        const pm2Cmd = `${process.env.APPDATA}\\npm\\pm2.cmd`;
+        const projectPath = process.cwd();
+        const tempDir = process.env.TEMP ?? `${process.env.USERPROFILE}\\AppData\\Local\\Temp`;
+        const scriptPath = path.join(tempDir, 'isp-pm2-full-reset.ps1');
+        const script = `Start-Sleep -Seconds 10\r\n` +
+            `& "${pm2Cmd}" kill\r\n` +
+            `Start-Sleep -Seconds 5\r\n` +
+            `Set-Location "${projectPath}"\r\n` +
+            `& "${pm2Cmd}" start ecosystem.config.js\r\n` +
+            `& "${pm2Cmd}" save\r\n`;
+        (0, fs_1.writeFileSync)(scriptPath, script);
+        const future = new Date(Date.now() + 30000);
+        const timeStr = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
+        const dateStr = `${String(future.getMonth() + 1).padStart(2, '0')}/${String(future.getDate()).padStart(2, '0')}/${future.getFullYear()}`;
+        (0, child_process_1.spawn)('schtasks', [
+            '/create', '/f',
+            '/tn', 'ISP-PM2-Full-Reset',
+            '/sc', 'once',
+            '/sd', dateStr,
+            '/st', timeStr,
+            '/tr', `powershell.exe -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`,
+        ], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
+        return {
+            ok: true,
+            message: `PM2 full reset scheduled at ${timeStr} — all services will restart in ~30-60s`,
+        };
+    }
     runUpdate() {
         const scriptPath = path.join(process.cwd(), 'update.ps1');
         (0, fs_1.mkdirSync)(path.dirname(this.logFile), { recursive: true });
@@ -158,6 +189,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DeployController.prototype, "restart", null);
+__decorate([
+    (0, common_1.Post)('fix-pm2'),
+    (0, common_1.HttpCode)(200),
+    __param(0, (0, common_1.Headers)('x-deploy-secret')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], DeployController.prototype, "fixPm2", null);
 exports.DeployController = DeployController = __decorate([
     (0, common_1.Controller)('deploy')
 ], DeployController);

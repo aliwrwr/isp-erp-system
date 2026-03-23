@@ -100,6 +100,55 @@ export class DeployController {
     return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
   }
 
+  // ── full PM2 daemon reset (kills all, restarts from ecosystem.config.js) ──
+
+  @Post('fix-pm2')
+  @HttpCode(200)
+  fixPm2(@Headers('x-deploy-secret') secret: string) {
+    if (!secret || secret !== DEPLOY_SECRET) {
+      throw new UnauthorizedException('Invalid deploy secret');
+    }
+
+    const pm2Cmd = `${process.env.APPDATA}\\npm\\pm2.cmd`;
+    const projectPath = process.cwd();
+    const tempDir = process.env.TEMP ?? `${process.env.USERPROFILE}\\AppData\\Local\\Temp`;
+    const scriptPath = path.join(tempDir, 'isp-pm2-full-reset.ps1');
+
+    // Write a script that kills the PM2 daemon and starts from scratch.
+    // This runs OUTSIDE PM2 (via schtasks/svchost) so it survives pm2 kill.
+    const script =
+      `Start-Sleep -Seconds 10\r\n` +
+      `& "${pm2Cmd}" kill\r\n` +
+      `Start-Sleep -Seconds 5\r\n` +
+      `Set-Location "${projectPath}"\r\n` +
+      `& "${pm2Cmd}" start ecosystem.config.js\r\n` +
+      `& "${pm2Cmd}" save\r\n`;
+
+    writeFileSync(scriptPath, script);
+
+    const future = new Date(Date.now() + 30000);
+    const timeStr = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
+    const dateStr = `${String(future.getMonth() + 1).padStart(2, '0')}/${String(future.getDate()).padStart(2, '0')}/${future.getFullYear()}`;
+
+    spawn(
+      'schtasks',
+      [
+        '/create', '/f',
+        '/tn', 'ISP-PM2-Full-Reset',
+        '/sc', 'once',
+        '/sd', dateStr,
+        '/st', timeStr,
+        '/tr', `powershell.exe -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`,
+      ],
+      { stdio: 'ignore', windowsHide: true, detached: true },
+    ).unref();
+
+    return {
+      ok: true,
+      message: `PM2 full reset scheduled at ${timeStr} — all services will restart in ~30-60s`,
+    };
+  }
+
   // ── shared update logic ────────────────────────────────────────────
 
   private runUpdate() {
