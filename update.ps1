@@ -62,14 +62,15 @@ Write-Host "[2/3] Installing packages..." -ForegroundColor Yellow
 Set-Location $projectPath
 npm install --omit=dev
 Set-Location $frontendPath
-npm install --omit=dev
+npm install --omit=dev --legacy-peer-deps
 Set-Location $projectPath
 Write-Host "Done." -ForegroundColor Green
 
-# Step 3: Restart services (reload from ecosystem config so env vars are refreshed)
+# Step 3: Restart services (start new apps + reload existing ones)
 Write-Host ""
 Write-Host "[3/3] Restarting services..." -ForegroundColor Yellow
 Set-Location $projectPath
+pm2 start ecosystem.config.js
 pm2 reload ecosystem.config.js --update-env
 pm2 save
 Write-Host "Done." -ForegroundColor Green
