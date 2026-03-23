@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 // Permission mapping for routes
@@ -169,8 +169,11 @@ const routes = [
   { path: '/:pathMatch(.*)*', redirect: '/login' },
 ];
 
+// استخدام hash history في Electron (file://) وweb history في المتصفح
 const router = createRouter({
-  history: createWebHistory(),
+  history: typeof window !== 'undefined' && window.location.protocol === 'file:'
+    ? createWebHashHistory()
+    : createWebHistory(),
   routes,
 });
 

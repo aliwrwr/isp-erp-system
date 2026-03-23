@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'ISP ERP',
   webDir: 'dist',
   server: {
-    url: 'http://192.200.251.111:5173',
+    url: 'http://192.200.251.4:8080',
     cleartext: true,
   },
   android: {
