@@ -34,3 +34,54 @@ body { background-color: #F5F7FA; margin: 0; }
 .slide-enter-active, .slide-leave-active { transition: transform 0.3s ease; }
 .slide-enter-from { transform: translateX(-100%); }
 .slide-leave-to { transform: translateX(-100%); }
+
+/* ===== توافقية الموبايل والمسّ ===== */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* جداول قابلة للتمرير على الشاشات الصغيرة */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* تحسين الأزرار للمس */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* منع تحديد النص غير المرغوب فيه على الموبايل */
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* تحسين الـ Safe Area لأجهزة iPhone X وما بعدها */
+@supports (padding-top: env(safe-area-inset-top)) {
+  header.sticky {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* modal كامل على الموبايل */
+@media (max-width: 640px) {
+  .modal-mobile-full {
+    position: fixed !important;
+    inset: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+  /* تصغير الجداول على الموبايل */
+  table { font-size: 12px; }
+  th, td { padding: 8px 10px !important; }
+}
+
+/* Capacitor / Electron - إخفاء شريط التمرير في حالات معينة */
+.capacitor-hide-scrollbar::-webkit-scrollbar { display: none; }
+.capacitor-hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

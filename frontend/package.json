@@ -1,14 +1,59 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:android": "npm run cap:sync && npx cap open android",
+    "cap:ios": "npm run cap:sync && npx cap open ios",
+    "electron:dev": "cross-env NODE_ENV=development electron electron/main.js",
+    "electron:build": "npm run build && electron-builder --win --mac --linux",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.isperp.app",
+    "productName": "ISP ERP",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/favicon.svg"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/favicon.svg"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/favicon.svg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerLanguages": [
+        "ar"
+      ],
+      "language": "1025"
+    }
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
     "axios": "^1.7.0",
     "chart.js": "^4.5.1",
     "pinia": "^3.0.0",
@@ -23,10 +68,12 @@
     "@types/node": "^24.12.0",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vue/tsconfig": "^0.9.0",
+    "cross-env": "^10.1.0",
     "postcss": "^8.5.0",
     "postcss-color-mix": "^1.1.0",
     "typescript": "~5.9.3",
     "vite": "^8.0.0",
+    "vite-plugin-pwa": "^0.21.0",
     "vue-tsc": "^3.2.5"
   }
 }
