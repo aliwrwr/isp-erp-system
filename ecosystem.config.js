@@ -45,5 +45,22 @@ module.exports = {
       out_file: './logs/frontend-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
     },
+
+    // ─── Frontend (port 8080 - للتوافق مع PC2) ──────────────────────
+    {
+      name: 'isp-frontend-8080',
+      script: 'serve.cjs',
+      cwd: __dirname + '/frontend',
+      watch: false,
+      autorestart: true,
+      restart_delay: 3000,
+      max_restarts: 10,
+      env: {
+        NODE_ENV: 'production',
+      },
+      error_file: './logs/frontend8080-error.log',
+      out_file: './logs/frontend8080-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+    },
   ],
 };
