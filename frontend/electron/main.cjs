@@ -24,8 +24,7 @@ function createWindow() {
   Menu.setApplicationMenu(null);
 
   if (isDev) {
-    win.loadURL('http://localhost:5180');
-    win.webContents.openDevTools();
+    win.loadFile(path.join(__dirname, '../dist/index.html'));
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }

@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// file:// protocol (Electron) has empty hostname — fallback to localhost
+const hostname = window.location.hostname || 'localhost';
+
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL as string) || `http://${window.location.hostname}:3000`,
+  baseURL: (import.meta.env.VITE_API_URL as string) || `http://${hostname}:3000`,
   headers: { 'Content-Type': 'application/json' },
 });
 
