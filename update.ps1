@@ -66,12 +66,18 @@ npm install --omit=dev --legacy-peer-deps
 Set-Location $projectPath
 Write-Host "Done." -ForegroundColor Green
 
-# Step 3: Restart services (start new apps + reload existing ones)
+# Step 3: Restart services
 Write-Host ""
 Write-Host "[3/3] Restarting services..." -ForegroundColor Yellow
 Set-Location $projectPath
-pm2 start ecosystem.config.js
-pm2 reload ecosystem.config.js --update-env
+
+# Delete any stale/corrupt isp-frontend-8080 entry, then start it fresh
+pm2 delete isp-frontend-8080 2>&1 | Out-Null
+pm2 start ecosystem.config.js --only isp-frontend-8080
+
+# Reload existing backend + isp-frontend processes
+pm2 reload isp-backend --update-env
+pm2 reload isp-frontend --update-env
 pm2 save
 Write-Host "Done." -ForegroundColor Green
 
