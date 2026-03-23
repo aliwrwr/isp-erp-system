@@ -47,10 +47,12 @@ export default defineConfig({
   ],
   server: {
     host: true,   // يسمح بالوصول من الشبكة المحلية
-    port: 5173,
+    port: 5180,
+    strictPort: true,
   },
   preview: {
-    host: true,   // يسمح بالوصول من الشبكة المحلية في وضع الإنتاج
-    port: 5173,
+    host: true,
+    port: 5180,
+    strictPort: true,
   },
 })

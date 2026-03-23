@@ -5,9 +5,8 @@ const config: CapacitorConfig = {
   appName: 'ISP ERP',
   webDir: 'dist',
   server: {
-    // للتطوير: اكتب عنوان IP الخاص بالسيرفر هنا
-    // url: 'http://192.168.1.100:5173',
-    // cleartext: true,
+    url: 'http://192.200.251.4:3000',
+    cleartext: true,
   },
   android: {
     allowMixedContent: true,
