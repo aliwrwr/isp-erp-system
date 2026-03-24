@@ -1,4 +1,5 @@
 // Static file server for Vue SPA — serves over HTTPS if ssl/ certs exist, else HTTP
+// Also proxies /api/* requests to the NestJS backend on port 3000 (avoids Mixed Content)
 const http  = require('http');
 const https = require('https');
 const fs    = require('fs');
@@ -28,6 +29,28 @@ const MIME = {
 };
 
 function requestHandler(req, res) {
+  // Proxy /api/* → http://127.0.0.1:3000/* (avoids Mixed Content on HTTPS)
+  if (req.url.startsWith('/api')) {
+    const backendPath = req.url.slice(4) || '/'; // strip /api prefix
+    const options = {
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: backendPath,
+      method: req.method,
+      headers: Object.assign({}, req.headers, { host: '127.0.0.1:3000' }),
+    };
+    const proxyReq = http.request(options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res);
+    });
+    proxyReq.on('error', () => {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Backend unavailable', statusCode: 502 }));
+    });
+    req.pipe(proxyReq);
+    return;
+  }
+
   // Strip query string
   const url = req.url.split('?')[0];
   let filePath = path.join(DIST, url === '/' ? 'index.html' : url);
