@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Headers, UnauthorizedException, HttpCode, UseGuards } from '@nestjs/common';
-import { spawn } from 'child_process';
-import { readFileSync, writeFileSync, mkdirSync, openSync, closeSync, existsSync } from 'fs';
+import { spawn, execSync } from 'child_process';
+import { readFileSync, writeFileSync, mkdirSync, openSync, closeSync, existsSync, readdirSync } from 'fs';
 import * as path from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -98,6 +98,33 @@ export class DeployController {
     ).unref();
 
     return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
+  }
+
+  // ── status check — shows git HEAD, ssl files, cwd ─────────────────
+
+  @Get('status')
+  getStatus(@Headers('x-deploy-secret') secret: string) {
+    if (!secret || secret !== DEPLOY_SECRET) {
+      throw new UnauthorizedException('Invalid deploy secret');
+    }
+    const cwd = process.cwd();
+    const sslDir = path.join(cwd, 'frontend', 'ssl');
+    let gitHead = 'unknown';
+    try { gitHead = execSync('git rev-parse --short HEAD', { cwd, encoding: 'utf8' }).trim(); } catch {}
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fsNative = require('fs');
+    const sslFiles = existsSync(sslDir)
+      ? readdirSync(sslDir).map(f => {
+          try { return `${f} (${fsNative.statSync(path.join(sslDir, f)).size}b)`; }
+          catch { return f; }
+        })
+      : ['ssl/ not found'];
+    return {
+      ok: true, gitHead, cwd, sslDir,
+      sslFiles,
+      sslCrtExists: existsSync(path.join(sslDir, 'server.crt')),
+      sslKeyExists: existsSync(path.join(sslDir, 'server.key')),
+    };
   }
 
   // ── full PM2 daemon reset (kills all, restarts from ecosystem.config.js) ──

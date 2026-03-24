@@ -20,6 +20,15 @@ export declare class DeployController {
         ok: boolean;
         message: string;
     };
+    getStatus(secret: string): {
+        ok: boolean;
+        gitHead: string;
+        cwd: string;
+        sslDir: string;
+        sslFiles: string[];
+        sslCrtExists: boolean;
+        sslKeyExists: boolean;
+    };
     fixPm2(secret: string): {
         ok: boolean;
         message: string;

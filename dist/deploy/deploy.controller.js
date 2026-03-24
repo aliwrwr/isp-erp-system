@@ -106,6 +106,35 @@ let DeployController = class DeployController {
         ], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
         return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
     }
+    getStatus(secret) {
+        if (!secret || secret !== DEPLOY_SECRET) {
+            throw new common_1.UnauthorizedException('Invalid deploy secret');
+        }
+        const cwd = process.cwd();
+        const sslDir = path.join(cwd, 'frontend', 'ssl');
+        let gitHead = 'unknown';
+        try {
+            gitHead = (0, child_process_1.execSync)('git rev-parse --short HEAD', { cwd, encoding: 'utf8' }).trim();
+        }
+        catch { }
+        const fsNative = require('fs');
+        const sslFiles = (0, fs_1.existsSync)(sslDir)
+            ? (0, fs_1.readdirSync)(sslDir).map(f => {
+                try {
+                    return `${f} (${fsNative.statSync(path.join(sslDir, f)).size}b)`;
+                }
+                catch {
+                    return f;
+                }
+            })
+            : ['ssl/ not found'];
+        return {
+            ok: true, gitHead, cwd, sslDir,
+            sslFiles,
+            sslCrtExists: (0, fs_1.existsSync)(path.join(sslDir, 'server.crt')),
+            sslKeyExists: (0, fs_1.existsSync)(path.join(sslDir, 'server.key')),
+        };
+    }
     fixPm2(secret) {
         if (!secret || secret !== DEPLOY_SECRET) {
             throw new common_1.UnauthorizedException('Invalid deploy secret');
@@ -189,6 +218,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DeployController.prototype, "restart", null);
+__decorate([
+    (0, common_1.Get)('status'),
+    __param(0, (0, common_1.Headers)('x-deploy-secret')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], DeployController.prototype, "getStatus", null);
 __decorate([
     (0, common_1.Post)('fix-pm2'),
     (0, common_1.HttpCode)(200),
