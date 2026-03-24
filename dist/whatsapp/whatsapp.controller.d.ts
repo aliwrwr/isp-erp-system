@@ -28,6 +28,10 @@ export declare class WhatsappController {
         success: boolean;
         message: string;
     }>;
+    send(dto: SendTestMessageDto): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     getSettings(): Promise<import("./entities/whatsapp-settings.entity").WhatsappSettings>;
     updateSettings(dto: UpdateWhatsappSettingsDto): Promise<import("./entities/whatsapp-settings.entity").WhatsappSettings>;
     getExpiring(days?: string): Promise<any[]>;

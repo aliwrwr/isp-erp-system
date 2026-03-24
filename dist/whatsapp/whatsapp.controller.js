@@ -51,6 +51,13 @@ let WhatsappController = class WhatsappController {
             message: sent ? 'تم إرسال الرسالة بنجاح' : 'فشل الإرسال — تأكد من الاتصال',
         };
     }
+    async send(dto) {
+        const sent = await this.whatsappService.sendMessage(dto.phone, dto.message);
+        return {
+            success: sent,
+            message: sent ? 'تم إرسال الرسالة بنجاح' : 'فشل الإرسال — تأكد من الاتصال',
+        };
+    }
     getSettings() {
         return this.whatsappService.getSettings();
     }
@@ -121,6 +128,13 @@ __decorate([
     __metadata("design:paramtypes", [send_test_dto_1.SendTestMessageDto]),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "sendTest", null);
+__decorate([
+    (0, common_1.Post)('send'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [send_test_dto_1.SendTestMessageDto]),
+    __metadata("design:returntype", Promise)
+], WhatsappController.prototype, "send", null);
 __decorate([
     (0, common_1.Get)('settings'),
     __metadata("design:type", Function),

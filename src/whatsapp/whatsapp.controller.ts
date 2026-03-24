@@ -63,6 +63,16 @@ export class WhatsappController {
     };
   }
 
+  /** Send a message (alias used by Dashboard quick-send) */
+  @Post('send')
+  async send(@Body() dto: SendTestMessageDto) {
+    const sent = await this.whatsappService.sendMessage(dto.phone, dto.message);
+    return {
+      success: sent,
+      message: sent ? 'تم إرسال الرسالة بنجاح' : 'فشل الإرسال — تأكد من الاتصال',
+    };
+  }
+
   /** Get notification settings */
   @Get('settings')
   getSettings() {

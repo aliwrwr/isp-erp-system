@@ -97,6 +97,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.client.on('qr', async (qr: string) => {
         this.logger.log('WhatsApp QR code received — scan to connect');
         this.isConnected = false;
+        this.isInitializing = false; // QR visible — no longer "initializing"
         try {
           this.qrDataUrl = await QRCode.toDataURL(qr, { scale: 6 });
         } catch (err) {
@@ -106,6 +107,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('ready', () => {
         this.isConnected = true;
+        this.isInitializing = false;
         this.qrDataUrl = null;
         const info = (this.client as any)?.info;
         this.phoneNumber = info?.wid?.user ?? null;
@@ -116,25 +118,33 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('authenticated', () => {
         this.logger.log('WhatsApp authenticated');
+        this.isInitializing = false;
       });
 
       this.client.on('auth_failure', (msg: any) => {
         this.logger.error(`WhatsApp auth failure: ${msg}`);
         this.isConnected = false;
+        this.isInitializing = false;
       });
 
       this.client.on('disconnected', (reason: any) => {
         this.logger.warn(`WhatsApp disconnected: ${reason}`);
         this.isConnected = false;
+        this.isInitializing = false;
         this.phoneNumber = null;
         this.qrDataUrl = null;
       });
 
-      await this.client.initialize();
+      // initialize() runs in background — do NOT await it
+      // isInitializing stays true until qr/ready/auth_failure fires
+      this.client.initialize().catch((err) => {
+        this.logger.error('WhatsApp client initialization failed', err);
+        this.isConnected = false;
+        this.isInitializing = false;
+      });
     } catch (err) {
-      this.logger.error('WhatsApp client initialization failed', err);
+      this.logger.error('WhatsApp client setup failed', err);
       this.isConnected = false;
-    } finally {
       this.isInitializing = false;
     }
   }
@@ -142,7 +152,8 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   async disconnect(): Promise<void> {
     if (this.client) {
       try {
-        await this.client.logout();
+        // destroy() stops the browser without revoking the session,
+        // so next connect() reuses the saved auth (no QR needed)
         await this.client.destroy();
       } catch (_) {
         // ignore
@@ -150,6 +161,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.client = null;
     }
     this.isConnected = false;
+    this.isInitializing = false;
     this.qrDataUrl = null;
     this.phoneNumber = null;
   }
@@ -159,14 +171,12 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
    * so a fresh QR code is generated for a new phone.
    */
   async changeDevice(): Promise<void> {
-    // Destroy existing client
+    // Forcefully stop any running client
     if (this.client) {
-      try {
-        await this.client.logout();
-        await this.client.destroy();
-      } catch (_) {}
+      try { await this.client.destroy(); } catch (_) {}
       this.client = null;
     }
+    // Reset all state — must set isInitializing=false so initializeClient() won't be blocked
     this.isConnected = false;
     this.qrDataUrl = null;
     this.phoneNumber = null;

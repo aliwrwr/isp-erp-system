@@ -124,6 +124,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.client.on('qr', async (qr) => {
                 this.logger.log('WhatsApp QR code received — scan to connect');
                 this.isConnected = false;
+                this.isInitializing = false;
                 try {
                     this.qrDataUrl = await QRCode.toDataURL(qr, { scale: 6 });
                 }
@@ -133,6 +134,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             });
             this.client.on('ready', () => {
                 this.isConnected = true;
+                this.isInitializing = false;
                 this.qrDataUrl = null;
                 const info = this.client?.info;
                 this.phoneNumber = info?.wid?.user ?? null;
@@ -140,31 +142,35 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             });
             this.client.on('authenticated', () => {
                 this.logger.log('WhatsApp authenticated');
+                this.isInitializing = false;
             });
             this.client.on('auth_failure', (msg) => {
                 this.logger.error(`WhatsApp auth failure: ${msg}`);
                 this.isConnected = false;
+                this.isInitializing = false;
             });
             this.client.on('disconnected', (reason) => {
                 this.logger.warn(`WhatsApp disconnected: ${reason}`);
                 this.isConnected = false;
+                this.isInitializing = false;
                 this.phoneNumber = null;
                 this.qrDataUrl = null;
             });
-            await this.client.initialize();
+            this.client.initialize().catch((err) => {
+                this.logger.error('WhatsApp client initialization failed', err);
+                this.isConnected = false;
+                this.isInitializing = false;
+            });
         }
         catch (err) {
-            this.logger.error('WhatsApp client initialization failed', err);
+            this.logger.error('WhatsApp client setup failed', err);
             this.isConnected = false;
-        }
-        finally {
             this.isInitializing = false;
         }
     }
     async disconnect() {
         if (this.client) {
             try {
-                await this.client.logout();
                 await this.client.destroy();
             }
             catch (_) {
@@ -172,13 +178,13 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.client = null;
         }
         this.isConnected = false;
+        this.isInitializing = false;
         this.qrDataUrl = null;
         this.phoneNumber = null;
     }
     async changeDevice() {
         if (this.client) {
             try {
-                await this.client.logout();
                 await this.client.destroy();
             }
             catch (_) { }
