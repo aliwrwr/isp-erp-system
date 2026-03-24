@@ -42,15 +42,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 "[1/3] Done." | Out-File $logFile -Append -Encoding utf8
 
-# Step 2: Install packages (only if package.json changed)
-"[2/3] npm install..." | Out-File $logFile -Append -Encoding utf8
-Set-Location $projectPath
-npm install --omit=dev --prefer-offline 2>&1 | Out-File $logFile -Append -Encoding utf8
-Set-Location $frontendPath
-npm install --omit=dev --legacy-peer-deps --prefer-offline 2>&1 | Out-File $logFile -Append -Encoding utf8
-Set-Location $projectPath
-"[2/3] Done." | Out-File $logFile -Append -Encoding utf8
-
 # Step 2b: SSL certs
 $sslKey = "$frontendPath\ssl\server.key"
 if (-not (Test-Path $sslKey)) {
@@ -63,8 +54,8 @@ if (-not (Test-Path $sslKey)) {
     "[SSL] Certificate exists, skipping." | Out-File $logFile -Append -Encoding utf8
 }
 
-# Step 3: Restart services (stop+start is more reliable than reload on Windows)
-"[3/3] Restarting PM2 services..." | Out-File $logFile -Append -Encoding utf8
+# Step 2: Restart services (stop+start is more reliable than reload on Windows)
+"[2/2] Restarting PM2 services..." | Out-File $logFile -Append -Encoding utf8
 Set-Location $projectPath
 pm2 delete isp-frontend-8080 2>&1 | Out-Null
 pm2 stop isp-backend 2>&1 | Out-File $logFile -Append -Encoding utf8
@@ -74,10 +65,10 @@ pm2 start isp-backend 2>&1 | Out-File $logFile -Append -Encoding utf8
 pm2 start isp-frontend 2>&1 | Out-File $logFile -Append -Encoding utf8
 pm2 start ecosystem.config.js --only isp-frontend-8080 2>&1 | Out-File $logFile -Append -Encoding utf8
 pm2 save 2>&1 | Out-File $logFile -Append -Encoding utf8
-"[3/3] Done." | Out-File $logFile -Append -Encoding utf8
+"[2/2] Done." | Out-File $logFile -Append -Encoding utf8
 
 $ts2 = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-"[$ts2] Update completed. http://${PC2_IP}:8080" | Out-File $logFile -Append -Encoding utf8
+"[$ts2] Update completed. https://${PC2_IP}:8080" | Out-File $logFile -Append -Encoding utf8
 
 
 
