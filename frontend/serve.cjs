@@ -32,12 +32,22 @@ function requestHandler(req, res) {
   // Proxy /api/* → http://127.0.0.1:3000/* (avoids Mixed Content on HTTPS)
   if (req.url.startsWith('/api')) {
     const backendPath = req.url.slice(4) || '/'; // strip /api prefix
+    // Build clean headers — strip HTTPS-specific and hop-by-hop headers
+    // that confuse the NestJS backend (especially Origin which triggers CORS crashes)
+    const fwdHeaders = {};
+    const skip = new Set(['origin', 'referer', 'connection', 'upgrade-insecure-requests',
+                          'sec-fetch-site', 'sec-fetch-mode', 'sec-fetch-dest', 'sec-fetch-user']);
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (!skip.has(k.toLowerCase())) fwdHeaders[k] = v;
+    }
+    fwdHeaders['host'] = '127.0.0.1:3000';
+
     const options = {
       hostname: '127.0.0.1',
       port: 3000,
       path: backendPath,
       method: req.method,
-      headers: Object.assign({}, req.headers, { host: '127.0.0.1:3000' }),
+      headers: fwdHeaders,
     };
     const proxyReq = http.request(options, (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
