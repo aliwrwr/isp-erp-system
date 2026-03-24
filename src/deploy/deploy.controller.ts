@@ -71,9 +71,14 @@ export class DeployController {
     // Write restart script to disk
     writeFileSync(
       scriptPath,
-      `& "${pm2}" restart isp-backend\r\n` +
-      `Start-Sleep -Seconds 8\r\n` +
-      `& "${pm2}" restart isp-frontend\r\n` +
+      `Set-Location "D:\\isp-erp-system"\r\n` +
+      `& "${pm2}" stop isp-backend\r\n` +
+      `& "${pm2}" stop isp-frontend\r\n` +
+      `& "${pm2}" stop isp-frontend-8080\r\n` +
+      `Start-Sleep -Seconds 3\r\n` +
+      `& "${pm2}" start isp-backend\r\n` +
+      `& "${pm2}" start isp-frontend\r\n` +
+      `& "${pm2}" start isp-frontend-8080\r\n` +
       `& "${pm2}" save\r\n`,
     );
 

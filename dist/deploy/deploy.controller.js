@@ -89,9 +89,14 @@ let DeployController = class DeployController {
         const pm2 = `${process.env.APPDATA}\\npm\\pm2.cmd`;
         const tempDir = process.env.TEMP ?? `${process.env.USERPROFILE}\\AppData\\Local\\Temp`;
         const scriptPath = path.join(tempDir, 'isp-pm2-restart.ps1');
-        (0, fs_1.writeFileSync)(scriptPath, `& "${pm2}" restart isp-backend\r\n` +
-            `Start-Sleep -Seconds 8\r\n` +
-            `& "${pm2}" restart isp-frontend\r\n` +
+        (0, fs_1.writeFileSync)(scriptPath, `Set-Location "D:\\isp-erp-system"\r\n` +
+            `& "${pm2}" stop isp-backend\r\n` +
+            `& "${pm2}" stop isp-frontend\r\n` +
+            `& "${pm2}" stop isp-frontend-8080\r\n` +
+            `Start-Sleep -Seconds 3\r\n` +
+            `& "${pm2}" start isp-backend\r\n` +
+            `& "${pm2}" start isp-frontend\r\n` +
+            `& "${pm2}" start isp-frontend-8080\r\n` +
             `& "${pm2}" save\r\n`);
         const future = new Date(Date.now() + 120000);
         const timeStr = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
