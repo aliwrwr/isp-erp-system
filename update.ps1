@@ -1,29 +1,20 @@
 # ===========================================
 # ISP ERP System - Update Script (PC2)
-# Run this file on PC2 after every update
 # ===========================================
 
 $PC2_IP       = "192.200.251.4"
 $projectPath  = "D:\isp-erp-system"
 $frontendPath = "$projectPath\frontend"
 
-# ─── Logging: capture ALL output to a transcript file ─────────
-$logsDir  = "$projectPath\logs"
-$logFile  = "$logsDir\deploy-update.log"
+# Write a simple log file (no transcript - avoid file locking issues)
+$logsDir = "$projectPath\logs"
 New-Item -ItemType Directory -Path $logsDir -Force -ErrorAction SilentlyContinue | Out-Null
-Start-Transcript -Path $logFile -Force | Out-Null
-Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] update.ps1 started"
-
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "   ISP ERP System - Update PC2"          -ForegroundColor Cyan
-Write-Host "   $PC2_IP"                              -ForegroundColor Cyan
-Write-Host "========================================"  -ForegroundColor Cyan
-Write-Host ""
+$logFile = "$logsDir\deploy-update.log"
+$ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+"[$ts] update.ps1 started" | Out-File $logFile -Encoding utf8 -Force
 
 if (-not (Test-Path $projectPath)) {
-    Write-Host "ERROR: Folder not found: $projectPath" -ForegroundColor Red
-    exit 1
+    "[ERROR] Folder not found: $projectPath" | Out-File $logFile -Append -Encoding utf8; exit 1
 }
 
 Set-Location $projectPath
@@ -32,74 +23,61 @@ Set-Location $projectPath
 $dbFile = "$projectPath\isp-erp.sqlite"
 if (Test-Path $dbFile) {
     $backupDir = "$projectPath\backups"
-    if (-not (Test-Path $backupDir)) {
-        New-Item -ItemType Directory -Path $backupDir | Out-Null
-    }
+    New-Item -ItemType Directory -Path $backupDir -Force -ErrorAction SilentlyContinue | Out-Null
     $timestamp  = Get-Date -Format "yyyy-MM-dd_HH-mm"
     $backupFile = "$backupDir\isp-erp_$timestamp.sqlite"
     Copy-Item $dbFile $backupFile
-    Write-Host "[0/5] Database backup: backups\isp-erp_$timestamp.sqlite" -ForegroundColor Cyan
-    Get-ChildItem "$backupDir\*.sqlite" |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -Skip 10 |
-        Remove-Item -Force
+    "[0] DB backup: $backupFile" | Out-File $logFile -Append -Encoding utf8
+    Get-ChildItem "$backupDir\*.sqlite" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 10 | Remove-Item -Force
 }
 
 # Step 1: Pull latest code from GitHub
-Write-Host "[1/3] Pulling latest code from GitHub..." -ForegroundColor Yellow
-git fetch origin
-git reset --hard origin/main
-git clean -fd
+"[1/3] git pull..." | Out-File $logFile -Append -Encoding utf8
+Set-Location $projectPath
+$gitOut = git fetch origin 2>&1 ; $gitOut | Out-File $logFile -Append -Encoding utf8
+$gitOut2 = git reset --hard origin/main 2>&1 ; $gitOut2 | Out-File $logFile -Append -Encoding utf8
+$gitOut3 = git clean -fd 2>&1 ; $gitOut3 | Out-File $logFile -Append -Encoding utf8
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: git pull failed. Check internet connection." -ForegroundColor Red
-    exit 1
+    "[ERROR] git failed" | Out-File $logFile -Append -Encoding utf8; exit 1
 }
-Write-Host "Done." -ForegroundColor Green
+"[1/3] Done." | Out-File $logFile -Append -Encoding utf8
 
-# Step 2: Install backend runtime packages (no build needed - dist/ shipped via git)
-Write-Host ""
-Write-Host "[2/3] Installing packages..." -ForegroundColor Yellow
+# Step 2: Install packages
+"[2/3] npm install..." | Out-File $logFile -Append -Encoding utf8
 Set-Location $projectPath
-npm install --omit=dev
+npm install --omit=dev 2>&1 | Out-File $logFile -Append -Encoding utf8
 Set-Location $frontendPath
-npm install --omit=dev --legacy-peer-deps
+npm install --omit=dev --legacy-peer-deps 2>&1 | Out-File $logFile -Append -Encoding utf8
 Set-Location $projectPath
-Write-Host "Done." -ForegroundColor Green
+"[2/3] Done." | Out-File $logFile -Append -Encoding utf8
 
-# Step 2b: Generate SSL certs for HTTPS (PWA support on other devices)
-$sslDir  = "$frontendPath\ssl"
-$sslKey  = "$sslDir\server.key"
+# Step 2b: SSL certs
+$sslKey = "$frontendPath\ssl\server.key"
 if (-not (Test-Path $sslKey)) {
-    Write-Host ""
-    Write-Host "[SSL] Generating HTTPS certificate for PWA support..." -ForegroundColor Yellow
+    "[SSL] Generating certificate..." | Out-File $logFile -Append -Encoding utf8
     Set-Location $frontendPath
-    node generate-ssl.cjs
+    node generate-ssl.cjs 2>&1 | Out-File $logFile -Append -Encoding utf8
     Set-Location $projectPath
-    Write-Host "[SSL] Done." -ForegroundColor Green
+    "[SSL] Done." | Out-File $logFile -Append -Encoding utf8
 } else {
-    Write-Host "[SSL] Certificate already exists — skipping generation." -ForegroundColor DarkGray
+    "[SSL] Certificate exists, skipping." | Out-File $logFile -Append -Encoding utf8
 }
 
-# Step 3: Restart services
-Write-Host ""
-Write-Host "[3/3] Restarting services..." -ForegroundColor Yellow
+# Step 3: Restart services (stop+start is more reliable than reload on Windows)
+"[3/3] Restarting PM2 services..." | Out-File $logFile -Append -Encoding utf8
 Set-Location $projectPath
-
-# Delete any stale/corrupt isp-frontend-8080 entry, then start it fresh
 pm2 delete isp-frontend-8080 2>&1 | Out-Null
-pm2 start ecosystem.config.js --only isp-frontend-8080
+pm2 stop isp-backend 2>&1 | Out-File $logFile -Append -Encoding utf8
+pm2 stop isp-frontend 2>&1 | Out-File $logFile -Append -Encoding utf8
+Start-Sleep -Seconds 2
+pm2 start isp-backend 2>&1 | Out-File $logFile -Append -Encoding utf8
+pm2 start isp-frontend 2>&1 | Out-File $logFile -Append -Encoding utf8
+pm2 start ecosystem.config.js --only isp-frontend-8080 2>&1 | Out-File $logFile -Append -Encoding utf8
+pm2 save 2>&1 | Out-File $logFile -Append -Encoding utf8
+"[3/3] Done." | Out-File $logFile -Append -Encoding utf8
 
-# Reload existing backend + isp-frontend processes
-pm2 reload isp-backend --update-env
-pm2 reload isp-frontend --update-env
-pm2 save
-Write-Host "Done." -ForegroundColor Green
+$ts2 = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+"[$ts2] Update completed. http://${PC2_IP}:8080" | Out-File $logFile -Append -Encoding utf8
 
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Green
-Write-Host "   Update completed successfully!"        -ForegroundColor Green
-Write-Host "   http://${PC2_IP}:5173"                -ForegroundColor Green
-Write-Host "========================================"  -ForegroundColor Green
-Write-Host ""
 
-Stop-Transcript | Out-Null
+
