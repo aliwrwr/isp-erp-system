@@ -182,19 +182,21 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     this.phoneNumber = null;
     this.isInitializing = false;
 
-    // Wait briefly to let Chrome fully close before deleting session files
-    await new Promise(r => setTimeout(r, 1500));
-
-    // Delete saved session folder so a new QR is generated
+    // Load fs and path
     const fs = await import('fs');
     const path = await import('path');
     const sessionPath = path.resolve('.wwebjs_auth');
-    if (fs.existsSync(sessionPath)) {
+
+    // Wait and retry up to 10 seconds for Chrome to fully close before deleting session files
+    for (let i = 0; i < 10; i++) {
+      if (!fs.existsSync(sessionPath)) break;
       try {
         fs.rmSync(sessionPath, { recursive: true, force: true });
         this.logger.log('WhatsApp session data cleared for device change');
+        break;
       } catch (rmErr) {
-        this.logger.warn(`Could not delete session folder (will retry on next QR): ${rmErr}`);
+        this.logger.warn(`Could not delete session folder yet (locked?). Retrying... (${i + 1}/10)`);
+        await new Promise(r => setTimeout(r, 1000));
       }
     }
 

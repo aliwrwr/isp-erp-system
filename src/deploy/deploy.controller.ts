@@ -217,15 +217,15 @@ export class DeployController {
     // Truncate the log so the caller gets a fresh log for this run
     try { writeFileSync(this.logFile, ''); } catch { /* ignore */ }
 
-    // Schedule via schtasks — runs in svchost.exe, completely outside PM2 job
-    const future = new Date(Date.now() + 5000); // 5 second delay
-    const timeStr = `${String(future.getHours()).padStart(2,'0')}:${String(future.getMinutes()).padStart(2,'0')}`;
-    const dateStr = `${String(future.getMonth()+1).padStart(2,'0')}/${String(future.getDate()).padStart(2,'0')}/${future.getFullYear()}`;
-    const taskCmd = `powershell.exe -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`;
-
+    // Run using PowerShell Start-Process to escape PM2 job constraints
     spawn(
-      'schtasks',
-      ['/create', '/f', '/tn', 'ISP-Update', '/sc', 'once', '/sd', dateStr, '/st', timeStr, '/tr', taskCmd],
+      'powershell.exe',
+      [
+        '-NonInteractive',
+        '-ExecutionPolicy', 'Bypass',
+        '-Command',
+        `Start-Process powershell.exe -ArgumentList '-ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"' -WindowStyle Hidden`
+      ],
       { stdio: 'ignore', windowsHide: true, detached: true },
     ).unref();
 
