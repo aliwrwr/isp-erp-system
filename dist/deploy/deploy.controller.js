@@ -111,6 +111,26 @@ let DeployController = class DeployController {
         ], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
         return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
     }
+    gitPull(secret) {
+        if (!secret || secret !== DEPLOY_SECRET) {
+            throw new common_1.UnauthorizedException('Invalid deploy secret');
+        }
+        const cwd = process.cwd();
+        try {
+            const fetch = (0, child_process_1.execSync)('git fetch origin', { cwd, encoding: 'utf8', timeout: 30000 });
+            const reset = (0, child_process_1.execSync)('git reset --hard origin/main', { cwd, encoding: 'utf8', timeout: 30000 });
+            const clean = (0, child_process_1.execSync)('git clean -fd', { cwd, encoding: 'utf8', timeout: 10000 });
+            let gitHead = 'unknown';
+            try {
+                gitHead = (0, child_process_1.execSync)('git rev-parse --short HEAD', { cwd, encoding: 'utf8' }).trim();
+            }
+            catch { }
+            return { ok: true, gitHead, fetch, reset, clean };
+        }
+        catch (err) {
+            return { ok: false, error: String(err?.message ?? err) };
+        }
+    }
     getStatus(secret) {
         if (!secret || secret !== DEPLOY_SECRET) {
             throw new common_1.UnauthorizedException('Invalid deploy secret');
@@ -229,6 +249,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DeployController.prototype, "restart", null);
+__decorate([
+    (0, common_1.Post)('pull'),
+    (0, common_1.HttpCode)(200),
+    __param(0, (0, common_1.Headers)('x-deploy-secret')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], DeployController.prototype, "gitPull", null);
 __decorate([
     (0, common_1.Get)('status'),
     __param(0, (0, common_1.Headers)('x-deploy-secret')),

@@ -105,6 +105,27 @@ export class DeployController {
     return { ok: true, message: `PM2 restart scheduled at ${timeStr}` };
   }
 
+  // ── git-pull only (sync, no restart) — fallback when schtasks fails ──
+
+  @Post('pull')
+  @HttpCode(200)
+  gitPull(@Headers('x-deploy-secret') secret: string) {
+    if (!secret || secret !== DEPLOY_SECRET) {
+      throw new UnauthorizedException('Invalid deploy secret');
+    }
+    const cwd = process.cwd();
+    try {
+      const fetch = execSync('git fetch origin', { cwd, encoding: 'utf8', timeout: 30000 });
+      const reset = execSync('git reset --hard origin/main', { cwd, encoding: 'utf8', timeout: 30000 });
+      const clean = execSync('git clean -fd', { cwd, encoding: 'utf8', timeout: 10000 });
+      let gitHead = 'unknown';
+      try { gitHead = execSync('git rev-parse --short HEAD', { cwd, encoding: 'utf8' }).trim(); } catch {}
+      return { ok: true, gitHead, fetch, reset, clean };
+    } catch (err: any) {
+      return { ok: false, error: String(err?.message ?? err) };
+    }
+  }
+
   // ── status check — shows git HEAD, ssl files, cwd ─────────────────
 
   @Get('status')

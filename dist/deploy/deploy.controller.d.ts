@@ -20,6 +20,21 @@ export declare class DeployController {
         ok: boolean;
         message: string;
     };
+    gitPull(secret: string): {
+        ok: boolean;
+        gitHead: string;
+        fetch: string;
+        reset: string;
+        clean: string;
+        error?: undefined;
+    } | {
+        ok: boolean;
+        error: string;
+        gitHead?: undefined;
+        fetch?: undefined;
+        reset?: undefined;
+        clean?: undefined;
+    };
     getStatus(secret: string): {
         ok: boolean;
         gitHead: string;
