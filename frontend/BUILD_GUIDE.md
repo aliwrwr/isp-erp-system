@@ -79,3 +79,12 @@ npm run electron:build:linux
 - 📱 Android (Chrome)
 - 📱 iOS (Safari - "إضافة إلى الشاشة الرئيسية")
 - 💻 Windows/Mac/Linux (Chrome/Edge)
+PS D:\isp-erp-system> Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+Add-WindowsCapability : The requested operation requires elevation.
+At line:1 char:1
++ Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Add-WindowsCapability], COMException
+    + FullyQualifiedErrorId : Microsoft.Dism.Commands.AddWindowsCapabilityCommand
+
+PS D:\isp-erp-system>
