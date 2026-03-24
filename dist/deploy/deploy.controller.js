@@ -178,13 +178,15 @@ let DeployController = class DeployController {
     runUpdate() {
         const scriptPath = path.join(process.cwd(), 'update.ps1');
         (0, fs_1.mkdirSync)(path.dirname(this.logFile), { recursive: true });
-        const fd = (0, fs_1.openSync)(this.logFile, 'w');
-        const child = (0, child_process_1.spawn)('cmd.exe', ['/c', 'start', '', '/B', 'powershell.exe',
-            '-ExecutionPolicy', 'Bypass',
-            '-NonInteractive',
-            '-File', scriptPath], { detached: true, stdio: ['ignore', fd, fd], windowsHide: true });
-        (0, fs_1.closeSync)(fd);
-        child.unref();
+        try {
+            (0, fs_1.writeFileSync)(this.logFile, '');
+        }
+        catch { }
+        const future = new Date(Date.now() + 5000);
+        const timeStr = `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
+        const dateStr = `${String(future.getMonth() + 1).padStart(2, '0')}/${String(future.getDate()).padStart(2, '0')}/${future.getFullYear()}`;
+        const taskCmd = `powershell.exe -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`;
+        (0, child_process_1.spawn)('schtasks', ['/create', '/f', '/tn', 'ISP-Update', '/sc', 'once', '/sd', dateStr, '/st', timeStr, '/tr', taskCmd], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
         return { ok: true, message: 'التحديث بدأ — انتظر دقيقة ثم راجع السجل' };
     }
 };

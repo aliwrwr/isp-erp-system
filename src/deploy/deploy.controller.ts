@@ -186,21 +186,28 @@ export class DeployController {
   }
 
   // ── shared update logic ────────────────────────────────────────────
+  // Uses Windows Task Scheduler (schtasks) to run update.ps1 OUTSIDE
+  // PM2's job object — this is the ONLY reliable way to escape PM2 job
+  // restrictions on Windows and spawn a detached long-running process.
 
   private runUpdate() {
     const scriptPath = path.join(process.cwd(), 'update.ps1');
     mkdirSync(path.dirname(this.logFile), { recursive: true });
-    const fd = openSync(this.logFile, 'w');
-    const child = spawn(
-      'cmd.exe',
-      ['/c', 'start', '', '/B', 'powershell.exe',
-        '-ExecutionPolicy', 'Bypass',
-        '-NonInteractive',
-        '-File', scriptPath],
-      { detached: true, stdio: ['ignore', fd, fd], windowsHide: true },
-    );
-    closeSync(fd);
-    child.unref();
+    // Truncate the log so the caller gets a fresh log for this run
+    try { writeFileSync(this.logFile, ''); } catch { /* ignore */ }
+
+    // Schedule via schtasks — runs in svchost.exe, completely outside PM2 job
+    const future = new Date(Date.now() + 5000); // 5 second delay
+    const timeStr = `${String(future.getHours()).padStart(2,'0')}:${String(future.getMinutes()).padStart(2,'0')}`;
+    const dateStr = `${String(future.getMonth()+1).padStart(2,'0')}/${String(future.getDate()).padStart(2,'0')}/${future.getFullYear()}`;
+    const taskCmd = `powershell.exe -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"`;
+
+    spawn(
+      'schtasks',
+      ['/create', '/f', '/tn', 'ISP-Update', '/sc', 'once', '/sd', dateStr, '/st', timeStr, '/tr', taskCmd],
+      { stdio: 'ignore', windowsHide: true, detached: true },
+    ).unref();
+
     return { ok: true, message: 'التحديث بدأ — انتظر دقيقة ثم راجع السجل' };
   }
 }
