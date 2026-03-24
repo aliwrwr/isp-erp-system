@@ -149,6 +149,10 @@ let DeployController = class DeployController {
         const tempDir = process.env.TEMP ?? `${process.env.USERPROFILE}\\AppData\\Local\\Temp`;
         const scriptPath = path.join(tempDir, 'isp-pm2-full-reset.ps1');
         const script = `Start-Sleep -Seconds 10\r\n` +
+            `Set-Location "${projectPath}"\r\n` +
+            `git fetch origin\r\n` +
+            `git reset --hard origin/main\r\n` +
+            `git clean -fd\r\n` +
             `& "${pm2Cmd}" kill\r\n` +
             `Start-Sleep -Seconds 5\r\n` +
             `Set-Location "${projectPath}"\r\n` +
