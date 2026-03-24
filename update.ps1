@@ -42,12 +42,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 "[1/3] Done." | Out-File $logFile -Append -Encoding utf8
 
-# Step 2: Install packages
+# Step 2: Install packages (only if package.json changed)
 "[2/3] npm install..." | Out-File $logFile -Append -Encoding utf8
 Set-Location $projectPath
-npm install --omit=dev 2>&1 | Out-File $logFile -Append -Encoding utf8
+npm install --omit=dev --prefer-offline 2>&1 | Out-File $logFile -Append -Encoding utf8
 Set-Location $frontendPath
-npm install --omit=dev --legacy-peer-deps 2>&1 | Out-File $logFile -Append -Encoding utf8
+npm install --omit=dev --legacy-peer-deps --prefer-offline 2>&1 | Out-File $logFile -Append -Encoding utf8
 Set-Location $projectPath
 "[2/3] Done." | Out-File $logFile -Append -Encoding utf8
 
