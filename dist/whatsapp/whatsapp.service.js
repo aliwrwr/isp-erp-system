@@ -194,12 +194,18 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         this.qrDataUrl = null;
         this.phoneNumber = null;
         this.isInitializing = false;
+        await new Promise(r => setTimeout(r, 1500));
         const fs = await import('fs');
         const path = await import('path');
         const sessionPath = path.resolve('.wwebjs_auth');
         if (fs.existsSync(sessionPath)) {
-            fs.rmSync(sessionPath, { recursive: true, force: true });
-            this.logger.log('WhatsApp session data cleared for device change');
+            try {
+                fs.rmSync(sessionPath, { recursive: true, force: true });
+                this.logger.log('WhatsApp session data cleared for device change');
+            }
+            catch (rmErr) {
+                this.logger.warn(`Could not delete session folder (will retry on next QR): ${rmErr}`);
+            }
         }
         await this.initializeClient();
     }

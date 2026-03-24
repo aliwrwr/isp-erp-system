@@ -68,7 +68,7 @@ pm2 save 2>&1 | Out-File $logFile -Append -Encoding utf8
 "[2/2] Done." | Out-File $logFile -Append -Encoding utf8
 
 $ts2 = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-"[$ts2] Update completed. https://${PC2_IP}:8080" | Out-File $logFile -Append -Encoding utf8
+"[$ts2] Update completed successfully. https://${PC2_IP}:8080" | Out-File $logFile -Append -Encoding utf8
 
 
 
