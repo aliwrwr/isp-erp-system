@@ -66,6 +66,20 @@ npm install --omit=dev --legacy-peer-deps
 Set-Location $projectPath
 Write-Host "Done." -ForegroundColor Green
 
+# Step 2b: Generate SSL certs for HTTPS (PWA support on other devices)
+$sslDir  = "$frontendPath\ssl"
+$sslCert = "$sslDir\server.crt"
+if (-not (Test-Path $sslCert)) {
+    Write-Host ""
+    Write-Host "[SSL] Generating HTTPS certificate for PWA support..." -ForegroundColor Yellow
+    Set-Location $frontendPath
+    node generate-ssl.cjs
+    Set-Location $projectPath
+    Write-Host "[SSL] Done." -ForegroundColor Green
+} else {
+    Write-Host "[SSL] Certificate already exists — skipping generation." -ForegroundColor DarkGray
+}
+
 # Step 3: Restart services
 Write-Host ""
 Write-Host "[3/3] Restarting services..." -ForegroundColor Yellow

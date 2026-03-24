@@ -1,10 +1,14 @@
-// Simple static file server for Vue SPA — use instead of "pm2 serve"
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+// Static file server for Vue SPA — serves over HTTPS if ssl/ certs exist, else HTTP
+const http  = require('http');
+const https = require('https');
+const fs    = require('fs');
+const path  = require('path');
 
 const PORT = 8080;
 const DIST = path.join(__dirname, 'dist');
+const SSL_CRT = path.join(__dirname, 'ssl', 'server.crt');
+const SSL_KEY = path.join(__dirname, 'ssl', 'server.key');
+const USE_HTTPS = fs.existsSync(SSL_CRT) && fs.existsSync(SSL_KEY);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -20,9 +24,10 @@ const MIME = {
   '.woff2':'font/woff2',
   '.ttf':  'font/ttf',
   '.eot':  'application/vnd.ms-fontobject',
+  '.webmanifest': 'application/manifest+json',
 };
 
-http.createServer((req, res) => {
+function requestHandler(req, res) {
   // Strip query string
   const url = req.url.split('?')[0];
   let filePath = path.join(DIST, url === '/' ? 'index.html' : url);
@@ -41,16 +46,28 @@ http.createServer((req, res) => {
       res.end('Not found');
       return;
     }
-    // Cache static assets for 1 day, never cache HTML
-    const cacheHeader = ext === '.html'
-      ? 'no-cache'
-      : 'public, max-age=86400';
+    // Cache static assets for 1 day, never cache HTML or SW
+    const noCache = ext === '.html' || filePath.endsWith('sw.js') || filePath.endsWith('registerSW.js');
     res.writeHead(200, {
       'Content-Type': contentType,
-      'Cache-Control': cacheHeader,
+      'Cache-Control': noCache ? 'no-cache' : 'public, max-age=86400',
     });
     res.end(data);
   });
-}).listen(PORT, '0.0.0.0', () => {
-  console.log(`[ISP-Frontend] Serving ${DIST} on port ${PORT}`);
-});
+}
+
+if (USE_HTTPS) {
+  const sslOptions = {
+    key:  fs.readFileSync(SSL_KEY),
+    cert: fs.readFileSync(SSL_CRT),
+  };
+  https.createServer(sslOptions, requestHandler).listen(PORT, '0.0.0.0', () => {
+    console.log(`[ISP-Frontend] HTTPS server running on https://0.0.0.0:${PORT}`);
+    console.log(`[ISP-Frontend] Serving: ${DIST}`);
+  });
+} else {
+  http.createServer(requestHandler).listen(PORT, '0.0.0.0', () => {
+    console.log(`[ISP-Frontend] HTTP server running on http://0.0.0.0:${PORT} (no SSL certs found)`);
+    console.log(`[ISP-Frontend] Serving: ${DIST}`);
+  });
+}

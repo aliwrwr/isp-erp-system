@@ -11,6 +11,10 @@ node_modules
 dist-ssr
 *.local
 
+# SSL — private keys stay local, only ca.crt is shared for device trust
+ssl/ca.key
+ssl/server.key
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
