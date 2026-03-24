@@ -68,8 +68,8 @@ Write-Host "Done." -ForegroundColor Green
 
 # Step 2b: Generate SSL certs for HTTPS (PWA support on other devices)
 $sslDir  = "$frontendPath\ssl"
-$sslCert = "$sslDir\server.crt"
-if (-not (Test-Path $sslCert)) {
+$sslKey  = "$sslDir\server.key"
+if (-not (Test-Path $sslKey)) {
     Write-Host ""
     Write-Host "[SSL] Generating HTTPS certificate for PWA support..." -ForegroundColor Yellow
     Set-Location $frontendPath
