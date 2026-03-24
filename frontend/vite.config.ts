@@ -9,6 +9,7 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'inline',   // inline the SW registration script into index.html (avoids missing registerSW.js with base:./)
       includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: false,  // use public/manifest.json instead (avoids base:'./' path issues)
       workbox: {
