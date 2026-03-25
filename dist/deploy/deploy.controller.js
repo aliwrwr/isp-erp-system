@@ -203,10 +203,10 @@ let DeployController = class DeployController {
         }
         catch { }
         (0, child_process_1.spawn)('powershell.exe', [
+            '-NoProfile',
             '-NonInteractive',
             '-ExecutionPolicy', 'Bypass',
-            '-Command',
-            `Start-Process powershell.exe -ArgumentList '-ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"' -WindowStyle Hidden`
+            '-File', scriptPath
         ], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
         return { ok: true, message: 'التحديث بدأ — انتظر دقيقة ثم راجع السجل' };
     }

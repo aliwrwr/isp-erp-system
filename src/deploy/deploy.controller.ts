@@ -217,14 +217,14 @@ export class DeployController {
     // Truncate the log so the caller gets a fresh log for this run
     try { writeFileSync(this.logFile, ''); } catch { /* ignore */ }
 
-    // Run using PowerShell Start-Process to escape PM2 job constraints
+    // Run using PowerShell in detached mode
     spawn(
       'powershell.exe',
       [
+        '-NoProfile',
         '-NonInteractive',
         '-ExecutionPolicy', 'Bypass',
-        '-Command',
-        `Start-Process powershell.exe -ArgumentList '-ExecutionPolicy Bypass -WindowStyle Hidden -File "${scriptPath}"' -WindowStyle Hidden`
+        '-File', scriptPath
       ],
       { stdio: 'ignore', windowsHide: true, detached: true },
     ).unref();

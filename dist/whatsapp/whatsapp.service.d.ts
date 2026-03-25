@@ -23,6 +23,7 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
     onModuleDestroy(): Promise<void>;
     initializeClient(): Promise<void>;
     disconnect(): Promise<void>;
+    private forceKillChromeProcesses;
     changeDevice(): Promise<void>;
     formatPhone(phone: string): string;
     sendMessage(phone: string, message: string, type?: string, subscriberName?: string): Promise<boolean>;

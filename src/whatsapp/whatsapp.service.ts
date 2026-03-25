@@ -167,6 +167,20 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Run a deep cleanup of any lingering Chrome processes locking the session
+   */
+  private async forceKillChromeProcesses(): Promise<void> {
+    const { exec } = await import('child_process');
+    return new Promise((resolve) => {
+      // Kills any chrome.exe process that has "wwebjs" in its command line
+      const cmd = `powershell.exe -NonInteractive -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'chrome.exe'\\" | Where-Object CommandLine -match \\"wwebjs\\" | Invoke-CimMethod -MethodName Terminate"`;
+      exec(cmd, () => {
+        resolve();
+      });
+    });
+  }
+
+  /**
    * Change WhatsApp device: wipe saved session files then re-init
    * so a fresh QR code is generated for a new phone.
    */
@@ -176,11 +190,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       try { await this.client.destroy(); } catch (_) {}
       this.client = null;
     }
-    // Reset all state — must set isInitializing=false so initializeClient() won't be blocked
     this.isConnected = false;
     this.qrDataUrl = null;
     this.phoneNumber = null;
     this.isInitializing = false;
+
+    // Forcefully kill any zombie chrome.exe holding locks
+    await this.forceKillChromeProcesses();
 
     // Load fs and path
     const fs = await import('fs');

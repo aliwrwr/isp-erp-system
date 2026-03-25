@@ -182,6 +182,15 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         this.qrDataUrl = null;
         this.phoneNumber = null;
     }
+    async forceKillChromeProcesses() {
+        const { exec } = await import('child_process');
+        return new Promise((resolve) => {
+            const cmd = `powershell.exe -NonInteractive -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'chrome.exe'\\" | Where-Object CommandLine -match \\"wwebjs\\" | Invoke-CimMethod -MethodName Terminate"`;
+            exec(cmd, () => {
+                resolve();
+            });
+        });
+    }
     async changeDevice() {
         if (this.client) {
             try {
@@ -194,6 +203,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         this.qrDataUrl = null;
         this.phoneNumber = null;
         this.isInitializing = false;
+        await this.forceKillChromeProcesses();
         const fs = await import('fs');
         const path = await import('path');
         const sessionPath = path.resolve('.wwebjs_auth');
