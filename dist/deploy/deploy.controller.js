@@ -202,12 +202,22 @@ let DeployController = class DeployController {
             (0, fs_1.writeFileSync)(this.logFile, '');
         }
         catch { }
-        (0, child_process_1.spawn)('powershell.exe', [
-            '-NoProfile',
-            '-NonInteractive',
-            '-ExecutionPolicy', 'Bypass',
-            '-File', scriptPath
-        ], { stdio: 'ignore', windowsHide: true, detached: true }).unref();
+        const vbsPath = path.join(process.cwd(), 'run-update.vbs');
+        const vbsContent = `
+Set objShell = WScript.CreateObject("WScript.Shell")
+objShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""${scriptPath}""", 0, False
+    `.trim();
+        try {
+            (0, fs_1.writeFileSync)(vbsPath, vbsContent);
+            (0, child_process_1.spawn)('cscript.exe', ['//Nologo', vbsPath], {
+                detached: true,
+                stdio: 'ignore',
+                windowsHide: true,
+            }).unref();
+        }
+        catch (err) {
+            (0, fs_1.writeFileSync)(this.logFile, `ERROR launching update: ${err.message}\n`);
+        }
         return { ok: true, message: 'التحديث بدأ — انتظر دقيقة ثم راجع السجل' };
     }
 };

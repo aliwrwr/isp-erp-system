@@ -214,20 +214,25 @@ export class DeployController {
   private runUpdate() {
     const scriptPath = path.join(process.cwd(), 'update.ps1');
     mkdirSync(path.dirname(this.logFile), { recursive: true });
-    // Truncate the log so the caller gets a fresh log for this run
     try { writeFileSync(this.logFile, ''); } catch { /* ignore */ }
 
-    // Run using PowerShell in detached mode
-    spawn(
-      'powershell.exe',
-      [
-        '-NoProfile',
-        '-NonInteractive',
-        '-ExecutionPolicy', 'Bypass',
-        '-File', scriptPath
-      ],
-      { stdio: 'ignore', windowsHide: true, detached: true },
-    ).unref();
+    // Use VBScript to launch PowerShell completely detached from PM2 job object
+    const vbsPath = path.join(process.cwd(), 'run-update.vbs');
+    const vbsContent = `
+Set objShell = WScript.CreateObject("WScript.Shell")
+objShell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""${scriptPath}""", 0, False
+    `.trim();
+    
+    try {
+      writeFileSync(vbsPath, vbsContent);
+      spawn('cscript.exe', ['//Nologo', vbsPath], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+      }).unref();
+    } catch (err: any) {
+      writeFileSync(this.logFile, `ERROR launching update: ${err.message}\n`);
+    }
 
     return { ok: true, message: 'التحديث بدأ — انتظر دقيقة ثم راجع السجل' };
   }
