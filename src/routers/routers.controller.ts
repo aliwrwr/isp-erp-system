@@ -104,7 +104,7 @@ export class RoutersController {
 
   @Get()
   @Roles('Super Admin', 'Network Admin')
-  @Permissions('internet.routers')
+  @Permissions('internet.routers', 'internet.connected', 'internet.subscribers')
   findAll() {
     return this.routersService.findAll();
   }
