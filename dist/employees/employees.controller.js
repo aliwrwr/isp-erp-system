@@ -19,7 +19,7 @@ const create_employee_dto_1 = require("./dto/create-employee.dto");
 const update_employee_dto_1 = require("./dto/update-employee.dto");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
-const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const permissions_decorator_1 = require("../auth/decorators/permissions.decorator");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 let EmployeesController = class EmployeesController {
     employeesService;
@@ -30,27 +30,9 @@ let EmployeesController = class EmployeesController {
         return this.employeesService.create(createEmployeeDto);
     }
     findAll(req) {
-        const user = req.user;
-        if (user.isSuperAdmin) {
-            return this.employeesService.findAll();
-        }
-        const allowedPerms = ['hr.employees', 'support.tickets', 'support.technicians'];
-        const hasAccess = allowedPerms.some(p => user.permissions?.includes(p));
-        if (!hasAccess) {
-            throw new common_1.ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الموظفين');
-        }
         return this.employeesService.findAll();
     }
     async findOne(id, req) {
-        const user = req.user;
-        if (user.isSuperAdmin) {
-            return this.employeesService.findOne(+id);
-        }
-        const allowedPerms = ['hr.employees', 'support.tickets', 'support.technicians'];
-        const hasAccess = allowedPerms.some(p => user.permissions?.includes(p));
-        if (!hasAccess) {
-            throw new common_1.ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الموظفين');
-        }
         return this.employeesService.findOne(+id);
     }
     update(id, updateEmployeeDto) {
@@ -63,7 +45,7 @@ let EmployeesController = class EmployeesController {
 exports.EmployeesController = EmployeesController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('Super Admin'),
+    (0, permissions_decorator_1.Permissions)('hr.employees.add'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_employee_dto_1.CreateEmployeeDto]),
@@ -71,6 +53,7 @@ __decorate([
 ], EmployeesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, permissions_decorator_1.Permissions)('hr.employees.view', 'support.tickets.view', 'support.technicians.view'),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -78,6 +61,7 @@ __decorate([
 ], EmployeesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, permissions_decorator_1.Permissions)('hr.employees.view', 'support.tickets.view', 'support.technicians.view'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -86,7 +70,7 @@ __decorate([
 ], EmployeesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)('Super Admin'),
+    (0, permissions_decorator_1.Permissions)('hr.employees.edit'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -95,7 +79,7 @@ __decorate([
 ], EmployeesController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, roles_decorator_1.Roles)('Super Admin'),
+    (0, permissions_decorator_1.Permissions)('hr.employees.delete'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

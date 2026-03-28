@@ -5,7 +5,6 @@ import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Permissions } from '../auth/decorators/permissions.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('Departments')
@@ -16,31 +15,46 @@ export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Post()
-  @Permissions('hr.departments.add')
+  @Roles('Super Admin')
   create(@Body() createDepartmentDto: CreateDepartmentDto) {
     return this.departmentsService.create(createDepartmentDto);
   }
 
   @Get()
-  @Permissions('hr.departments.view')
   async findAll(@Request() req) {
+    const user = req.user;
+    // Super Admin sees all departments
+    if (user.isSuperAdmin) {
+      return this.departmentsService.findAll();
+    }
+    // Check if user has hr.departments permission
+    if (!user.permissions?.includes('hr.departments')) {
+      throw new ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الأقسام');
+    }
+    // User with hr.departments permission sees ALL departments
     return this.departmentsService.findAll();
   }
 
   @Get(':id')
-  @Permissions('hr.departments.view')
   async findOne(@Param('id') id: string, @Request() req) {
+    const user = req.user;
+    if (user.isSuperAdmin) {
+      return this.departmentsService.findOne(+id);
+    }
+    if (!user.permissions?.includes('hr.departments')) {
+      throw new ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الأقسام');
+    }
     return this.departmentsService.findOne(+id);
   }
 
   @Patch(':id')
-  @Permissions('hr.departments.edit')
+  @Roles('Super Admin')
   update(@Param('id') id: string, @Body() updateDepartmentDto: UpdateDepartmentDto) {
     return this.departmentsService.update(+id, updateDepartmentDto);
   }
 
   @Delete(':id')
-  @Permissions('hr.departments.delete')
+  @Roles('Super Admin')
   remove(@Param('id') id: string) {
     return this.departmentsService.remove(+id);
   }

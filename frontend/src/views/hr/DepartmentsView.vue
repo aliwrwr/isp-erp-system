@@ -6,7 +6,7 @@
         <h2 class="text-xl font-bold text-secondary">إدارة الأقسام</h2>
         <p class="text-sm text-gray-400 mt-1">إجمالي الأقسام: {{ departments.length }}</p>
       </div>
-      <button v-if="auth.isSuperAdmin" @click="openAddModal" class="bg-hr hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md shadow-purple-200">
+      <button v-if="auth.isSuperAdmin || auth.hasPermission('hr.departments.add')" @click="openAddModal" class="bg-hr hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md shadow-purple-200">
         <i class="fas fa-plus-circle"></i> إضافة قسم جديد
       </button>
     </div>
@@ -41,7 +41,7 @@
     <div v-else-if="departments.length === 0" class="text-center py-16 bg-white rounded-xl border border-gray-100">
       <i class="fas fa-folder-open text-4xl text-gray-200 mb-3 block"></i>
       <p class="text-gray-400">لا يوجد أقسام حالياً</p>
-      <button v-if="auth.isSuperAdmin" @click="openAddModal" class="mt-4 bg-hr text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition">إضافة أول قسم</button>
+      <button v-if="auth.isSuperAdmin || auth.hasPermission('hr.departments.add')" @click="openAddModal" class="mt-4 bg-hr text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition">إضافة أول قسم</button>
     </div>
 
     <!-- Department Cards -->
@@ -59,11 +59,11 @@
               <p class="text-[11px] text-gray-400">{{ dept.employees?.length || 0 }} موظف</p>
             </div>
           </div>
-          <div v-if="auth.isSuperAdmin" class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button @click="openEditModal(dept)" class="w-8 h-8 rounded-lg hover:bg-blue-50 text-blue-500 flex items-center justify-center transition" title="تعديل">
-              <i class="fas fa-pen text-xs"></i>
-            </button>
-            <button @click="confirmDelete(dept)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition" title="حذف">
+            <div v-if="auth.isSuperAdmin || auth.hasPermission('hr.departments.edit') || auth.hasPermission('hr.departments.delete')" class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button v-if="auth.isSuperAdmin || auth.hasPermission('hr.departments.edit')" @click="openEditModal(dept)" class="w-8 h-8 rounded-lg hover:bg-blue-50 text-blue-500 flex items-center justify-center transition" title="تعديل">
+                <i class="fas fa-pen text-xs"></i>
+              </button>
+              <button v-if="auth.isSuperAdmin || auth.hasPermission('hr.departments.delete')" @click="confirmDelete(dept)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition" title="حذف">
               <i class="fas fa-trash-alt text-xs"></i>
             </button>
           </div>
@@ -547,7 +547,7 @@ async function saveDept() {
       name: form.value.name,
       description: form.value.description || undefined,
       manager: form.value.manager || undefined,
-      permissions: form.value.permissions.length ? form.value.permissions : undefined,
+      permissions: form.value.permissions,
     };
     if (editingDept.value) {
       await api.patch(`/departments/${editingDept.value.id}`, payload);

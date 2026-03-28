@@ -19,7 +19,7 @@ const create_department_dto_1 = require("./dto/create-department.dto");
 const update_department_dto_1 = require("./dto/update-department.dto");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
-const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const permissions_decorator_1 = require("../auth/decorators/permissions.decorator");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 let DepartmentsController = class DepartmentsController {
     departmentsService;
@@ -30,23 +30,9 @@ let DepartmentsController = class DepartmentsController {
         return this.departmentsService.create(createDepartmentDto);
     }
     async findAll(req) {
-        const user = req.user;
-        if (user.isSuperAdmin) {
-            return this.departmentsService.findAll();
-        }
-        if (!user.permissions?.includes('hr.departments')) {
-            throw new common_1.ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الأقسام');
-        }
         return this.departmentsService.findAll();
     }
     async findOne(id, req) {
-        const user = req.user;
-        if (user.isSuperAdmin) {
-            return this.departmentsService.findOne(+id);
-        }
-        if (!user.permissions?.includes('hr.departments')) {
-            throw new common_1.ForbiddenException('ليس لديك صلاحية للوصول إلى بيانات الأقسام');
-        }
         return this.departmentsService.findOne(+id);
     }
     update(id, updateDepartmentDto) {
@@ -59,7 +45,7 @@ let DepartmentsController = class DepartmentsController {
 exports.DepartmentsController = DepartmentsController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('Super Admin'),
+    (0, permissions_decorator_1.Permissions)('hr.departments.add'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_department_dto_1.CreateDepartmentDto]),
@@ -67,6 +53,7 @@ __decorate([
 ], DepartmentsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, permissions_decorator_1.Permissions)('hr.departments.view'),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -74,6 +61,7 @@ __decorate([
 ], DepartmentsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, permissions_decorator_1.Permissions)('hr.departments.view'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -82,7 +70,7 @@ __decorate([
 ], DepartmentsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)('Super Admin'),
+    (0, permissions_decorator_1.Permissions)('hr.departments.edit'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -91,7 +79,7 @@ __decorate([
 ], DepartmentsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, roles_decorator_1.Roles)('Super Admin'),
+    (0, permissions_decorator_1.Permissions)('hr.departments.delete'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

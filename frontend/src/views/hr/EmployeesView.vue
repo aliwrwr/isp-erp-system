@@ -6,7 +6,7 @@
         <h2 class="text-xl font-bold text-secondary">إدارة الموظفين</h2>
         <p class="text-sm text-gray-400 mt-1">إجمالي الموظفين: {{ employees.length }}</p>
       </div>
-      <button v-if="auth.isSuperAdmin" @click="openAddModal" class="bg-hr hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md shadow-purple-200">
+      <button v-if="auth.isSuperAdmin || auth.hasPermission('hr.employees.add')" @click="openAddModal" class="bg-hr hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-md shadow-purple-200">
         <i class="fas fa-plus-circle"></i> إضافة موظف جديد
       </button>
     </div>
@@ -91,11 +91,11 @@
                 </span>
               </td>
               <td class="px-5 py-4">
-                <div v-if="auth.isSuperAdmin" class="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                  <button @click="openEditModal(emp)" class="w-8 h-8 rounded-lg hover:bg-blue-50 text-blue-500 flex items-center justify-center transition" title="تعديل">
+                <div v-if="auth.isSuperAdmin || auth.hasPermission('hr.employees.edit') || auth.hasPermission('hr.employees.delete')" class="flex items-center justify-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <button v-if="auth.isSuperAdmin || auth.hasPermission('hr.employees.edit')" @click="openEditModal(emp)" class="w-8 h-8 rounded-lg hover:bg-blue-50 text-blue-500 flex items-center justify-center transition" title="تعديل">
                     <i class="fas fa-pen text-xs"></i>
                   </button>
-                  <button @click="confirmDelete(emp)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition" title="حذف">
+                  <button v-if="auth.isSuperAdmin || auth.hasPermission('hr.employees.delete')" @click="confirmDelete(emp)" class="w-8 h-8 rounded-lg hover:bg-red-50 text-red-400 flex items-center justify-center transition" title="حذف">
                     <i class="fas fa-trash-alt text-xs"></i>
                   </button>
                 </div>
