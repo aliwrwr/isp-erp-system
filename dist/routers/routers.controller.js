@@ -185,7 +185,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     (0, roles_decorator_1.Roles)('Super Admin', 'Network Admin'),
-    (0, permissions_decorator_1.Permissions)('internet.routers'),
+    (0, permissions_decorator_1.Permissions)('internet.routers', 'internet.connected', 'internet.subscribers'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
