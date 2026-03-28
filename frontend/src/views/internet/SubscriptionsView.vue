@@ -548,7 +548,7 @@
             class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-2xl transition shadow-sm shadow-emerald-200">
             <i class="fas fa-print"></i> طباعة
           </button>
-          <button @click="showViewModal = false"
+          <button @click="closeViewModal()"
             class="px-5 py-2.5 text-sm font-semibold border border-gray-200 rounded-2xl hover:bg-gray-100 transition text-gray-600">
             إغلاق
           </button>
@@ -939,7 +939,11 @@ function openContextMenu(event: MouseEvent | TouchEvent, s: any) {
 
 function closeViewModal() {
   showViewModal.value = false;
-  selectedSub.value = null;
+  setTimeout(() => {
+    if (!showViewModal.value) {
+      selectedSub.value = null;
+    }
+  }, 300);
 }
 
 function closeContextMenu() {
