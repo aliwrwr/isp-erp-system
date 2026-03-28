@@ -66,8 +66,8 @@ let ManagersService = class ManagersService {
     async findAll() {
         const managers = await this.managersRepository.find({ order: { name: 'ASC' } });
         try {
-            const counts = await this.managersRepository.manager.query(`SELECT "managerId", COUNT(*) as count FROM "subscriber" WHERE "managerId" IS NOT NULL GROUP BY "managerId"`);
-            const countMap = new Map(counts.map(r => [r.managerId, parseInt(r.count, 10)]));
+            const counts = await this.managersRepository.manager.query(`SELECT "managerId", COUNT(*) as count FROM "subscribers" WHERE "managerId" IS NOT NULL GROUP BY "managerId"`);
+            const countMap = new Map(counts.map(r => [r.managerId, Number(r.count)]));
             return managers.map(m => ({ ...m, subscriberCount: countMap.get(m.id) ?? 0 }));
         }
         catch {

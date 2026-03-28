@@ -24,9 +24,9 @@ export class ManagersService {
     const managers = await this.managersRepository.find({ order: { name: 'ASC' } });
     try {
       const counts: { managerId: number; count: string }[] = await this.managersRepository.manager.query(
-        `SELECT "managerId", COUNT(*) as count FROM "subscriber" WHERE "managerId" IS NOT NULL GROUP BY "managerId"`,
+        `SELECT "managerId", COUNT(*) as count FROM "subscribers" WHERE "managerId" IS NOT NULL GROUP BY "managerId"`,
       );
-      const countMap = new Map(counts.map(r => [r.managerId, parseInt(r.count, 10)]));
+      const countMap = new Map(counts.map(r => [r.managerId, Number(r.count)]));
       return managers.map(m => ({ ...m, subscriberCount: countMap.get(m.id) ?? 0 }));
     } catch {
       // subscriber count is optional — return managers without it if query fails
