@@ -87,7 +87,7 @@
             class="w-full pr-8 pl-3 py-2 text-sm border border-white/30 rounded-xl bg-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/60 transition text-white appearance-none"
           >
             <option value="" class="text-gray-800">كل المدراء</option>
-            <option v-for="m in managers" :key="m.id" :value="m.id" class="text-gray-800">{{ m.position || m.name }}</option>
+            <option v-for="m in managers" :key="m.id" :value="m.id" class="text-gray-800">{{ m.username || m.name || m.position }}</option>
           </select>
         </div>
 
@@ -465,7 +465,7 @@
                   <label class="block text-xs font-semibold text-gray-600 mb-1.5">تابع إلى (المدير)</label>
                   <select v-model="form.managerId" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition cursor-pointer">
                     <option :value="null">— اختر المدير —</option>
-                    <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.name || m.position }}</option>
+                    <option v-for="m in managers" :key="m.id" :value="m.id">{{ m.username || m.name || m.position }}</option>
                   </select>
                 </div>
                 <div>
