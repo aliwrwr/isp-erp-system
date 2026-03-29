@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth';
 
 // Permission mapping for routes
 const routePermissions: Record<string, string> = {
+  'ManagementReports': 'internet.management_reports',
   'Subscribers': 'internet.subscribers',
   'ConnectedUsers': 'internet.connected',
   'Packages': 'internet.packages',
@@ -62,6 +63,14 @@ const routes = [
     name: 'SelectSystem',
     component: () => import('../views/SelectSystemView.vue'),
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/management',
+    component: () => import('../layouts/SystemLayout.vue'),
+    meta: { requiresAuth: true, system: 'management' },
+    children: [
+      { path: 'reports', name: 'ManagementReports', component: () => import('../views/management/ReportsView.vue') },
+    ],
   },
   {
     path: '/internet',

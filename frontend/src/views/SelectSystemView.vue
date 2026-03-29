@@ -244,6 +244,7 @@ async function triggerUpdate() {
 // ── Systems ───────────────────────────────────────────────────────────
 
 const allSystems = [
+  { id: 'management', nameAr: 'نظام الإدارة', desc: 'التقارير الشاملة، الإحصائيات والإعدادات', icon: 'fas fa-chart-pie', color: '#10B981', route: '/management/reports' },
   { id: 'internet', nameAr: 'نظام الاشتراكات', desc: 'إدارة اشتراكات الإنترنت والمشتركين', icon: 'fas fa-wifi', color: '#2980B9', route: '/internet' },
   { id: 'sales', nameAr: 'نظام المبيعات', desc: 'نقاط البيع والفواتير والمخزون', icon: 'fas fa-cash-register', color: '#27AE60', route: '/sales' },
   { id: 'hr', nameAr: 'شؤون الموظفين', desc: 'إدارة الموظفين والحضور والرواتب', icon: 'fas fa-users-cog', color: '#8E44AD', route: '/hr' },

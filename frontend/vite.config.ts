@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite'
+﻿import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',   // relative paths so Electron can load assets from file://
+  base: '/',   // Changed to absolute path to fix nested route history mode issues
   plugins: [
     vue(),
     VitePWA({
@@ -29,7 +29,7 @@ export default defineConfig({
     }),
   ],
   server: {
-    host: true,   // يسمح بالوصول من الشبكة المحلية
+    host: true,   // ظٹط³ظ…ط­ ط¨ط§ظ„ظˆطµظˆظ„ ظ…ظ† ط§ظ„ط´ط¨ظƒط© ط§ظ„ظ…ط­ظ„ظٹط©
     port: 5180,
     strictPort: true,
   },
@@ -39,3 +39,4 @@ export default defineConfig({
     strictPort: true,
   },
 })
+

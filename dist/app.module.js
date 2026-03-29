@@ -45,6 +45,7 @@ const cashbox_module_1 = require("./cashbox/cashbox.module");
 const system_settings_module_1 = require("./system-settings/system-settings.module");
 const installments_module_1 = require("./installments/installments.module");
 const groups_module_1 = require("./groups/groups.module");
+const global_reports_module_1 = require("./global-reports/global-reports.module");
 const config_2 = __importDefault(require("./config/config"));
 let AppModule = class AppModule {
 };
@@ -52,6 +53,7 @@ exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            global_reports_module_1.GlobalReportsModule,
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
                 load: [config_2.default],

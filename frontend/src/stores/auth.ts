@@ -51,6 +51,9 @@ export const useAuthStore = defineStore('auth', {
     hasSystemAccess() {
       return (system: string) => {
         if (this.isSuperAdmin) return true;
+        if (system === 'management') {
+          return this.permissions.some((p: string) => p.startsWith('internet.management_reports.') || p.startsWith('management.'));
+        }
         return this.permissions.some((p: string) => p.startsWith(system + '.'));
       };
     },

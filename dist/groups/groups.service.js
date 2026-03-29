@@ -11,16 +11,31 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var GroupsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GroupsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const group_entity_1 = require("./entities/group.entity");
-let GroupsService = class GroupsService {
+let GroupsService = GroupsService_1 = class GroupsService {
     repo;
+    logger = new common_1.Logger(GroupsService_1.name);
     constructor(repo) {
         this.repo = repo;
+    }
+    async onModuleInit() {
+        try {
+            const adminGroup = await this.repo.findOne({ where: { name: 'admin' } });
+            if (adminGroup && adminGroup.permissions !== '["*"]') {
+                adminGroup.permissions = '["*"]';
+                await this.repo.save(adminGroup);
+                this.logger.log('Updated "admin" group permissions to comprehensive ["*"]');
+            }
+        }
+        catch (e) {
+            this.logger.error('Failed to auto-seed admin group permissions', e);
+        }
     }
     create(dto) {
         return this.repo.save(this.repo.create(dto));
@@ -43,7 +58,7 @@ let GroupsService = class GroupsService {
     }
 };
 exports.GroupsService = GroupsService;
-exports.GroupsService = GroupsService = __decorate([
+exports.GroupsService = GroupsService = GroupsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(group_entity_1.Group)),
     __metadata("design:paramtypes", [typeorm_2.Repository])

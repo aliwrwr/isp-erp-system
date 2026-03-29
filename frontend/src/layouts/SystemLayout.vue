@@ -158,6 +158,9 @@ const systemMenus: Record<string, { label: string; icon: string; route: string }
     { label: 'التقارير', icon: 'fas fa-chart-bar', route: '/installments/reports' },
     { label: 'الإعدادات', icon: 'fas fa-cog', route: '/installments/settings' },
   ],
+  management: [
+    { label: 'التقارير الشاملة', icon: 'fas fa-chart-pie', route: '/management/reports' }
+  ],
 };
 
 const systemMeta: Record<string, { name: string; icon: string; color: string }> = {
@@ -168,12 +171,14 @@ const systemMeta: Record<string, { name: string; icon: string; color: string }> 
   messaging: { name: 'نظام الرسائل', icon: 'fas fa-comment-dots', color: '#16A085' },
   restaurant: { name: 'نظام المطاعم', icon: 'fas fa-utensils', color: '#D35400' },
   installments: { name: 'نظام الأقساط', icon: 'fas fa-hand-holding-usd', color: '#6366F1' },
+  management: { name: 'نظام الإدارة', icon: 'fas fa-chart-pie', color: '#10B981' },
 };
 
 const currentSystem = computed(() => (route.meta.system as string) || 'internet');
 
 // Permission mapping: route -> permission key
 const routePermissions: Record<string, string> = {
+  '/management/reports': 'management.reports',
   '/internet/subscribers': 'internet.subscribers',
   '/internet/connected': 'internet.connected',
   '/internet/packages': 'internet.packages',

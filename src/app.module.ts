@@ -34,10 +34,12 @@ import { CashboxModule } from './cashbox/cashbox.module';
 import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { InstallmentsModule } from './installments/installments.module';
 import { GroupsModule } from './groups/groups.module';
+import { GlobalReportsModule } from './global-reports/global-reports.module';
 import config from './config/config';
 
 @Module({
   imports: [
+    GlobalReportsModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [config],
