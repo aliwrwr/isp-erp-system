@@ -17,7 +17,7 @@ let GlobalReportsService = class GlobalReportsService {
     constructor(dataSource) {
         this.dataSource = dataSource;
     }
-    async getDashboardData(period) {
+    async getDashboardData(period, system) {
         let dateFilter = '';
         const now = new Date();
         if (period === 'today') {
@@ -46,8 +46,25 @@ let GlobalReportsService = class GlobalReportsService {
             const incomeInv = Number(invRes[0]?.total || 0);
             const incomeInst = Number(instRes[0]?.total || 0);
             const incomeRest = Number(restRes[0]?.total || 0);
-            const totalIncome = incomeSub + incomeInv + incomeInst + incomeRest;
-            const totalExpenses = Number(expRes[0]?.total || 0);
+            let totalIncome = incomeSub + incomeInv + incomeInst + incomeRest;
+            let totalExpenses = Number(expRes[0]?.total || 0);
+            if (system && system !== 'all') {
+                if (system === 'internet') {
+                    totalIncome = incomeSub;
+                }
+                else if (system === 'sales') {
+                    totalIncome = incomeInv;
+                    totalExpenses = 0;
+                }
+                else if (system === 'installments') {
+                    totalIncome = incomeInst;
+                    totalExpenses = 0;
+                }
+                else if (system === 'restaurant') {
+                    totalIncome = incomeRest;
+                    totalExpenses = 0;
+                }
+            }
             const netProfit = totalIncome - totalExpenses;
             return {
                 totalIncome,

@@ -12,6 +12,15 @@
         <p class="text-sm text-gray-500 mt-1 pl-12">نظرة عامة على أداء جميع الأنظمة</p>
       </div>
 
+      <!-- System Tabs -->
+      <div class="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
+        <button v-for="tab in systemTabs" :key="tab.id" @click="activeSystemTab = tab.id; fetchData()"
+          class="px-5 py-2 text-sm font-semibold rounded-lg transition-all"
+          :class="activeSystemTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+          {{ tab.label }}
+        </button>
+      </div>
+
       <div class="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
         <button v-for="p in periods" :key="p.id" @click="setPeriod(p.id)"
           class="px-5 py-2 text-sm font-semibold rounded-lg transition-all"
@@ -219,13 +228,23 @@ const periods = [
 ];
 
 const selectedPeriod = ref('month');
+const activeSystemTab = ref('all');
+
+const systemTabs = [
+  { id: 'all', label: 'الكل' },
+  { id: 'internet', label: 'الانترنت' },
+  { id: 'sales', label: 'المبيعات' },
+  { id: 'installments', label: 'الاقساط' },
+  { id: 'restaurant', label: 'المطعم' },
+];
+
 const data = ref<any>({});
 const loading = ref(false);
 
 async function fetchData() {
   loading.value = true;
   try {
-    const res = await api.get('/global-reports/dashboard', { params: { period: selectedPeriod.value } });
+    const res = await api.get('/global-reports/dashboard', { params: { period: selectedPeriod.value, system: activeSystemTab.value === 'all' ? undefined : activeSystemTab.value } });
     data.value = res.data;
   } catch (err) {
     console.error('Failed to fetch global reports', err);

@@ -5,7 +5,7 @@ import { DataSource } from 'typeorm';
 export class GlobalReportsService {
   constructor(private dataSource: DataSource) {}
 
-  async getDashboardData(period: string) {
+  async getDashboardData(period: string, system?: string) {
     let dateFilter = '';
     const now = new Date();
     if (period === 'today') {
@@ -56,8 +56,24 @@ export class GlobalReportsService {
       const incomeInst = Number(instRes[0]?.total || 0);
       const incomeRest = Number(restRes[0]?.total || 0);
       
-      const totalIncome = incomeSub + incomeInv + incomeInst + incomeRest;
-      const totalExpenses = Number(expRes[0]?.total || 0);
+let totalIncome = incomeSub + incomeInv + incomeInst + incomeRest;      
+      let totalExpenses = Number(expRes[0]?.total || 0);
+
+      if (system && system !== 'all') {
+        if (system === 'internet') {
+            totalIncome = incomeSub;
+        } else if (system === 'sales') {
+            totalIncome = incomeInv;
+            totalExpenses = 0; // Assuming expenses aren't clearly divided yet
+        } else if (system === 'installments') {
+            totalIncome = incomeInst;
+            totalExpenses = 0;
+        } else if (system === 'restaurant') {
+            totalIncome = incomeRest;
+            totalExpenses = 0;
+        }
+      }
+
       const netProfit = totalIncome - totalExpenses;
 
       return {

@@ -21,16 +21,17 @@ let GlobalReportsController = class GlobalReportsController {
     constructor(globalReportsService) {
         this.globalReportsService = globalReportsService;
     }
-    async getDashboardData(period) {
-        return this.globalReportsService.getDashboardData(period || 'month');
+    async getDashboardData(period, system) {
+        return this.globalReportsService.getDashboardData(period || 'month', system);
     }
 };
 exports.GlobalReportsController = GlobalReportsController;
 __decorate([
     (0, common_1.Get)('dashboard'),
     __param(0, (0, common_1.Query)('period')),
+    __param(1, (0, common_1.Query)('system')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], GlobalReportsController.prototype, "getDashboardData", null);
 exports.GlobalReportsController = GlobalReportsController = __decorate([

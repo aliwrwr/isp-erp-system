@@ -2,7 +2,7 @@ import { GlobalReportsService } from './global-reports.service';
 export declare class GlobalReportsController {
     private readonly globalReportsService;
     constructor(globalReportsService: GlobalReportsService);
-    getDashboardData(period?: string): Promise<{
+    getDashboardData(period?: string, system?: string): Promise<{
         totalIncome: number;
         totalExpenses: number;
         netProfit: number;
