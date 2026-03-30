@@ -13,7 +13,7 @@
       </div>
 
       <!-- System Tabs -->
-      <div class="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
+      <div class="flex flex-wrap items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
         <button v-for="tab in systemTabs" :key="tab.id" @click="activeSystemTab = tab.id; fetchData()"
           class="px-5 py-2 text-sm font-semibold rounded-lg transition-all"
           :class="activeSystemTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
