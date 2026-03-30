@@ -252,6 +252,7 @@ const allSystems = [
   { id: 'messaging', nameAr: 'نظام الرسائل', desc: 'إرسال رسائل وإشعارات للمشتركين', icon: 'fas fa-comment-dots', color: '#16A085', route: '/messaging' },
   { id: 'restaurant', nameAr: 'نظام المطاعم', desc: 'إدارة المطعم والطلبات والحجوزات', icon: 'fas fa-utensils', color: '#D35400', route: '/restaurant' },
   { id: 'installments', nameAr: 'نظام الأقساط', desc: 'البيع بالتقسيط وإدارة العقود والدفعات', icon: 'fas fa-hand-holding-usd', color: '#6366F1', route: '/installments' },
+    { id: 'backup', nameAr: 'نظام النسخ الاحتياطي', desc: 'إدارة وحماية واستعادة النسخ الاحتياطية', icon: 'fas fa-database', color: '#1F2937', route: '/backup' },
 ];
 
 const systems = computed(() => {
