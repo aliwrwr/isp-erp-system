@@ -552,69 +552,79 @@ function printBarcode() {
   const bars = code128Bars(code);
 
   // Canvas dimensions (58mm label ~ 220px wide)
-  const W = 280, H = 120;
+  const W = 280, H = 130;
+  const scale = 4; // High DPI resolution for crisp printing
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = W * scale;
+  canvas.height = H * scale;
   const ctx = canvas.getContext('2d')!;
+
+  ctx.scale(scale, scale);
+  ctx.imageSmoothingEnabled = false;
 
   // White background
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H);
 
   // Product name (top)
-  ctx.fillStyle = '#111111';
-  ctx.font = 'bold 13px Arial';
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 15px Arial';
   ctx.textAlign = 'center';
-  const displayName = name.length > 28 ? name.slice(0, 27) + '…' : name;
-  ctx.fillText(displayName, W / 2, 16);
+  const displayName = name.length > 25 ? name.slice(0, 24) + '…' : name;
+  ctx.fillText(displayName, W / 2, 20);
 
   // Price
-  ctx.font = 'bold 11px Arial';
-  ctx.fillStyle = '#333333';
-  ctx.fillText(Number(price).toLocaleString() + ' IQD', W / 2, 30);
+  ctx.font = 'bold 13px Arial';
+  ctx.fillStyle = '#000000';
+  ctx.fillText(Number(price).toLocaleString() + ' IQD', W / 2, 38);
 
   // Draw barcode bars
-  const barW = Math.max(1, Math.floor((W - 20) / bars.length));
+  const barW = Math.max(1, Math.floor((W - 30) / bars.length));
   const barH = 55;
   const startX = Math.floor((W - bars.length * barW) / 2);
-  const startY = 36;
+  const startY = 46;
   for (let i = 0; i < bars.length; i++) {
     ctx.fillStyle = bars[i] === '1' ? '#000000' : '#ffffff';
     ctx.fillRect(startX + i * barW, startY, barW, barH);
   }
 
   // Barcode number text (below bars)
-  ctx.fillStyle = '#111111';
-  ctx.font = '10px monospace';
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 14px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(code, W / 2, startY + barH + 12);
+  ctx.fillText(code, W / 2, startY + barH + 16);
 
   // Open print window
   const dataUrl = canvas.toDataURL('image/png');
   const win = window.open('', '_blank', 'width=400,height=300')!;
   win.document.write(`
-    <!DOCTYPE html><html><head>
+    <!DOCTYPE html><html dir="rtl"><head>
     <title>طباعة باركود - ${name}</title>
     <style>
       * { margin:0; padding:0; box-sizing:border-box; }
-      body { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f5f5f5; }
+      body { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#f5f5f5; font-family: sans-serif; }
       .label { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.1); }
-      img { display:block; margin:0 auto; image-rendering:pixelated; }
+      img { display:block; margin:0 auto; width: ${W}px; height: ${H}px; }
+      
       @media print {
-        body { background:#fff; }
-        .label { border:none; box-shadow:none; padding:0; }
-        .no-print { display:none; }
+        @page { margin: 0; size: auto; }
+        html, body { width: 100%; height: 100%; background: #ffffff !important; display: block; }
+        .label { border: none; box-shadow: none; padding: 0; margin: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        img { width: 100vw; height: 100vh; max-width: 100%; object-fit: contain; }
+        .no-print { display: none !important; }
       }
     </style></head><body>
     <div class="label">
-      <img src="${dataUrl}" width="${W}" height="${H}" />
-      <div class="no-print" style="margin-top:12px">
-        <button onclick="window.print()" style="padding:8px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">
-          &#128438; طباعة
+      <img src="${dataUrl}" />
+      <div class="no-print" style="margin-top:16px">
+        <button onclick="window.print()" style="padding:10px 24px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;">
+          طباعة الباركود 🖨️
         </button>
       </div>
     </div>
+    <script>
+      setTimeout(() => window.print(), 500);
+    <\/script>
   </body></html>`);
   win.document.close();
 }
@@ -666,3 +676,4 @@ onMounted(loadData);
 .modal-enter-active .bg-white { transition: transform .2s; }
 .modal-enter-from .bg-white { transform: scale(.96); }
 </style>
+
