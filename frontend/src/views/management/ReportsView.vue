@@ -28,6 +28,16 @@
           {{ p.label }}
         </button>
       </div>
+      
+      <!-- Custom Date Filter -->
+      <div v-if="selectedPeriod === 'custom'" class="flex items-center gap-2 w-full md:w-auto mt-2 md:mt-0">
+        <input type="datetime-local" v-model="startDate" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+        <span class="text-gray-500 text-sm">إلى</span>
+        <input type="datetime-local" v-model="endDate" class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />
+        <button @click="fetchData" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-700">
+          بحث
+        </button>
+      </div>
     </div>
 
     <!-- Main Stat Cards -->
@@ -225,10 +235,13 @@ const periods = [
   { id: 'week', label: 'هذا الأسبوع' },
   { id: 'month', label: 'هذا الشهر' },
   { id: 'year', label: 'هذا العام' },
+  { id: 'custom', label: 'مخصص' },
 ];
 
 const selectedPeriod = ref('month');
 const activeSystemTab = ref('all');
+const startDate = ref('');
+const endDate = ref('');
 
 const systemTabs = [
   { id: 'all', label: 'الكل' },
@@ -242,9 +255,19 @@ const data = ref<any>({});
 const loading = ref(false);
 
 async function fetchData() {
+  if (selectedPeriod.value === 'custom' && (!startDate.value || !endDate.value)) {
+    return; // Wait for both dates to be set
+  }
   loading.value = true;
   try {
-    const res = await api.get('/global-reports/dashboard', { params: { period: selectedPeriod.value, system: activeSystemTab.value === 'all' ? undefined : activeSystemTab.value } });
+    const res = await api.get('/global-reports/dashboard', { 
+      params: { 
+        period: selectedPeriod.value, 
+        system: activeSystemTab.value === 'all' ? undefined : activeSystemTab.value,
+        startDate: startDate.value ? new Date(startDate.value).toISOString() : undefined,
+        endDate: endDate.value ? new Date(endDate.value).toISOString() : undefined,
+      } 
+    });
     data.value = res.data;
   } catch (err) {
     console.error('Failed to fetch global reports', err);
@@ -255,7 +278,9 @@ async function fetchData() {
 
 function setPeriod(p: string) {
   selectedPeriod.value = p;
-  fetchData();
+  if (p !== 'custom') {
+    fetchData();
+  }
 }
 
 function percent(val: number | undefined) {

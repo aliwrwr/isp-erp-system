@@ -21,8 +21,8 @@ let GlobalReportsController = class GlobalReportsController {
     constructor(globalReportsService) {
         this.globalReportsService = globalReportsService;
     }
-    async getDashboardData(period, system) {
-        return this.globalReportsService.getDashboardData(period || 'month', system);
+    async getDashboardData(period, system, startDate, endDate) {
+        return this.globalReportsService.getDashboardData(period || 'month', system, startDate, endDate);
     }
 };
 exports.GlobalReportsController = GlobalReportsController;
@@ -30,8 +30,10 @@ __decorate([
     (0, common_1.Get)('dashboard'),
     __param(0, (0, common_1.Query)('period')),
     __param(1, (0, common_1.Query)('system')),
+    __param(2, (0, common_1.Query)('startDate')),
+    __param(3, (0, common_1.Query)('endDate')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], GlobalReportsController.prototype, "getDashboardData", null);
 exports.GlobalReportsController = GlobalReportsController = __decorate([

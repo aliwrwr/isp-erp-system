@@ -17,30 +17,48 @@ let GlobalReportsService = class GlobalReportsService {
     constructor(dataSource) {
         this.dataSource = dataSource;
     }
-    async getDashboardData(period, system) {
-        let dateFilter = '';
-        const now = new Date();
-        if (period === 'today') {
-            dateFilter = `date('now', 'localtime')`;
-        }
-        else if (period === 'week') {
-            dateFilter = `date('now', '-7 days', 'localtime')`;
-        }
-        else if (period === 'month') {
-            dateFilter = `date('now', 'start of month', 'localtime')`;
-        }
-        else if (period === 'year') {
-            dateFilter = `date('now', 'start of year', 'localtime')`;
+    async getDashboardData(period, system, startDate, endDate) {
+        let whereClauseSub = '';
+        let whereClauseInv = '';
+        let whereClauseInst = '';
+        let whereClauseRest = `status = 'paid'`;
+        let whereClauseExp = '';
+        if (period === 'custom' && startDate && endDate) {
+            whereClauseSub = `datetime(startDate) >= datetime('${startDate}') AND datetime(startDate) <= datetime('${endDate}')`;
+            whereClauseInv = `datetime(date) >= datetime('${startDate}') AND datetime(date) <= datetime('${endDate}')`;
+            whereClauseInst = `datetime(paymentDate) >= datetime('${startDate}') AND datetime(paymentDate) <= datetime('${endDate}')`;
+            whereClauseRest += ` AND datetime(createdAt) >= datetime('${startDate}') AND datetime(createdAt) <= datetime('${endDate}')`;
+            whereClauseExp = `datetime(date) >= datetime('${startDate}') AND datetime(date) <= datetime('${endDate}')`;
         }
         else {
-            dateFilter = `date('now', 'start of month', 'localtime')`;
+            let dateFilter = '';
+            if (period === 'today') {
+                dateFilter = `date('now', 'localtime')`;
+            }
+            else if (period === 'week') {
+                dateFilter = `date('now', '-7 days', 'localtime')`;
+            }
+            else if (period === 'month') {
+                dateFilter = `date('now', 'start of month', 'localtime')`;
+            }
+            else if (period === 'year') {
+                dateFilter = `date('now', 'start of year', 'localtime')`;
+            }
+            else {
+                dateFilter = `date('now', 'start of month', 'localtime')`;
+            }
+            whereClauseSub = `date(startDate) >= ${dateFilter} ${period === 'today' ? `AND date(startDate) = ${dateFilter}` : ''}`;
+            whereClauseInv = `date(date) >= ${dateFilter} ${period === 'today' ? `AND date(date) = ${dateFilter}` : ''}`;
+            whereClauseInst = `date(paymentDate) >= ${dateFilter} ${period === 'today' ? `AND date(paymentDate) = ${dateFilter}` : ''}`;
+            whereClauseRest += ` AND date(createdAt) >= ${dateFilter} ${period === 'today' ? `AND date(createdAt) = ${dateFilter}` : ''}`;
+            whereClauseExp = `date(date) >= ${dateFilter} ${period === 'today' ? `AND date(date) = ${dateFilter}` : ''}`;
         }
         try {
-            const subRes = await this.dataSource.query(`SELECT SUM(paidAmount) as total FROM subscriptions WHERE date(startDate) >= ${period === 'today' ? dateFilter : dateFilter} ${period === 'today' ? `AND date(startDate) = ${dateFilter}` : ''}`);
-            const invRes = await this.dataSource.query(`SELECT SUM(paidAmount) as total FROM invoices WHERE date(date) >= ${period === 'today' ? dateFilter : dateFilter} ${period === 'today' ? `AND date(date) = ${dateFilter}` : ''}`);
-            const instRes = await this.dataSource.query(`SELECT SUM(amount) as total FROM installment_payment WHERE date(paymentDate) >= ${period === 'today' ? dateFilter : dateFilter} ${period === 'today' ? `AND date(paymentDate) = ${dateFilter}` : ''}`).catch(() => [{ total: 0 }]);
-            const restRes = await this.dataSource.query(`SELECT SUM(totalAmount) as total FROM restaurant_orders WHERE status = 'paid' AND date(createdAt) >= ${period === 'today' ? dateFilter : dateFilter} ${period === 'today' ? `AND date(createdAt) = ${dateFilter}` : ''}`).catch(() => [{ total: 0 }]);
-            const expRes = await this.dataSource.query(`SELECT SUM(amount) as total FROM expenses WHERE date(date) >= ${period === 'today' ? dateFilter : dateFilter} ${period === 'today' ? `AND date(date) = ${dateFilter}` : ''}`);
+            const subRes = await this.dataSource.query(`SELECT SUM(paidAmount) as total FROM subscriptions ${whereClauseSub ? 'WHERE ' + whereClauseSub : ''}`);
+            const invRes = await this.dataSource.query(`SELECT SUM(paidAmount) as total FROM invoices ${whereClauseInv ? 'WHERE ' + whereClauseInv : ''}`);
+            const instRes = await this.dataSource.query(`SELECT SUM(amount) as total FROM installment_payment ${whereClauseInst ? 'WHERE ' + whereClauseInst : ''}`).catch(() => [{ total: 0 }]);
+            const restRes = await this.dataSource.query(`SELECT SUM(totalAmount) as total FROM restaurant_orders ${whereClauseRest ? 'WHERE ' + whereClauseRest : ''}`).catch(() => [{ total: 0 }]);
+            const expRes = await this.dataSource.query(`SELECT SUM(amount) as total FROM expenses ${whereClauseExp ? 'WHERE ' + whereClauseExp : ''}`);
             const activeSubsRes = await this.dataSource.query(`SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'`);
             const incomeSub = Number(subRes[0]?.total || 0);
             const incomeInv = Number(invRes[0]?.total || 0);

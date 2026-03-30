@@ -8,7 +8,12 @@ export class GlobalReportsController {
   constructor(private readonly globalReportsService: GlobalReportsService) {}
 
   @Get('dashboard')
-  async getDashboardData(@Query('period') period?: string, @Query('system') system?: string) {
-    return this.globalReportsService.getDashboardData(period || 'month', system);
+  async getDashboardData(
+    @Query('period') period?: string,
+    @Query('system') system?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    return this.globalReportsService.getDashboardData(period || 'month', system, startDate, endDate);
   }
 }
