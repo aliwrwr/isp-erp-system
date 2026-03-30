@@ -87,7 +87,7 @@
             <input type="file" ref="fileInput" accept=".sqlite" class="hidden" @change="onFileSelected" />
             
             <div class="flex gap-2">
-              <button @click=".fileInput.click()" class="flex-1 bg-white border-2 border-indigo-100 hover:border-indigo-500 text-indigo-700 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+              <button @click="fileInput.click()" class="flex-1 bg-white border-2 border-indigo-100 hover:border-indigo-500 text-indigo-700 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
                 <i class="fas fa-folder-open"></i>
                 اختيار ملف (.sqlite)
               </button>

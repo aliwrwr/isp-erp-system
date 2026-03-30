@@ -65,6 +65,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/backup',
+    name: 'Backup',
+    component: () => import('../views/BackupView.vue'),
+    meta: { requiresAuth: true, system: 'backup' },
+  },
+  {
     path: '/management',
     component: () => import('../layouts/SystemLayout.vue'),
     meta: { requiresAuth: true, system: 'management' },
