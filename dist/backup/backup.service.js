@@ -250,11 +250,39 @@ let BackupService = BackupService_1 = class BackupService {
             return { success: false, error: e.message };
         }
     }
+    async localBackup() {
+        try {
+            const backupDir = path.resolve(process.cwd(), 'backups');
+            if (!fs.existsSync(backupDir)) {
+                fs.mkdirSync(backupDir);
+            }
+            const now = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            const backupPath = path.resolve(backupDir, `isp-erp-backup-${now}.sqlite`);
+            fs.copyFileSync(DB_PATH, backupPath);
+            this.logger.log(`Local backup saved at: ${backupPath}`);
+            const files = fs.readdirSync(backupDir).filter(f => f.endsWith('.sqlite'));
+            if (files.length > 20) {
+                files.sort().reverse();
+                const filesToDelete = files.slice(20);
+                for (const file of filesToDelete) {
+                    try {
+                        fs.unlinkSync(path.resolve(backupDir, file));
+                    }
+                    catch (e) { }
+                }
+            }
+        }
+        catch (e) {
+            this.logger.error('Local backup failed: ' + e.message);
+        }
+    }
     async autoBackup() {
-        if (!this.config.enabled || !this.config.serviceAccount)
-            return;
-        this.logger.log('Running scheduled Google Drive backup...');
-        await this.backupNow();
+        this.logger.log('Running scheduled automatic backups...');
+        await this.localBackup();
+        if (this.config.enabled && this.config.serviceAccount) {
+            this.logger.log('Running scheduled Google Drive backup...');
+            await this.backupNow();
+        }
     }
 };
 exports.BackupService = BackupService;

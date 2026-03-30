@@ -31,5 +31,6 @@ export declare class BackupService {
         fileId?: string;
         error?: string;
     }>;
+    private localBackup;
     autoBackup(): Promise<void>;
 }
