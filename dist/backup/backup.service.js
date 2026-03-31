@@ -142,7 +142,7 @@ let BackupService = BackupService_1 = class BackupService {
         const now = Math.floor(Date.now() / 1000);
         const payload = {
             iss: sa.client_email,
-            scope: 'https://www.googleapis.com/auth/drive.file',
+            scope: 'https://www.googleapis.com/auth/drive',
             aud: 'https://oauth2.googleapis.com/token',
             iat: now,
             exp: now + 3600,
@@ -201,7 +201,7 @@ let BackupService = BackupService_1 = class BackupService {
         return new Promise((resolve, reject) => {
             const options = {
                 hostname: 'www.googleapis.com',
-                path: '/upload/drive/v3/files?uploadType=multipart',
+                path: '/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true',
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
