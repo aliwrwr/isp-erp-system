@@ -18,11 +18,12 @@ export declare class BackupService {
         dbSizeKb: number;
         dbModified: string | null;
     };
-    getAuthUrl(redirectUri: string): string;
+    private readonly REDIRECT_URI;
+    getAuthUrl(): string;
     saveOAuthCredentials(clientId: string, clientSecret: string, folderId: string): {
         success: boolean;
     };
-    exchangeCodeForToken(code: string, redirectUri: string): Promise<{
+    exchangeCodeForToken(code: string): Promise<{
         success: boolean;
         error?: string;
     }>;

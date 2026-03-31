@@ -108,10 +108,11 @@ let BackupService = BackupService_1 = class BackupService {
             dbModified: dbExists ? fs.statSync(DB_PATH).mtime.toISOString() : null,
         };
     }
-    getAuthUrl(redirectUri) {
+    REDIRECT_URI = 'http://localhost';
+    getAuthUrl() {
         const params = querystring.stringify({
             client_id: this.config.clientId,
-            redirect_uri: redirectUri,
+            redirect_uri: this.REDIRECT_URI,
             response_type: 'code',
             scope: 'https://www.googleapis.com/auth/drive.file',
             access_type: 'offline',
@@ -126,13 +127,13 @@ let BackupService = BackupService_1 = class BackupService {
         this.saveConfig();
         return { success: true };
     }
-    async exchangeCodeForToken(code, redirectUri) {
+    async exchangeCodeForToken(code) {
         try {
             const postData = querystring.stringify({
                 code,
                 client_id: this.config.clientId,
                 client_secret: this.config.clientSecret,
-                redirect_uri: redirectUri,
+                redirect_uri: this.REDIRECT_URI,
                 grant_type: 'authorization_code',
             });
             const tokenData = await this.httpsPost('oauth2.googleapis.com', '/token', postData, {

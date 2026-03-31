@@ -75,10 +75,12 @@ export class BackupService {
     };
   }
 
-  getAuthUrl(redirectUri: string): string {
+  private readonly REDIRECT_URI = 'http://localhost';
+
+  getAuthUrl(): string {
     const params = querystring.stringify({
       client_id: this.config.clientId,
-      redirect_uri: redirectUri,
+      redirect_uri: this.REDIRECT_URI,
       response_type: 'code',
       scope: 'https://www.googleapis.com/auth/drive.file',
       access_type: 'offline',
@@ -95,13 +97,13 @@ export class BackupService {
     return { success: true };
   }
 
-  async exchangeCodeForToken(code: string, redirectUri: string): Promise<{ success: boolean; error?: string }> {
+  async exchangeCodeForToken(code: string): Promise<{ success: boolean; error?: string }> {
     try {
       const postData = querystring.stringify({
         code,
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
-        redirect_uri: redirectUri,
+        redirect_uri: this.REDIRECT_URI,
         grant_type: 'authorization_code',
       });
 

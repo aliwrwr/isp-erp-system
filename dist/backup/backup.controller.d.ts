@@ -31,12 +31,11 @@ export declare class BackupController {
     }): {
         success: boolean;
     };
-    getAuthUrl(redirectUri: string): {
+    getAuthUrl(): {
         url: string;
     };
     handleOAuthCallback(body: {
         code: string;
-        redirect_uri: string;
     }): Promise<{
         success: boolean;
         error?: string;

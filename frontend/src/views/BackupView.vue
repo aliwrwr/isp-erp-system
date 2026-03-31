@@ -149,11 +149,9 @@
                <h4 class="font-bold mb-2"><i class="fas fa-info-circle ml-1"></i> طريقة الإعداد:</h4>
                <ol class="list-decimal list-inside space-y-1 text-xs">
                  <li>اذهب إلى <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="underline font-bold">Google Cloud Console</a></li>
-                 <li>أنشئ مشروع جديد (أو استخدم المشروع الحالي)</li>
-                 <li>فعّل <strong>Google Drive API</strong> من قسم APIs & Services</li>
+                 <li>أنشئ مشروع جديد (أو استخدم المشروع الحالي) وفعّل <strong>Google Drive API</strong></li>
                  <li>اذهب لـ <strong>OAuth consent screen</strong> واختر External ثم أضف بريدك كـ Test User</li>
-                 <li>أنشئ <strong>OAuth 2.0 Client ID</strong> من نوع <strong>Web Application</strong></li>
-                 <li>أضف رابط إعادة التوجيه (Redirect URI): <code class="bg-blue-100 px-1 rounded" dir="ltr">{{ redirectUri }}</code></li>
+                 <li>أنشئ <strong>OAuth 2.0 Client ID</strong> من نوع <strong>Desktop app</strong></li>
                  <li>انسخ الـ Client ID والـ Client Secret وأدخلهما هنا</li>
                </ol>
              </div>
@@ -171,15 +169,33 @@
                <input type="text" v-model="oauthConfig.folderId" dir="ltr" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white text-sm focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder="1A2b3C4d5E6f7G8h9I0J" />
              </div>
              
-             <div class="flex gap-2">
-               <button @click="saveOAuthConfig" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-                 <i class="fas fa-save"></i>
-                 حفظ الإعدادات
-               </button>
-               <button v-if="status?.hasOAuth" @click="startGoogleAuth" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+             <button @click="saveOAuthConfig" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+               <i class="fas fa-save"></i>
+               حفظ الإعدادات
+             </button>
+
+             <!-- Step 2: Google Auth -->
+             <div v-if="status?.hasOAuth && !status?.configured" class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+               <h4 class="font-bold text-amber-800 text-sm"><i class="fas fa-key ml-1"></i> الخطوة 2: ربط حساب Google</h4>
+               
+               <button @click="startGoogleAuth" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
                  <i class="fab fa-google"></i>
-                 تسجيل الدخول بحساب Google
+                 فتح صفحة تسجيل الدخول بحساب Google
                </button>
+               
+               <div class="bg-white rounded-lg p-3 border border-amber-100 text-xs text-gray-600 leading-relaxed">
+                 <p class="font-bold text-gray-800 mb-1">بعد تسجيل الدخول والموافقة:</p>
+                 <p>سيتحول المتصفح لصفحة فارغة وفي شريط العنوان ستجد رابط يحتوي على <code class="bg-gray-100 px-1 rounded">code=</code></p>
+                 <p class="mt-1">انسخ الكود من الرابط والصقه في الخانة أدناه:</p>
+               </div>
+               
+               <div class="flex gap-2">
+                 <input type="text" v-model="authCode" dir="ltr" class="flex-1 px-4 py-3 border border-gray-300 rounded-xl bg-white text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="4/0Axxxxxxxxxxxxxxxxxxxxxxx" />
+                 <button @click="submitAuthCode" :disabled="!authCode || oauthProcessing" class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 px-6 rounded-xl transition flex items-center justify-center gap-2">
+                   <i class="fas fa-check" :class="{ 'fa-spin': oauthProcessing }"></i>
+                   ربط
+                 </button>
+               </div>
              </div>
 
              <!-- OAuth Processing Notice -->
@@ -195,13 +211,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
-const route = useRoute();
 
 const status = ref<any>(null);
 const fileInput = ref<any>(null);
@@ -210,15 +225,12 @@ const restoring = ref(false);
 const uploading = ref(false);
 const downloading = ref(false);
 const oauthProcessing = ref(false);
+const authCode = ref('');
 
 const oauthConfig = ref({
   clientId: '',
   clientSecret: '',
   folderId: '',
-});
-
-const redirectUri = computed(() => {
-  return window.location.origin + window.location.pathname;
 });
 
 function back() {
@@ -313,32 +325,29 @@ async function saveOAuthConfig() {
 
 async function startGoogleAuth() {
   try {
-    const res = await api.get('/backup/gdrive-auth-url', {
-      params: { redirect_uri: redirectUri.value }
-    });
-    window.location.href = res.data.url;
+    const res = await api.get('/backup/gdrive-auth-url');
+    window.open(res.data.url, '_blank');
   } catch (e: any) {
     Swal.fire('خطأ', 'فشل في إنشاء رابط التوثيق', 'error');
   }
 }
 
-async function handleOAuthCallback() {
-  const code = route.query.code as string;
-  if (!code) return;
+async function submitAuthCode() {
+  if (!authCode.value) return;
+
+  // Extract code from full URL if user pasted the whole URL
+  let code = authCode.value.trim();
+  const codeMatch = code.match(/[?&]code=([^&]+)/);
+  if (codeMatch) {
+    code = decodeURIComponent(codeMatch[1]);
+  }
 
   oauthProcessing.value = true;
-
-  // Clean URL from code params
-  const cleanUrl = window.location.pathname;
-  window.history.replaceState({}, '', cleanUrl);
-
   try {
-    const res = await api.post('/backup/gdrive-callback', {
-      code,
-      redirect_uri: redirectUri.value,
-    });
+    const res = await api.post('/backup/gdrive-callback', { code });
     if (res.data.success) {
       Swal.fire('تم الربط بنجاح!', 'تم ربط حساب Google Drive. يمكنك الآن رفع النسخ الاحتياطية.', 'success');
+      authCode.value = '';
       fetchStatus();
     } else {
       Swal.fire('خطأ', res.data.error || 'فشل في ربط الحساب', 'error');
@@ -380,9 +389,6 @@ async function backupNowToDrive() {
 }
 
 onMounted(() => {
-  if (route.query.code) {
-    handleOAuthCallback();
-  }
   fetchStatus();
 });
 </script>
