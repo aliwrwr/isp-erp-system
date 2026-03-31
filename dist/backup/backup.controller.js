@@ -41,19 +41,20 @@ let BackupController = class BackupController {
         return this.backupService.getStatus();
     }
     saveGDriveConfig(body) {
-        if (!body.serviceAccountJson) {
-            throw new common_1.BadRequestException('يجب توفير ملف Service Account JSON');
+        if (!body.clientId || !body.clientSecret) {
+            throw new common_1.BadRequestException('يجب توفير Client ID و Client Secret');
         }
-        try {
-            const parsed = JSON.parse(body.serviceAccountJson);
-            if (!parsed.client_email || !parsed.private_key) {
-                throw new Error('Missing required fields');
-            }
-        }
-        catch {
-            throw new common_1.BadRequestException('صيغة JSON غير صالحة أو تنقص حقول مطلوبة');
-        }
-        return this.backupService.saveGoogleDriveConfig(body.serviceAccountJson, body.folderId || '', !!body.enabled);
+        return this.backupService.saveOAuthCredentials(body.clientId.trim(), body.clientSecret.trim(), body.folderId?.trim() || '');
+    }
+    getAuthUrl(redirectUri) {
+        if (!redirectUri)
+            throw new common_1.BadRequestException('redirect_uri is required');
+        return { url: this.backupService.getAuthUrl(redirectUri) };
+    }
+    async handleOAuthCallback(body) {
+        if (!body.code)
+            throw new common_1.BadRequestException('Authorization code is required');
+        return this.backupService.exchangeCodeForToken(body.code, body.redirect_uri);
     }
     async backupNow() {
         return this.backupService.backupNow();
@@ -91,6 +92,20 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], BackupController.prototype, "saveGDriveConfig", null);
+__decorate([
+    (0, common_1.Get)('gdrive-auth-url'),
+    __param(0, (0, common_1.Query)('redirect_uri')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BackupController.prototype, "getAuthUrl", null);
+__decorate([
+    (0, common_1.Post)('gdrive-callback'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], BackupController.prototype, "handleOAuthCallback", null);
 __decorate([
     (0, common_1.Post)('gdrive-now'),
     __metadata("design:type", Function),

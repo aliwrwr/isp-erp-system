@@ -110,46 +110,83 @@
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden border-t-4 border-t-amber-400 flex flex-col">
         <div class="p-5 border-b border-gray-50 flex items-center gap-3 bg-gray-50/50">
           <i class="fab fa-google-drive text-amber-500"></i>
-          <h3 class="font-bold text-gray-800">الربط السحابي (Google Drive)</h3>
+          <h3 class="font-bold text-gray-800">الربط السحابي (Google Drive - OAuth 2.0)</h3>
         </div>
         <div class="p-6 space-y-5">
            
-          <div v-if="status?.configured" class="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-4">
+          <!-- OAuth Connected State -->
+          <div v-if="status?.configured" class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
              <div class="flex items-center gap-3 mb-2">
-               <i class="fas fa-check-circle text-amber-500 text-xl"></i>
-               <h4 class="font-bold text-amber-800">تم تكوين اتصال Google Drive بنجاح</h4>
+               <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
+               <h4 class="font-bold text-emerald-800">تم ربط حساب Google Drive بنجاح</h4>
              </div>
-             <p class="text-sm text-amber-700/80 mb-4 pr-8">يمكنك الآن رفع نسخة احتياطية فورية إلى السحابة، أو السماح للنظام برفعها كل 6 ساعات بشكل اوتوماتيكي.</p>
+             <p class="text-sm text-emerald-700/80 mb-4 pr-8">الحساب متصل ويمكنك رفع نسخ احتياطية مباشرة أو تفعيل الرفع التلقائي كل 6 ساعات.</p>
              
              <div class="flex flex-wrap gap-2 pr-8">
                <button @click="backupNowToDrive" :disabled="uploading" class="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold py-2.5 px-5 rounded-lg transition shadow-md shadow-amber-500/20 flex items-center gap-2 text-sm">
                   <i class="fas fa-cloud-upload-alt" :class="{ 'animate-bounce': uploading }"></i>
-                  {{ uploading ? 'جاري الرفع والسحب...' : 'رفع نسخة احتياطية للـ Drive الآن' }}
+                  {{ uploading ? 'جاري الرفع...' : 'رفع نسخة للـ Drive الآن' }}
                </button>
                
                <button v-if="status?.enabled" @click="toggleDriveAuto(false)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-5 rounded-lg transition flex items-center gap-2 text-sm">
-                  <i class="fas fa-pause"></i> تعطيل النسخ السحابي التلقائي
+                  <i class="fas fa-pause"></i> تعطيل النسخ التلقائي
                </button>
                <button v-else @click="toggleDriveAuto(true)" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold py-2.5 px-5 rounded-lg transition flex items-center gap-2 text-sm">
-                  <i class="fas fa-play"></i> تفعيل النسخ السحابي التلقائي
+                  <i class="fas fa-play"></i> تفعيل النسخ التلقائي
                </button>
              </div>
           </div>
 
+          <!-- Last Error -->
+          <div v-if="status?.lastError" class="bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
+            <i class="fas fa-exclamation-triangle ml-1"></i>
+            آخر خطأ: {{ status.lastError }}
+          </div>
+
+          <!-- OAuth Setup -->
           <div class="space-y-4 pt-4 border-t border-gray-100">
+             <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800 leading-relaxed">
+               <h4 class="font-bold mb-2"><i class="fas fa-info-circle ml-1"></i> طريقة الإعداد:</h4>
+               <ol class="list-decimal list-inside space-y-1 text-xs">
+                 <li>اذهب إلى <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="underline font-bold">Google Cloud Console</a></li>
+                 <li>أنشئ مشروع جديد (أو استخدم المشروع الحالي)</li>
+                 <li>فعّل <strong>Google Drive API</strong> من قسم APIs & Services</li>
+                 <li>اذهب لـ <strong>OAuth consent screen</strong> واختر External ثم أضف بريدك كـ Test User</li>
+                 <li>أنشئ <strong>OAuth 2.0 Client ID</strong> من نوع <strong>Web Application</strong></li>
+                 <li>أضف رابط إعادة التوجيه (Redirect URI): <code class="bg-blue-100 px-1 rounded" dir="ltr">{{ redirectUri }}</code></li>
+                 <li>انسخ الـ Client ID والـ Client Secret وأدخلهما هنا</li>
+               </ol>
+             </div>
+
              <div>
-               <label class="block text-sm font-bold text-gray-700 mb-1">بيانات الـ Service Account (JSON)</label>
-               <textarea v-model="gdriveConfig.serviceAccountJson" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-left bg-gray-50 focus:bg-white text-xs font-mono focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder='{ "type": "service_account", "project_id": "...", ... }'></textarea>
+               <label class="block text-sm font-bold text-gray-700 mb-1">Client ID</label>
+               <input type="text" v-model="oauthConfig.clientId" dir="ltr" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white text-sm font-mono focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder="xxxx.apps.googleusercontent.com" />
+             </div>
+             <div>
+               <label class="block text-sm font-bold text-gray-700 mb-1">Client Secret</label>
+               <input type="password" v-model="oauthConfig.clientSecret" dir="ltr" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white text-sm font-mono focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder="GOCSPX-xxxxxxxxxxxx" />
              </div>
              <div>
                <label class="block text-sm font-bold text-gray-700 mb-1">مجلد الـ Folder ID (اختياري)</label>
-               <input type="text" v-model="gdriveConfig.folderId" dir="ltr" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white text-sm focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder="e.g. 1A2b3C4d5E6f7G8h9I0J" />
+               <input type="text" v-model="oauthConfig.folderId" dir="ltr" class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white text-sm focus:ring-2 focus:ring-amber-500 outline-none transition" placeholder="1A2b3C4d5E6f7G8h9I0J" />
              </div>
              
-             <button @click="saveDriveConfig" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
-               <i class="fas fa-save"></i>
-               حفظ إعدادات Google Drive
-             </button>
+             <div class="flex gap-2">
+               <button @click="saveOAuthConfig" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                 <i class="fas fa-save"></i>
+                 حفظ الإعدادات
+               </button>
+               <button v-if="status?.hasOAuth" @click="startGoogleAuth" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                 <i class="fab fa-google"></i>
+                 تسجيل الدخول بحساب Google
+               </button>
+             </div>
+
+             <!-- OAuth Processing Notice -->
+             <div v-if="oauthProcessing" class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+               <i class="fas fa-spinner fa-spin text-amber-500 text-2xl mb-2"></i>
+               <p class="text-sm text-amber-700 font-bold">جاري ربط حساب Google... يرجى الانتظار</p>
+             </div>
           </div>
         </div>
       </div>
@@ -158,12 +195,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import api from '../api';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
+const route = useRoute();
 
 const status = ref<any>(null);
 const fileInput = ref<any>(null);
@@ -171,11 +209,16 @@ const selectedFile = ref<File | null>(null);
 const restoring = ref(false);
 const uploading = ref(false);
 const downloading = ref(false);
+const oauthProcessing = ref(false);
 
-const gdriveConfig = ref({
-  serviceAccountJson: '',
+const oauthConfig = ref({
+  clientId: '',
+  clientSecret: '',
   folderId: '',
-  enabled: true
+});
+
+const redirectUri = computed(() => {
+  return window.location.origin + window.location.pathname;
 });
 
 function back() {
@@ -254,21 +297,64 @@ async function restoreBackup() {
   }
 }
 
-async function saveDriveConfig() {
+async function saveOAuthConfig() {
+  if (!oauthConfig.value.clientId || !oauthConfig.value.clientSecret) {
+    Swal.fire('خطأ', 'يجب إدخال Client ID و Client Secret', 'error');
+    return;
+  }
   try {
-    await api.post('/backup/gdrive-config', gdriveConfig.value);
-    Swal.fire('نجاح', 'تم حفظ إعدادات الربط بنجاح', 'success');
+    await api.post('/backup/gdrive-config', oauthConfig.value);
+    Swal.fire('نجاح', 'تم حفظ الإعدادات. الآن اضغط "تسجيل الدخول بحساب Google" للربط.', 'success');
     fetchStatus();
   } catch (e: any) {
     Swal.fire('خطأ', e.response?.data?.message || 'فشل حفظ الإعدادات', 'error');
   }
 }
 
+async function startGoogleAuth() {
+  try {
+    const res = await api.get('/backup/gdrive-auth-url', {
+      params: { redirect_uri: redirectUri.value }
+    });
+    window.location.href = res.data.url;
+  } catch (e: any) {
+    Swal.fire('خطأ', 'فشل في إنشاء رابط التوثيق', 'error');
+  }
+}
+
+async function handleOAuthCallback() {
+  const code = route.query.code as string;
+  if (!code) return;
+
+  oauthProcessing.value = true;
+
+  // Clean URL from code params
+  const cleanUrl = window.location.pathname;
+  window.history.replaceState({}, '', cleanUrl);
+
+  try {
+    const res = await api.post('/backup/gdrive-callback', {
+      code,
+      redirect_uri: redirectUri.value,
+    });
+    if (res.data.success) {
+      Swal.fire('تم الربط بنجاح!', 'تم ربط حساب Google Drive. يمكنك الآن رفع النسخ الاحتياطية.', 'success');
+      fetchStatus();
+    } else {
+      Swal.fire('خطأ', res.data.error || 'فشل في ربط الحساب', 'error');
+    }
+  } catch (e: any) {
+    Swal.fire('خطأ', e.response?.data?.message || 'فشل في ربط حساب Google', 'error');
+  } finally {
+    oauthProcessing.value = false;
+  }
+}
+
 async function toggleDriveAuto(enable: boolean) {
   try {
     if (enable) {
-      gdriveConfig.value.enabled = true;
-      await saveDriveConfig();
+      await api.post('/backup/gdrive-config', oauthConfig.value);
+      fetchStatus();
     } else {
       await api.post('/backup/gdrive-disable');
       fetchStatus();
@@ -294,6 +380,9 @@ async function backupNowToDrive() {
 }
 
 onMounted(() => {
+  if (route.query.code) {
+    handleOAuthCallback();
+  }
   fetchStatus();
 });
 </script>

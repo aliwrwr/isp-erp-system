@@ -13,18 +13,25 @@ export declare class BackupService {
         folderId: string;
         lastBackup: string | null;
         lastError: string | null;
+        hasOAuth: boolean;
         dbExists: boolean;
         dbSizeKb: number;
         dbModified: string | null;
     };
-    saveGoogleDriveConfig(serviceAccountJson: string, folderId: string, enabled: boolean): {
+    getAuthUrl(redirectUri: string): string;
+    saveOAuthCredentials(clientId: string, clientSecret: string, folderId: string): {
         success: boolean;
     };
+    exchangeCodeForToken(code: string, redirectUri: string): Promise<{
+        success: boolean;
+        error?: string;
+    }>;
     disableGoogleDrive(): {
         success: boolean;
     };
     restoreBackup(fileBuffer: Buffer): Promise<void>;
     private getAccessToken;
+    private httpsPost;
     private uploadToDrive;
     backupNow(): Promise<{
         success: boolean;

@@ -19,17 +19,28 @@ export declare class BackupController {
         folderId: string;
         lastBackup: string | null;
         lastError: string | null;
+        hasOAuth: boolean;
         dbExists: boolean;
         dbSizeKb: number;
         dbModified: string | null;
     };
     saveGDriveConfig(body: {
-        serviceAccountJson: string;
+        clientId: string;
+        clientSecret: string;
         folderId: string;
-        enabled: boolean;
     }): {
         success: boolean;
     };
+    getAuthUrl(redirectUri: string): {
+        url: string;
+    };
+    handleOAuthCallback(body: {
+        code: string;
+        redirect_uri: string;
+    }): Promise<{
+        success: boolean;
+        error?: string;
+    }>;
     backupNow(): Promise<{
         success: boolean;
         fileId?: string;

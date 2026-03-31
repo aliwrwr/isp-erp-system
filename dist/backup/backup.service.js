@@ -54,7 +54,7 @@ const typeorm_2 = require("typeorm");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const https = __importStar(require("https"));
-const jwt = __importStar(require("jsonwebtoken"));
+const querystring = __importStar(require("querystring"));
 const DB_PATH = path.resolve(process.cwd(), 'isp-erp.sqlite');
 const CONFIG_PATH = path.resolve(process.cwd(), 'backup-config.json');
 let BackupService = BackupService_1 = class BackupService {
@@ -67,7 +67,9 @@ let BackupService = BackupService_1 = class BackupService {
     config = {
         enabled: false,
         folderId: '',
-        serviceAccount: null,
+        clientId: '',
+        clientSecret: '',
+        refreshToken: '',
         lastBackup: null,
         lastError: null,
     };
@@ -95,23 +97,60 @@ let BackupService = BackupService_1 = class BackupService {
     getStatus() {
         const dbExists = fs.existsSync(DB_PATH);
         return {
-            configured: !!this.config.serviceAccount,
+            configured: !!this.config.refreshToken,
             enabled: this.config.enabled,
             folderId: this.config.folderId,
             lastBackup: this.config.lastBackup,
             lastError: this.config.lastError,
+            hasOAuth: !!this.config.clientId && !!this.config.clientSecret,
             dbExists,
             dbSizeKb: dbExists ? Math.round(fs.statSync(DB_PATH).size / 1024) : 0,
             dbModified: dbExists ? fs.statSync(DB_PATH).mtime.toISOString() : null,
         };
     }
-    saveGoogleDriveConfig(serviceAccountJson, folderId, enabled) {
-        const serviceAccount = JSON.parse(serviceAccountJson);
-        this.config.serviceAccount = serviceAccount;
+    getAuthUrl(redirectUri) {
+        const params = querystring.stringify({
+            client_id: this.config.clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            access_type: 'offline',
+            prompt: 'consent',
+        });
+        return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    }
+    saveOAuthCredentials(clientId, clientSecret, folderId) {
+        this.config.clientId = clientId;
+        this.config.clientSecret = clientSecret;
         this.config.folderId = folderId;
-        this.config.enabled = enabled;
         this.saveConfig();
         return { success: true };
+    }
+    async exchangeCodeForToken(code, redirectUri) {
+        try {
+            const postData = querystring.stringify({
+                code,
+                client_id: this.config.clientId,
+                client_secret: this.config.clientSecret,
+                redirect_uri: redirectUri,
+                grant_type: 'authorization_code',
+            });
+            const tokenData = await this.httpsPost('oauth2.googleapis.com', '/token', postData, {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            });
+            if (tokenData.refresh_token) {
+                this.config.refreshToken = tokenData.refresh_token;
+                this.config.enabled = true;
+                this.saveConfig();
+                return { success: true };
+            }
+            else {
+                return { success: false, error: tokenData.error_description || 'No refresh token returned' };
+            }
+        }
+        catch (e) {
+            return { success: false, error: e.message };
+        }
     }
     disableGoogleDrive() {
         this.config.enabled = false;
@@ -134,44 +173,40 @@ let BackupService = BackupService_1 = class BackupService {
             fs.copyFileSync(tempPath, DB_PATH);
             fs.unlinkSync(tempPath);
         }
-        this.logger.log('Database restored — restarting process...');
+        this.logger.log('Database restored - restarting process...');
         setTimeout(() => process.exit(0), 500);
     }
     async getAccessToken() {
-        const sa = this.config.serviceAccount;
-        const now = Math.floor(Date.now() / 1000);
-        const payload = {
-            iss: sa.client_email,
-            scope: 'https://www.googleapis.com/auth/drive',
-            aud: 'https://oauth2.googleapis.com/token',
-            iat: now,
-            exp: now + 3600,
-        };
-        const jwtToken = jwt.sign(payload, sa.private_key, { algorithm: 'RS256' });
+        const postData = querystring.stringify({
+            client_id: this.config.clientId,
+            client_secret: this.config.clientSecret,
+            refresh_token: this.config.refreshToken,
+            grant_type: 'refresh_token',
+        });
+        const tokenData = await this.httpsPost('oauth2.googleapis.com', '/token', postData, {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        });
+        if (tokenData.access_token)
+            return tokenData.access_token;
+        throw new Error(tokenData.error_description || 'Failed to refresh access token');
+    }
+    httpsPost(hostname, urlPath, body, headers) {
         return new Promise((resolve, reject) => {
-            const body = `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwtToken}`;
             const options = {
-                hostname: 'oauth2.googleapis.com',
-                path: '/token',
+                hostname,
+                path: urlPath,
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Content-Length': Buffer.byteLength(body),
-                },
+                headers: { ...headers, 'Content-Length': Buffer.byteLength(body) },
             };
             const req = https.request(options, (res) => {
                 let data = '';
                 res.on('data', (chunk) => (data += chunk));
                 res.on('end', () => {
                     try {
-                        const parsed = JSON.parse(data);
-                        if (parsed.access_token)
-                            resolve(parsed.access_token);
-                        else
-                            reject(new Error(parsed.error_description || 'Token request failed'));
+                        resolve(JSON.parse(data));
                     }
                     catch {
-                        reject(new Error('Failed to parse token response'));
+                        reject(new Error('Failed to parse response: ' + data.slice(0, 200)));
                     }
                 });
             });
@@ -201,7 +236,7 @@ let BackupService = BackupService_1 = class BackupService {
         return new Promise((resolve, reject) => {
             const options = {
                 hostname: 'www.googleapis.com',
-                path: '/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true',
+                path: '/upload/drive/v3/files?uploadType=multipart',
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -232,8 +267,8 @@ let BackupService = BackupService_1 = class BackupService {
     }
     async backupNow() {
         try {
-            if (!this.config.serviceAccount) {
-                throw new Error('Google Drive not configured');
+            if (!this.config.refreshToken) {
+                throw new Error('Google Drive not configured - OAuth not completed');
             }
             const token = await this.getAccessToken();
             const fileId = await this.uploadToDrive(token);
@@ -279,7 +314,7 @@ let BackupService = BackupService_1 = class BackupService {
     async autoBackup() {
         this.logger.log('Running scheduled automatic backups...');
         await this.localBackup();
-        if (this.config.enabled && this.config.serviceAccount) {
+        if (this.config.enabled && this.config.refreshToken) {
             this.logger.log('Running scheduled Google Drive backup...');
             await this.backupNow();
         }

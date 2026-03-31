@@ -5,7 +5,7 @@ import { DataSource } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as https from 'https';
-import * as jwt from 'jsonwebtoken';
+import * as querystring from 'querystring';
 
 const DB_PATH = path.resolve(process.cwd(), 'isp-erp.sqlite');
 const CONFIG_PATH = path.resolve(process.cwd(), 'backup-config.json');
@@ -13,7 +13,9 @@ const CONFIG_PATH = path.resolve(process.cwd(), 'backup-config.json');
 interface BackupConfig {
   enabled: boolean;
   folderId: string;
-  serviceAccount: Record<string, string> | null;
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
   lastBackup: string | null;
   lastError: string | null;
 }
@@ -29,7 +31,9 @@ export class BackupService {
   private config: BackupConfig = {
     enabled: false,
     folderId: '',
-    serviceAccount: null,
+    clientId: '',
+    clientSecret: '',
+    refreshToken: '',
     lastBackup: null,
     lastError: null,
   };
@@ -59,24 +63,63 @@ export class BackupService {
   getStatus() {
     const dbExists = fs.existsSync(DB_PATH);
     return {
-      configured: !!this.config.serviceAccount,
+      configured: !!this.config.refreshToken,
       enabled: this.config.enabled,
       folderId: this.config.folderId,
       lastBackup: this.config.lastBackup,
       lastError: this.config.lastError,
+      hasOAuth: !!this.config.clientId && !!this.config.clientSecret,
       dbExists,
       dbSizeKb: dbExists ? Math.round(fs.statSync(DB_PATH).size / 1024) : 0,
       dbModified: dbExists ? fs.statSync(DB_PATH).mtime.toISOString() : null,
     };
   }
 
-  saveGoogleDriveConfig(serviceAccountJson: string, folderId: string, enabled: boolean) {
-    const serviceAccount = JSON.parse(serviceAccountJson);
-    this.config.serviceAccount = serviceAccount;
+  getAuthUrl(redirectUri: string): string {
+    const params = querystring.stringify({
+      client_id: this.config.clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      access_type: 'offline',
+      prompt: 'consent',
+    });
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  }
+
+  saveOAuthCredentials(clientId: string, clientSecret: string, folderId: string) {
+    this.config.clientId = clientId;
+    this.config.clientSecret = clientSecret;
     this.config.folderId = folderId;
-    this.config.enabled = enabled;
     this.saveConfig();
     return { success: true };
+  }
+
+  async exchangeCodeForToken(code: string, redirectUri: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const postData = querystring.stringify({
+        code,
+        client_id: this.config.clientId,
+        client_secret: this.config.clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      });
+
+      const tokenData: any = await this.httpsPost('oauth2.googleapis.com', '/token', postData, {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      });
+
+      if (tokenData.refresh_token) {
+        this.config.refreshToken = tokenData.refresh_token;
+        this.config.enabled = true;
+        this.saveConfig();
+        return { success: true };
+      } else {
+        return { success: false, error: tokenData.error_description || 'No refresh token returned' };
+      }
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   }
 
   disableGoogleDrive() {
@@ -86,64 +129,55 @@ export class BackupService {
   }
 
   async restoreBackup(fileBuffer: Buffer) {
-    // 1. كتابة الملف المؤقت
     const tempPath = DB_PATH + '.restore_temp';
     fs.writeFileSync(tempPath, fileBuffer);
 
-    // 2. إغلاق اتصال قاعدة البيانات حتى يمكن استبدال الملف على Windows
     try {
       await this.dataSource.destroy();
     } catch {}
 
-    // 3. استبدال الملف
     try {
       if (fs.existsSync(DB_PATH)) fs.unlinkSync(DB_PATH);
       fs.renameSync(tempPath, DB_PATH);
     } catch (e) {
-      // محاولة أخرى بـ copyFile إذا فشل rename
       fs.copyFileSync(tempPath, DB_PATH);
       fs.unlinkSync(tempPath);
     }
 
-    // 4. إعادة تشغيل العملية حتى يعيد TypeORM فتح الاتصال من الصفر
-    this.logger.log('Database restored — restarting process...');
+    this.logger.log('Database restored - restarting process...');
     setTimeout(() => process.exit(0), 500);
   }
 
   private async getAccessToken(): Promise<string> {
-    const sa = this.config.serviceAccount as any;
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: sa.client_email,
-      scope: 'https://www.googleapis.com/auth/drive',
-      aud: 'https://oauth2.googleapis.com/token',
-      iat: now,
-      exp: now + 3600,
-    };
-    const jwtToken = jwt.sign(payload, sa.private_key, { algorithm: 'RS256' });
+    const postData = querystring.stringify({
+      client_id: this.config.clientId,
+      client_secret: this.config.clientSecret,
+      refresh_token: this.config.refreshToken,
+      grant_type: 'refresh_token',
+    });
 
+    const tokenData: any = await this.httpsPost('oauth2.googleapis.com', '/token', postData, {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    });
+
+    if (tokenData.access_token) return tokenData.access_token;
+    throw new Error(tokenData.error_description || 'Failed to refresh access token');
+  }
+
+  private httpsPost(hostname: string, urlPath: string, body: string | Buffer, headers: Record<string, any>): Promise<any> {
     return new Promise((resolve, reject) => {
-      const body = `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwtToken}`;
       const options = {
-        hostname: 'oauth2.googleapis.com',
-        path: '/token',
+        hostname,
+        path: urlPath,
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': Buffer.byteLength(body),
-        },
+        headers: { ...headers, 'Content-Length': Buffer.byteLength(body) },
       };
       const req = https.request(options, (res) => {
         let data = '';
         res.on('data', (chunk) => (data += chunk));
         res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.access_token) resolve(parsed.access_token);
-            else reject(new Error(parsed.error_description || 'Token request failed'));
-          } catch {
-            reject(new Error('Failed to parse token response'));
-          }
+          try { resolve(JSON.parse(data)); }
+          catch { reject(new Error('Failed to parse response: ' + data.slice(0, 200))); }
         });
       });
       req.on('error', reject);
@@ -175,7 +209,7 @@ export class BackupService {
     return new Promise((resolve, reject) => {
       const options = {
         hostname: 'www.googleapis.com',
-        path: '/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true',
+        path: '/upload/drive/v3/files?uploadType=multipart',
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -204,8 +238,8 @@ export class BackupService {
 
   async backupNow(): Promise<{ success: boolean; fileId?: string; error?: string }> {
     try {
-      if (!this.config.serviceAccount) {
-        throw new Error('Google Drive not configured');
+      if (!this.config.refreshToken) {
+        throw new Error('Google Drive not configured - OAuth not completed');
       }
       const token = await this.getAccessToken();
       const fileId = await this.uploadToDrive(token);
@@ -232,16 +266,13 @@ export class BackupService {
       const backupPath = path.resolve(backupDir, `isp-erp-backup-${now}.sqlite`);
       fs.copyFileSync(DB_PATH, backupPath);
       this.logger.log(`Local backup saved at: ${backupPath}`);
-      
-      // Clean up old backups (keep last 20)
+
       const files = fs.readdirSync(backupDir).filter(f => f.endsWith('.sqlite'));
       if (files.length > 20) {
         files.sort().reverse();
         const filesToDelete = files.slice(20);
         for (const file of filesToDelete) {
-          try {
-            fs.unlinkSync(path.resolve(backupDir, file));
-          } catch(e) {}
+          try { fs.unlinkSync(path.resolve(backupDir, file)); } catch(e) {}
         }
       }
     } catch(e) {
@@ -253,8 +284,8 @@ export class BackupService {
   async autoBackup() {
     this.logger.log('Running scheduled automatic backups...');
     await this.localBackup();
-    
-    if (this.config.enabled && this.config.serviceAccount) {
+
+    if (this.config.enabled && this.config.refreshToken) {
       this.logger.log('Running scheduled Google Drive backup...');
       await this.backupNow();
     }

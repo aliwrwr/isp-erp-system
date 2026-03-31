@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -45,29 +46,30 @@ export class BackupController {
 
   @Post('gdrive-config')
   saveGDriveConfig(
-    @Body()
-    body: {
-      serviceAccountJson: string;
-      folderId: string;
-      enabled: boolean;
-    },
+    @Body() body: { clientId: string; clientSecret: string; folderId: string },
   ) {
-    if (!body.serviceAccountJson) {
-      throw new BadRequestException('يجب توفير ملف Service Account JSON');
+    if (!body.clientId || !body.clientSecret) {
+      throw new BadRequestException('يجب توفير Client ID و Client Secret');
     }
-    try {
-      const parsed = JSON.parse(body.serviceAccountJson);
-      if (!parsed.client_email || !parsed.private_key) {
-        throw new Error('Missing required fields');
-      }
-    } catch {
-      throw new BadRequestException('صيغة JSON غير صالحة أو تنقص حقول مطلوبة');
-    }
-    return this.backupService.saveGoogleDriveConfig(
-      body.serviceAccountJson,
-      body.folderId || '',
-      !!body.enabled,
+    return this.backupService.saveOAuthCredentials(
+      body.clientId.trim(),
+      body.clientSecret.trim(),
+      body.folderId?.trim() || '',
     );
+  }
+
+  @Get('gdrive-auth-url')
+  getAuthUrl(@Query('redirect_uri') redirectUri: string) {
+    if (!redirectUri) throw new BadRequestException('redirect_uri is required');
+    return { url: this.backupService.getAuthUrl(redirectUri) };
+  }
+
+  @Post('gdrive-callback')
+  async handleOAuthCallback(
+    @Body() body: { code: string; redirect_uri: string },
+  ) {
+    if (!body.code) throw new BadRequestException('Authorization code is required');
+    return this.backupService.exchangeCodeForToken(body.code, body.redirect_uri);
   }
 
   @Post('gdrive-now')
