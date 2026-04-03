@@ -328,6 +328,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     }
     async getLogs(page = 1, limit = 10) {
         const [data, total] = await this.logRepository.findAndCount({
+            select: ['id', 'createdAt', 'type', 'phone', 'subscriberName', 'success', 'message'],
             order: { createdAt: 'DESC' },
             take: limit,
             skip: (page - 1) * limit,

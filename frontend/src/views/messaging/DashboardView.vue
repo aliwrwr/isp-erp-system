@@ -214,7 +214,7 @@ const statusIcon = (log: any) => {
 };
 
 async function retryMessage(message: any) {
-  if (!message.content) {
+  if (!message.message) {
     console.error("Cannot retry message, content is missing.", message);
     return;
   }
@@ -224,7 +224,7 @@ async function retryMessage(message: any) {
   try {
     const res = await api.post('/whatsapp/send', {
       phone: message.phone,
-      message: message.content,
+      message: message.message,
     });
     
     if (res.data?.success) {
