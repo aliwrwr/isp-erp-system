@@ -110,7 +110,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <button v-if="!log.success && log.status !== 'pending'" @click="retryMessage(log)" class="text-xs bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed" :disabled="log.status === 'pending_retry'">
+                  <button v-if="!log.success && log.status !== 'pending_retry'" @click="retryMessage(log)" class="text-xs bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed" :disabled="log.status === 'pending_retry'">
                     <i class="fas fa-redo-alt mr-1"></i>
                     إعادة الإرسال
                   </button>
@@ -215,7 +215,6 @@ const statusIcon = (log: any) => {
 
 async function retryMessage(message: any) {
   if (!message.content) {
-    // Maybe show a toast notification that content is missing
     console.error("Cannot retry message, content is missing.", message);
     return;
   }
@@ -230,15 +229,15 @@ async function retryMessage(message: any) {
     
     if (res.data?.success) {
       message.success = true;
-      message.status = 'retried_success'; 
+      // No need to change status, the v-if will hide the button
     } else {
       message.success = false;
-      message.status = 'retried_failed';
+      message.status = 'retried_failed'; // Keep it failed to allow another retry
     }
   } catch (error) {
     console.error('Failed to retry message:', error);
     message.success = false;
-    message.status = 'retried_failed';
+    message.status = 'retried_failed'; // Keep it failed
   }
 }
 
