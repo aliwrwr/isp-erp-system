@@ -911,7 +911,7 @@ async function loadData() {
       paidAmount: Number(s.paidAmount || 0),
       debtAmount: Number(s.debtAmount || 0),
       notes: s.notes || ''
-    }));
+    })).sort((a: any, b: any) => b.id - a.id);
   } catch {
     allSubscriptions.value = [];
   } finally {
