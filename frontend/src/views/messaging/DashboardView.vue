@@ -234,6 +234,7 @@ async function retryMessage(message: any) {
       message.success = false;
       message.status = 'retried_failed'; // Keep it failed to allow another retry
     }
+    await loadStats(); // Refresh stats on top
   } catch (error) {
     console.error('Failed to retry message:', error);
     message.success = false;
