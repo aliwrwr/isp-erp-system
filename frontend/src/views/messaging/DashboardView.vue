@@ -84,14 +84,15 @@
                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">النوع</th>
                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500">الوقت</th>
                 <th class="px-4 py-3 text-center text-xs font-bold text-gray-500">الحالة</th>
+                <th class="px-4 py-3 text-center text-xs font-bold text-gray-500">الإجراءات</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
               <tr v-if="loadingLogs">
-                <td colspan="4" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i></td>
+                <td colspan="5" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl"></i></td>
               </tr>
               <tr v-else-if="!logs.length">
-                <td colspan="4" class="text-center py-8 text-gray-400 text-sm"><i class="fab fa-whatsapp text-2xl mb-2 block text-gray-300"></i>لا توجد رسائل مسجلة بعد</td>
+                <td colspan="5" class="text-center py-8 text-gray-400 text-sm"><i class="fab fa-whatsapp text-2xl mb-2 block text-gray-300"></i>لا توجد رسائل مسجلة بعد</td>
               </tr>
               <tr v-for="log in logs" :key="log.id" class="hover:bg-gray-50 transition">
                 <td class="px-4 py-3">
@@ -103,10 +104,16 @@
                 </td>
                 <td class="px-4 py-3 text-xs text-gray-400">{{ formatTime(log.createdAt) }}</td>
                 <td class="px-4 py-3 text-center">
-                  <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="log.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500'">
-                    <i :class="log.success ? 'fas fa-check' : 'fas fa-times'"></i>
-                    {{ log.success ? 'نجح' : 'فشل' }}
+                  <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="statusClass(log)">
+                    <i :class="statusIcon(log)"></i>
+                    {{ statusLabel(log) }}
                   </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button v-if="!log.success && log.status !== 'pending'" @click="retryMessage(log)" class="text-xs bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 px-3 py-1 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed" :disabled="log.status === 'pending_retry'">
+                    <i class="fas fa-redo-alt mr-1"></i>
+                    إعادة الإرسال
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -190,6 +197,50 @@ const quickPhone = ref('');
 const quickMessage = ref('');
 const sendingQuick = ref(false);
 const quickResult = ref<'success' | 'failed' | null>(null);
+
+const statusLabel = (log: any) => {
+  if (log.status === 'pending_retry') return 'قيد الإرسال';
+  return log.success ? 'نجح' : 'فشل';
+};
+
+const statusClass = (log: any) => {
+  if (log.status === 'pending_retry') return 'bg-yellow-100 text-yellow-700';
+  return log.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-500';
+};
+
+const statusIcon = (log: any) => {
+  if (log.status === 'pending_retry') return 'fas fa-spinner fa-spin';
+  return log.success ? 'fas fa-check' : 'fas fa-times';
+};
+
+async function retryMessage(message: any) {
+  if (!message.content) {
+    // Maybe show a toast notification that content is missing
+    console.error("Cannot retry message, content is missing.", message);
+    return;
+  }
+  
+  message.status = 'pending_retry';
+
+  try {
+    const res = await api.post('/whatsapp/send', {
+      phone: message.phone,
+      message: message.content,
+    });
+    
+    if (res.data?.success) {
+      message.success = true;
+      message.status = 'retried_success'; 
+    } else {
+      message.success = false;
+      message.status = 'retried_failed';
+    }
+  } catch (error) {
+    console.error('Failed to retry message:', error);
+    message.success = false;
+    message.status = 'retried_failed';
+  }
+}
 
 const typeLabels: Record<string, string> = {
   activation: 'تفعيل اشتراك',
