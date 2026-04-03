@@ -178,7 +178,7 @@
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button @click="openEdit(t)"
                     class="w-7 h-7 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white flex items-center justify-center transition"
-                    title="تعديل">
+                    title=" تعديل">
                     <i class="fas fa-edit text-xs"></i>
                   </button>
                   <button @click="remove(t.id)"
@@ -554,7 +554,7 @@
             <div class="w-9 h-9 rounded-xl bg-support/10 flex items-center justify-center">
               <i class="fas fa-ticket-alt text-support"></i>
             </div>
-            <h3 class="font-bold text-base text-secondary">{{ editingId ? 'تعديل التذكرة' : 'تذكرة دعم جديدة' }}</h3>
+            <h3 class="font-bold text-base text-secondary">{{ editingId ? ' تعديل التذكرة' : 'تذكرة دعم جديدة' }}</h3>
           </div>
           <button @click="showModal = false" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition">
             <i class="fas fa-times text-sm"></i>
@@ -613,10 +613,31 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">المشترك</label>
-              <select v-model="form.subscriberId" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-support/30 focus:border-support transition bg-white">
-                <option :value="null">— اختر مشترك —</option>
-                <option v-for="s in subscribers" :key="s.id" :value="s.id">{{ s.name }}</option>
-              </select>
+              <div class="relative">
+                <input
+                  type="text"
+                  v-model="subscriberSearch"
+                  @focus="showSubscriberDropdown = true"
+                  @blur="hideSubscriberDropdown"
+                  placeholder="ابحث بالاسم أو الهاتف..."
+                  class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-support/30 focus:border-support transition"
+                />
+                <div v-if="showSubscriberDropdown" class="absolute z-10 mt-1 w-full bg-white rounded-xl shadow-lg border border-gray-100 max-h-60 overflow-y-auto">
+                  <div
+                    v-for="s in filteredSubscribers"
+                    :key="s.id"
+                    @mousedown.prevent="selectSubscriber(s)"
+                    class="px-4 py-2.5 text-sm cursor-pointer hover:bg-support/10"
+                    :class="{ 'bg-support/10': form.subscriberId === s.id }"
+                  >
+                    <p class="font-medium text-gray-800">{{ s.name }}</p>
+                    <p class="text-xs text-gray-400">{{ s.phone }}</p>
+                  </div>
+                  <div v-if="filteredSubscribers.length === 0" class="px-4 py-3 text-sm text-gray-400 text-center">
+                    لا توجد نتائج
+                  </div>
+                </div>
+              </div>
             </div>
             <div>
               <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">الفني المسؤول</label>
@@ -970,6 +991,7 @@ async function loadData() {
 function openAdd() {
   editingId.value = null;
   form.value = defaultForm();
+  subscriberSearch.value = '';
   errorMsg.value = '';
   showModal.value = true;
 }
@@ -986,6 +1008,8 @@ function openEdit(t: any) {
     assignedToId: t.assignedTo?.id ?? null,
     notes: t.notes || '',
   };
+  const selected = subscribers.value.find(s => s.id === t.subscriber?.id);
+  subscriberSearch.value = selected ? selected.name : '';
   errorMsg.value = '';
   showModal.value = true;
 }
