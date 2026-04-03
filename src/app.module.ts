@@ -35,6 +35,7 @@ import { SystemSettingsModule } from './system-settings/system-settings.module';
 import { InstallmentsModule } from './installments/installments.module';
 import { GroupsModule } from './groups/groups.module';
 import { GlobalReportsModule } from './global-reports/global-reports.module';
+import { ActivityLogModule } from './activity-log/activity-log.module';
 import config from './config/config';
 
 @Module({
@@ -81,6 +82,7 @@ import config from './config/config';
     SystemSettingsModule,
     InstallmentsModule,
     GroupsModule,
+    ActivityLogModule,
   ],
   controllers: [AppController],
   providers: [AppService],

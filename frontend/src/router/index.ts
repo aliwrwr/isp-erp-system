@@ -93,7 +93,7 @@ const routes = [
       { path: 'managers', name: 'Managers', component: () => import('../views/internet/ManagersView.vue') },
       { path: 'groups', name: 'InternetGroups', component: () => import('../views/internet/GroupsView.vue') },
       { path: 'permissions', name: 'InternetPermissions', component: () => import('../views/internet/PermissionsView.vue') },
-      { path: 'log', name: 'InternetLog', component: () => import('../views/internet/LogView.vue') },
+      { path: 'log', name: 'InternetLog', component: () => import('../views/settings/ActivityLogView.vue') },
       { path: 'settings', name: 'InternetSettings', component: () => import('../views/internet/SettingsView.vue') },
       { path: 'whatsapp', name: 'InternetWhatsApp', component: () => import('../views/internet/WhatsAppView.vue') },
     ],

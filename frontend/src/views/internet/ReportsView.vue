@@ -307,7 +307,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { getActivityLog } from '../../utils/activityLog';
+import { getLocalActivityLog } from "../../utils/activityLog";
 import { Bar, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS, Title, Tooltip, Legend, BarElement,

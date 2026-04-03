@@ -46,6 +46,7 @@ const system_settings_module_1 = require("./system-settings/system-settings.modu
 const installments_module_1 = require("./installments/installments.module");
 const groups_module_1 = require("./groups/groups.module");
 const global_reports_module_1 = require("./global-reports/global-reports.module");
+const activity_log_module_1 = require("./activity-log/activity-log.module");
 const config_2 = __importDefault(require("./config/config"));
 let AppModule = class AppModule {
 };
@@ -95,6 +96,7 @@ exports.AppModule = AppModule = __decorate([
             system_settings_module_1.SystemSettingsModule,
             installments_module_1.InstallmentsModule,
             groups_module_1.GroupsModule,
+            activity_log_module_1.ActivityLogModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

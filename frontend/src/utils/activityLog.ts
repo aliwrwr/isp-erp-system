@@ -1,46 +1,38 @@
+import api from '../api';
+
 // ===================== Activity Log Utility =====================
 // Stores all employee actions in localStorage for audit trail.
 
 export interface ActivityLogEntry {
-  id: string;
-  timestamp: string;        // ISO string
   action: string;           // e.g. 'add_subscriber'
-  module: string;           // 'subscriber' | 'subscription' | 'package'
-  subscriberName?: string;
-  packageName?: string;
+  module?: string;           // 'subscriber' | 'subscription' | 'package'
   details: string;          // Human-readable Arabic description
+  subscriberName?: string;
   amount?: number;
+  subscriberId?: number;
 }
+
+export async function logActivity(entry: ActivityLogEntry): Promise<void> {
+  try {
+    await api.post('/activity-log', entry);
+  } catch (error) {
+    console.error('Failed to log activity to server:', error);
+    // Optional: Implement a fallback to localStorage if the API fails
+  }
+}
+
+// The following functions are now deprecated and can be removed later
+// if no fallback to localStorage is needed.
 
 const STORAGE_KEY = 'isp_activity_log';
 const MAX_ENTRIES = 1000;
 
-export function logActivity(entry: Omit<ActivityLogEntry, 'id' | 'timestamp'>): void {
-  const entries = getActivityLog();
-  const newEntry: ActivityLogEntry = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-    timestamp: new Date().toISOString(),
-    ...entry,
-  };
-  entries.unshift(newEntry); // newest first
-  if (entries.length > MAX_ENTRIES) {
-    entries.splice(MAX_ENTRIES);
-  }
+export function getLocalActivityLog(): any[] {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  } catch {
-    // localStorage full — try removing oldest 200 then retry
-    entries.splice(MAX_ENTRIES - 200);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch { /* ignore */ }
-  }
-}
-
-export function getActivityLog(): ActivityLogEntry[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as ActivityLogEntry[];
-  } catch {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    console.error("Could not parse activity log:", e);
     return [];
   }
 }
@@ -65,7 +57,7 @@ export const ACTION_LABELS: Record<string, string> = {
   edit_package:        'تعديل باقة',
   delete_package:      'حذف باقة',
   add_manager:         'إضافة مدير',
-  edit_manager:        'تعديل مدير',
+  edit_manager:        ' تعديل مدير',
   delete_manager:      'حذف مدير',
   manager_deposit:      'إيداع مدير',
   manager_withdraw:     'سحب مدير',
