@@ -97,12 +97,12 @@ if (-not $hasNewCommit) {
     if (Test-Path $pc2Share) {
         Write-Host "  نسخ dist (backend)..." -ForegroundColor Yellow
         robocopy $backendDist "$pc2Share\dist" /MIR /NJH /NJS /NDL /R:1 /W:1 | Out-Null
-
-        Write-Host "  نسخ frontend\dist..." -ForegroundColor Yellow
+        Write-Host "  نسخ dist (frontend)..." -ForegroundColor Yellow
         robocopy $frontDist "$pc2Share\frontend\dist" /MIR /NJH /NJS /NDL /R:1 /W:1 | Out-Null
+        Write-Host "  نسخ جلسة WhatsApp..." -ForegroundColor Yellow
+        robocopy ".\.wwebjs_auth" "$pc2Share\.wwebjs_auth" /MIR /NJH /NJS /NDL /R:1 /W:1 | Out-Null
 
-        Write-Host "  إعادة تشغيل PM2 على PC2 عبر API..." -ForegroundColor Yellow
-        Start-Sleep -Seconds 2
+        Write-Host "  إعادة تشغيل الخادم على PC2..." -ForegroundColor Yellow
         try {
             Invoke-RestMethod -Uri "$PC2_URL/deploy/restart" `
                 -Method POST `
