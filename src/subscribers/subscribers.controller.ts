@@ -48,6 +48,24 @@ export class SubscribersController {
     return this.subscribersService.remove(+id);
   }
 
+  @Post(':id/suspend')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('internet.subscribers')
+  suspend(@Param('id') id: string) {
+    return this.subscribersService.suspend(+id);
+  }
+
+  @Post(':id/activate')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Permissions('internet.subscribers')
+  activate(@Param('id') id: string) {
+    return this.subscribersService.activate(+id);
+  }
+
   @Post(':id/sync-router')
   @HttpCode(200)
   @ApiBearerAuth()

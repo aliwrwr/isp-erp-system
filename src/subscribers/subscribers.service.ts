@@ -236,7 +236,54 @@ export class SubscribersService {
       }
     }
 
+    // Log status changes
+    if (before && rest.status && before.status !== rest.status) {
+      if (rest.status === 'active') {
+        // This is handled by the subscription activation logic, but we can add a log here if needed
+      } else if (rest.status === 'suspended') {
+        // This is where you would log a suspension
+      }
+    }
+
     return this.findOne(id);
+  }
+
+  async suspend(id: number): Promise<Subscriber | null> {
+    await this.subscribersRepository.update(id, { status: 'suspended' });
+    const sub = await this.findOne(id);
+    if (sub?.router && this.mikrotikService) {
+      await this.syncPppoe(sub.router, {
+        username: sub.username,
+        password: (sub as any).password,
+        isEnabled: false,
+        package: (sub as any).package,
+      }, 'disable');
+    }
+    return sub;
+  }
+
+  async activate(id: number): Promise<Subscriber | null> {
+    await this.subscribersRepository.update(id, { status: 'active' });
+    const sub = await this.findOne(id);
+    if (sub?.router && this.mikrotikService) {
+      await this.syncPppoe(sub.router, {
+        username: sub.username,
+        password: (sub as any).password,
+        isEnabled: true,
+        package: (sub as any).package,
+      }, 'enable');
+    }
+    // Also send whatsapp notification on manual activation
+    if (this.whatsappService && sub) {
+      const activeSubscription = (sub as any).subscriptions?.find((s: any) => s.status === 'active');
+      this.whatsappService.sendActivationNotification(
+        sub.phone,
+        sub.name,
+        (sub as any).package?.name ?? '',
+        activeSubscription?.endDate ?? null,
+      ).catch(() => {});
+    }
+    return sub;
   }
 
   async remove(id: number): Promise<void> {

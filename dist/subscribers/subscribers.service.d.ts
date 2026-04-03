@@ -20,6 +20,8 @@ export declare class SubscribersService {
     findAll(): Promise<Subscriber[]>;
     findOne(id: number): Promise<Subscriber | null>;
     update(id: number, updateSubscriberDto: UpdateSubscriberDto): Promise<Subscriber | null>;
+    suspend(id: number): Promise<Subscriber | null>;
+    activate(id: number): Promise<Subscriber | null>;
     remove(id: number): Promise<void>;
     syncToRouter(id: number): Promise<{
         success: boolean;

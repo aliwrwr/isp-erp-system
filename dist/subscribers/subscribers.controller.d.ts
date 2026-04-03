@@ -9,6 +9,8 @@ export declare class SubscribersController {
     create(createSubscriberDto: CreateSubscriberDto): Promise<import("./entities/subscriber.entity").Subscriber>;
     update(id: string, updateSubscriberDto: UpdateSubscriberDto): Promise<import("./entities/subscriber.entity").Subscriber | null>;
     remove(id: string): Promise<void>;
+    suspend(id: string): Promise<import("./entities/subscriber.entity").Subscriber | null>;
+    activate(id: string): Promise<import("./entities/subscriber.entity").Subscriber | null>;
     syncToRouter(id: string): Promise<{
         success: boolean;
         message: string;

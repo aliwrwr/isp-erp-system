@@ -695,138 +695,167 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const pageSizes = [5, 10, 50, 100, 500];
 
-const defaultForm = () => ({
-  subject: '',
-  description: '',
-  priority: 'medium',
-  status: 'open',
-  type: 'internet',
-  subscriberId: null as number | null,
-  assignedToId: null as number | null,
-  notes: '',
+// For subscriber search
+const subscriberSearch = ref('');
+const showSubscriberDropdown = ref(false);
+
+const filteredSubscribers = computed(() => {
+  if (!subscribers.value) return [];
+  if (!subscriberSearch.value) {
+    return subscribers.value.slice(0, 50);
+  }
+  const search = subscriberSearch.value.toLowerCase();
+  return subscribers.value.filter(s =>
+    s.name.toLowerCase().includes(search) ||
+    s.phone?.includes(search)
+  );
 });
-const form = ref(defaultForm());
 
-// ── Context Menu ─────────────────────────────────────────
+const selectSubscriber = (subscriber: any) => {
+  form.value.subscriberId = subscriber.id;
+  subscriberSearch.value = subscriber.name;
+  showSubscriberDropdown.value = false;
+};
+
+const hideSubscriberDropdown = () => {
+  setTimeout(() => {
+    showSubscriberDropdown.value = false;
+  }, 200);
+};
+
+// Context Menu
 const ctxMenu = ref({ show: false, x: 0, y: 0, ticket: null as any });
-const ctxSub = ref('');
-const detailsModal = ref({ show: false, ticket: null as any });
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-let subTimer: ReturnType<typeof setTimeout> | null = null;
 
-// Send Message
+// Details Modal
+const detailsModal = ref({ show: false, ticket: null as any });
+
+// Send Message Modal
 const showSendMessageModal = ref(false);
 const messageSending = ref(false);
 const whatsappConnected = ref(false);
 const messageForm = ref({ text: '' });
 const msgTarget = ref<any>(null);
-const msgTemplates = [
-  { label: 'استلام التذكرة',   icon: 'fas fa-ticket-alt',       text: 'عزيزي {الاسم}، تم استلام تذكرة الدعم رقم #{الرقم} بخصوص "{الموضوع}". سيتواصل معك فريقنا قريباً.' },
-  { label: 'قيد المعالجة',     icon: 'fas fa-tools',            text: 'عزيزي {الاسم}، يعمل فريقنا حالياً على معالجة طلبك رقم #{الرقم}. سنُبلغك عند الانتهاء.' },
-  { label: 'تم الحل',          icon: 'fas fa-check-circle',     text: 'عزيزي {الاسم}، يسعدنا إبلاغكم بأنه تم حل مشكلة تذكرة الدعم رقم #{الرقم}. نرجو أن تكون الخدمة عادت بشكل طبيعي.' },
-  { label: 'طلب معلومات',      icon: 'fas fa-info-circle',      text: 'عزيزي {الاسم}، بخصوص تذكرتك رقم #{الرقم}، نحتاج منك بعض المعلومات الإضافية لنتمكن من المساعدة. يرجى التواصل معنا.' },
-  { label: 'موعد الزيارة',     icon: 'fas fa-calendar-check',   text: 'عزيزي {الاسم}، تم تحديد موعد لزيارة فني لإصلاح خدمتكم. يرجى التواجد في المنزل خلال الموعد المحدد.' },
-];
 
-function showSub(name: string) {
-  if (subTimer) { clearTimeout(subTimer); subTimer = null; }
-  ctxSub.value = name;
-}
-function hideSub() {
-  subTimer = setTimeout(() => { ctxSub.value = ''; subTimer = null; }, 150);
-}
+const defaultForm = () => ({
+  subject: '',
+  description: '',
+  priority: 'normal',
+  status: 'open',
+  type: 'technical',
+  subscriberId: null as number | null,
+  assignedToId: null as number | null,
+  notes: '',
+});
 
-const priorityOptions = [
-  { value: 'critical', label: 'حرج',   dot: 'bg-red-500',    color: 'text-red-600' },
-  { value: 'high',     label: 'عاجل',  dot: 'bg-orange-500', color: 'text-orange-600' },
-  { value: 'medium',   label: 'متوسط', dot: 'bg-amber-500',  color: 'text-amber-600' },
-  { value: 'low',      label: 'عادي',  dot: 'bg-blue-500',   color: 'text-blue-600' },
-];
+let form = ref(defaultForm());
 
-const statusCtxOptions = [
-  { value: 'open',        label: 'مفتوح',        badge: 'bg-blue-100 text-blue-700',    desc: 'تذكرة جديدة لم تُعالج بعد' },
-  { value: 'in-progress', label: 'قيد المعالجة', badge: 'bg-amber-100 text-amber-700',  desc: 'يعمل الفني على حلها' },
-  { value: 'resolved',    label: 'تم الحل',      badge: 'bg-green-100 text-green-700',  desc: 'تم حل المشكلة بنجاح' },
-  { value: 'closed',      label: 'مغلقة',        badge: 'bg-gray-100 text-gray-500',    desc: 'أُغلقت ولا تقبل تعديلاً' },
-];
+const openModal = async (ticket: any = null) => {
+  errorMsg.value = '';
+  if (ticket) {
+    editingId.value = ticket.id;
+    form.value = { ...ticket, assignedToId: ticket.assignedTo?.id, subscriberId: ticket.subscriber?.id };
+    const sub = subscribers.value.find(s => s.id === ticket.subscriber?.id);
+    subscriberSearch.value = sub ? sub.name : '';
+  } else {
+    editingId.value = null;
+    form.value = defaultForm();
+    subscriberSearch.value = '';
+  }
+  showModal.value = true;
+};
 
-function openCtxMenu(event: MouseEvent, ticket: any) {
-  const margin = 8;
-  let x = event.clientX;
-  let y = event.clientY;
-  // Keep within viewport
-  if (x + 220 > window.innerWidth) x = window.innerWidth - 220 - margin;
-  if (y + 360 > window.innerHeight) y = window.innerHeight - 360 - margin;
-  ctxMenu.value = { show: true, x, y, ticket };
-}
+const closeModal = () => {
+  showModal.value = false;
+  editingId.value = null;
+};
 
 function closeCtxMenu() {
   ctxMenu.value.show = false;
-  ctxSub.value = '';
-  if (subTimer) { clearTimeout(subTimer); subTimer = null; }
 }
 
-function onTouchStart(event: TouchEvent, ticket: any) {
+function startLongPress(event: MouseEvent, ticket: any) {
+  if (event.button !== 0) return;
   longPressTimer = setTimeout(() => {
-    const t = event.touches[0];
-    openCtxMenu({ clientX: t.clientX, clientY: t.clientY } as MouseEvent, ticket);
-  }, 600);
+    showContextMenu(event, ticket);
+  }, 700);
 }
 
-function onTouchEnd() {
+function cancelLongPress() {
   if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
 }
 
-function ctxViewDetails() {
-  detailsModal.value = { show: true, ticket: ctxMenu.value.ticket };
-  closeCtxMenu();
+function showContextMenu(event: MouseEvent, ticket: any) {
+  event.preventDefault();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let x = event.clientX;
+  let y = event.clientY;
+  if (x + 200 > vw) x = vw - 210;
+  if (y + 300 > vh) y = vh - 310;
+  ctxMenu.value = { show: true, x, y, ticket };
 }
 
-async function ctxChangePriority(priority: string) {
-  const t = ctxMenu.value.ticket;
+const ctxViewDetails = () => {
+  detailsModal.value = { show: true, ticket: ctxMenu.value.ticket };
   closeCtxMenu();
+};
+
+const ctxEdit = () => {
+  openModal(ctxMenu.value.ticket);
+  closeCtxMenu();
+};
+
+const ctxSetPriority = async (priority: string) => {
+  const t = ctxMenu.value.ticket;
+  if (!t) return;
   try {
     await api.patch(`/tickets/${t.id}`, { priority });
     await loadData();
-  } catch { alert('تعذّر تغيير الأولوية'); }
-}
+    closeCtxMenu();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
-async function ctxChangeStatus(status: string) {
+const ctxSetStatus = async (status: string) => {
   const t = ctxMenu.value.ticket;
-  closeCtxMenu();
+  if (!t) return;
   try {
     await api.patch(`/tickets/${t.id}`, { status });
     await loadData();
-  } catch { alert('تعذّر تغيير الحالة'); }
-}
+    closeCtxMenu();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
-async function ctxAssignTech(assignedToId: number | null) {
+const ctxAssign = async (employeeId: number | null) => {
   const t = ctxMenu.value.ticket;
-  closeCtxMenu();
+  if (!t) return;
+  const payload = { assignedToId: employeeId };
   try {
-    const payload: any = {};
-    if (assignedToId) payload.assignedToId = assignedToId;
-    else payload.assignedToId = null;
     await api.patch(`/tickets/${t.id}`, payload);
     await loadData();
-  } catch { alert('تعذّر تعيين الفني'); }
-}
-
-function ctxSendMessage() {}
-
-async function openSendMessage() {
-  const t = ctxMenu.value.ticket;
-  if (!t.subscriber?.phone) {
     closeCtxMenu();
-    alert('لا يوجد رقم هاتف للمشترك');
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const ctxSendMessage = () => {
+  const t = ctxMenu.value.ticket;
+  if (!t || !t.subscriber?.phone) {
+    // Maybe show a toast?
+    console.warn("No subscriber or phone to send message to");
     return;
   }
-  closeCtxMenu();
   msgTarget.value = t;
   messageForm.value = { text: '' };
-  await checkWhatsappStatus();
+  checkWhatsappStatus();
   showSendMessageModal.value = true;
-}
+  closeCtxMenu();
+};
 
 async function checkWhatsappStatus() {
   try {
@@ -835,47 +864,46 @@ async function checkWhatsappStatus() {
   } catch { whatsappConnected.value = false; }
 }
 
-function applyMsgTemplate(tpl: { label: string; icon: string; text: string }) {
+const applyTemplate = (tpl: { text: string }) => {
   const t = msgTarget.value;
+  if (!t) return;
   messageForm.value.text = tpl.text
-    .replace(/{الاسم}/g, t?.subscriber?.name || '')
-    .replace(/{الرقم}/g, t?.id || '')
-    .replace(/{الموضوع}/g, t?.subject || '');
-}
+    .replace(/{الاسم}/g, t.subscriber.name)
+    .replace(/{الرقم}/g, t.subscriber.phone)
+    .replace(/{تاريخ_الانتهاء}/g, t.subscriber.endDate ? formatDate(t.subscriber.endDate) : 'N/A');
+};
 
 async function sendMessage() {
   if (!messageForm.value.text.trim()) return;
   const t = msgTarget.value;
-  const phone = t?.subscriber?.phone?.replace(/\D/g, '');
-  if (!phone) return;
+  if (!t || !t.subscriber?.phone) return;
+
+  const phone = t.subscriber.phone;
 
   if (whatsappConnected.value) {
     messageSending.value = true;
     try {
-      const res = await api.post('/whatsapp/send-direct', { phone, message: messageForm.value.text });
-      if (res.data?.success) {
-        showSendMessageModal.value = false;
-        alert('تم إرسال الرسالة عبر واتساب بنجاح ✅');
-      } else {
-        alert('فشل الإرسال: ' + (res.data?.message || ''));
-      }
-    } catch { alert('حدث خطأ أثناء الإرسال'); }
-    finally { messageSending.value = false; }
+      await api.post('/whatsapp/send-direct', { phone, message: messageForm.value.text });
+      showSendMessageModal.value = false;
+      // show toast
+    } catch (error) {
+      console.error("Failed to send WhatsApp message", error);
+      // show error toast
+    } finally { messageSending.value = false; }
   } else {
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(messageForm.value.text)}`, '_blank');
     showSendMessageModal.value = false;
   }
 }
 
-async function ctxDelete() {
+const ctxDelete = () => {
   const t = ctxMenu.value.ticket;
+  if (!t) return;
+  if (confirm(`هل أنت متأكد من حذف التذكرة "${t.subject}"؟`)) {
+    deleteTicket(t.id);
+  }
   closeCtxMenu();
-  if (!confirm(`هل أنت متأكد من حذف التذكرة #${t.id}؟`)) return;
-  try {
-    await api.delete(`/tickets/${t.id}`);
-    await loadData();
-  } catch { alert('تعذّر حذف التذكرة'); }
-}
+};
 
 onUnmounted(() => { if (longPressTimer) clearTimeout(longPressTimer); });
 // ─────────────────────────────────────────────────────────

@@ -202,7 +202,43 @@ let SubscribersService = class SubscribersService {
                 this.whatsappService.sendActivationNotification(sub.phone, sub.name, sub.package?.name ?? '', activeSubscription?.endDate ?? null).catch(() => { });
             }
         }
+        if (before && rest.status && before.status !== rest.status) {
+            if (rest.status === 'active') {
+            }
+            else if (rest.status === 'suspended') {
+            }
+        }
         return this.findOne(id);
+    }
+    async suspend(id) {
+        await this.subscribersRepository.update(id, { status: 'suspended' });
+        const sub = await this.findOne(id);
+        if (sub?.router && this.mikrotikService) {
+            await this.syncPppoe(sub.router, {
+                username: sub.username,
+                password: sub.password,
+                isEnabled: false,
+                package: sub.package,
+            }, 'disable');
+        }
+        return sub;
+    }
+    async activate(id) {
+        await this.subscribersRepository.update(id, { status: 'active' });
+        const sub = await this.findOne(id);
+        if (sub?.router && this.mikrotikService) {
+            await this.syncPppoe(sub.router, {
+                username: sub.username,
+                password: sub.password,
+                isEnabled: true,
+                package: sub.package,
+            }, 'enable');
+        }
+        if (this.whatsappService && sub) {
+            const activeSubscription = sub.subscriptions?.find((s) => s.status === 'active');
+            this.whatsappService.sendActivationNotification(sub.phone, sub.name, sub.package?.name ?? '', activeSubscription?.endDate ?? null).catch(() => { });
+        }
+        return sub;
     }
     async remove(id) {
         const sub = await this.subscribersRepository.findOne({ where: { id }, relations: ['router'] });
