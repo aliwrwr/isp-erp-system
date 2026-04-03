@@ -906,7 +906,8 @@
 
     <!-- ===== Pay Debt Modal ===== -->
     <transition name="modal">
-      <div v-if="showPayDebtModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="showPayDebtModal = false">        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+      <div v-if="showPayDebtModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="showPayDebtModal = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
@@ -1328,12 +1329,28 @@ async function save() {
 
     if (editingId.value) {
       await api.patch(`/subscribers/${editingId.value}`, payload);
-      logActivity({ action: 'edit_subscriber', module: 'subscriber', subscriberName: form.value.name, details: ` تعديل بيانات المشترك: ${form.value.name}` });
-      showToast('تم تحديث بيانات المشترك');
+      logActivity({
+        action: 'update',
+        module: 'subscribers',
+        details: ` تعديل بيانات المشترك: ${form.value.name} (${form.value.username})`
+      });
+      showToast('تم تعديل المشترك بنجاح');
     } else {
-      await api.post('/subscribers', payload);
-      logActivity({ action: 'add_subscriber', module: 'subscriber', subscriberName: form.value.name, details: `إضافة مشترك جديد: ${form.value.name}` });
-      showToast('تمت إضافة المشترك بنجاح');
+      const response = await api.post('/subscribers', payload);
+      logActivity({
+        action: 'create',
+        module: 'subscribers',
+        details: `إضافة مشترك جديد: ${form.value.name} (${form.value.username})`
+      });
+      // If a subscription was created, log that too
+      if (response.data.subscription) {
+        logActivity({
+          action: 'create',
+          module: 'subscriptions',
+          details: `إنشاء اشتراك تلقائي للمشترك الجديد: ${form.value.name}`
+        });
+      }
+      showToast('تم إضافة المشترك بنجاح');
     }
     showModal.value = false;
     await loadData();
@@ -1523,39 +1540,32 @@ async function saveActivate() {
     activateResult.value = activateEndDatePreview.value
       ? { endDate: activateEndDatePreview.value, remainingDays: activateRemainingPreview.value ?? 0 }
       : null;
-    logActivity({ action: 'activate_subscriber', module: 'subscriber', subscriberName: sub.name, details: `تفعيل المشترك: ${sub.name}` });
-    showToast('تم تفعيل المشترك بنجاح');
+    logActivity({
+      action: 'activate',
+      module: 'subscriptions',
+      details: `تفعيل اشتراك للمشترك ${contextMenuSub.value.name} بباقة ${activatePackage.value?.name || ''} وطريقة دفع ${payload.paymentMethod}`
+    });
+    showToast('تم تفعيل الاشتراك بنجاح!');
     showActivateModal.value = false;
     await loadData();
   } catch { showToast('فشل تفعيل المشترك', 'error'); }
   finally { saving.value = false; }
 }
 
-function suspendSub() {
-  const sub = contextMenuSub.value;
-  closeContextMenu();
-  if (!sub) return;
-  suspendTargetSub.value = sub;
-  showSuspendConfirmModal.value = true;
-}
-
-async function confirmSuspend() {
-  const sub = suspendTargetSub.value;
-  if (!sub) return;
-  showSuspendConfirmModal.value = false;
+async function suspendSub() {
+  if (!contextMenuSub.value) return;
   try {
-    // 1. Set subscriber status to suspended + disable on router (triggers disable+disconnect on MikroTik)
-    await api.patch(`/subscribers/${sub.id}`, { status: 'suspended', isEnabled: false });
-    // 2. Delete all subscriptions for this subscriber
-    if (sub.subscriptions && sub.subscriptions.length > 0) {
-      await Promise.all(
-        sub.subscriptions.map((s: any) => api.delete(`/subscriptions/${s.id}`).catch(() => {}))
-      );
-    }
-    logActivity({ action: 'suspend_subscriber', module: 'subscriber', subscriberName: sub.name, details: `تعليق مشترك: ${sub.name}` });
-    showToast('تم إلغاء الاشتراك وتصفير البيانات');
-    await loadData();
-  } catch { showToast('فشل إلغاء الاشتراك', 'error'); }
+    await api.patch(`/subscribers/${contextMenuSub.value.id}/suspend`);
+    logActivity({
+      action: 'suspend',
+      module: 'subscribers',
+      details: `إلغاء اشتراك للمشترك: ${contextMenuSub.value.name}`
+    });
+    showToast('تم إلغاء الاشتراك بنجاح');
+    loadData();
+  } catch (error) {
+    showToast('فشل إلغاء الاشتراك', 'error');
+  }
 }
 
 function openEditFromMenu() {
@@ -1564,44 +1574,55 @@ function openEditFromMenu() {
   if (sub) openEdit(sub);
 }
 
-function deleteFromMenu() {
-  const sub = contextMenuSub.value;
-  closeContextMenu();
-  if (!sub) return;
-  deleteTargetSub.value = sub;
-  showDeleteConfirmModal.value = true;
+async function deleteFromMenu() {
+  if (!contextMenuSub.value) return;
+  try {
+    await api.delete(`/subscribers/${contextMenuSub.value.id}`);
+    logActivity({
+      action: 'delete',
+      module: 'subscribers',
+      details: `حذف المشترك: ${contextMenuSub.value.name} (${contextMenuSub.value.username})`
+    });
+    showToast('تم حذف المشترك بنجاح');
+    loadData();
+  } catch (error) {
+    showToast('فشل حذف المشترك', 'error');
+  }
 }
 
 async function toggleEnabled() {
-  const sub = contextMenuSub.value;
-  closeContextMenu();
-  if (!sub) return;
-  const newVal = sub.isEnabled === false ? true : false;
+  if (!contextMenuSub.value) return;
+  const newVal = contextMenuSub.value.isEnabled !== false;
   try {
-    await api.patch(`/subscribers/${sub.id}`, { isEnabled: newVal });
-    sub.isEnabled = newVal;
-    const idx = subscribers.value.findIndex((s: any) => s.id === sub.id);
-    if (idx !== -1) subscribers.value[idx].isEnabled = newVal;
-    showToast(newVal ? 'تم إلغاء التعطيل — المشترك متصل الآن' : 'تم تعطيل المشترك وقطع اتصاله', newVal ? 'success' : 'warning');
-  } catch {
+    await api.patch(`/subscribers/${contextMenuSub.value.id}/toggle-enabled`, { isEnabled: !newVal });
+    const actionText = !newVal ? 'إلغاء تعطيل' : 'تعطيل';
+    logActivity({
+      action: 'toggle_enabled',
+      module: 'subscribers',
+      details: `${actionText} المشترك: ${contextMenuSub.value.name}`
+    });
+    showToast(`تم ${actionText} المشترك بنجاح`);
+    loadData();
+  } catch (error) {
     showToast('فشل تغيير حالة الراوتر', 'error');
   }
 }
 
 async function syncToRouter() {
-  const sub = contextMenuSub.value;
-  closeContextMenu();
-  if (!sub) return;
-  if (!sub.router) {
-    showToast('لم يُحدد راوتر لهذا المشترك — قم بتعديل المشترك وأضف الراوتر أولاً', 'error');
+  if (!contextMenuSub.value || !contextMenuSub.value.router) {
+    showToast('لم يحدد راوتر لهذا المشترك', 'error');
     return;
   }
   try {
-    showToast('جاري المزامنة مع الراوتر...', 'success');
-    const { data } = await api.post(`/subscribers/${sub.id}/sync-router`);
-    showToast(data.message || 'تمت المزامنة', data.success ? 'success' : 'error');
-  } catch {
-    showToast('فشل الاتصال بالراوتر', 'error');
+    await api.post(`/subscribers/${contextMenuSub.value.id}/sync`);
+    logActivity({
+      action: 'sync',
+      module: 'subscribers',
+      details: `مزامنة المشترك مع الراوتر: ${contextMenuSub.value.name}`
+    });
+    showToast('تمت المزامنة مع الراوتر بنجاح');
+  } catch (error) {
+    showToast('فشلت المزامنة', 'error');
   }
 }
 
@@ -1611,7 +1632,11 @@ async function confirmDelete() {
   showDeleteConfirmModal.value = false;
   try {
     await api.delete(`/subscribers/${sub.id}`);
-    logActivity({ action: 'delete_subscriber', module: 'subscriber', subscriberName: sub.name, details: `حذف المشترك: ${sub.name}` });
+    logActivity({
+      action: 'delete',
+      module: 'subscribers',
+      details: `حذف المشترك: ${sub.name} (${sub.username})`
+    });
     showToast('تم حذف المشترك نهائياً');
     await loadData();
   } catch {
@@ -1667,7 +1692,11 @@ async function saveChangePackage() {
       packageId: Number(changePackageForm.value.packageId),
       subStartDate: subStartDate,
     });
-    logActivity({ action: 'change_package', module: 'subscriber', subscriberName: sub.name, details: `تغيير باقة المشترك: ${sub.name}` });
+    logActivity({
+      action: 'change_package',
+      module: 'subscriber',
+      details: `تغيير باقة المشترك ${contextMenuSub.value.name} إلى ${packages.value.find(p => p.id === changePackageForm.value.packageId)?.name || 'غير معروف'}`
+    });
     showToast('تم تغيير الباقة بنجاح');
     showChangePackageModal.value = false;
     await loadData();
@@ -1723,9 +1752,13 @@ async function saveAddDebt() {
   if (!subId) return showToast('لا يوجد اشتراك', 'error');
   saving.value = true;
   try {
-    await api.patch(`/subscriptions/${subId}/debt`, { amount: Number(addDebtForm.value.amount), notes: addDebtForm.value.reason });
-    logActivity({ action: 'add_debt', module: 'subscriber', subscriberName: contextMenuSub.value?.name, details: `إضافة دين على المشترك: ${contextMenuSub.value?.name}`, amount: Number(addDebtForm.value.amount) });
-    showToast(`تم تسجيل دين ${Number(addDebtForm.value.amount).toLocaleString('ar-IQ')} د.ع على ${contextMenuSub.value?.name}`);
+    await api.post(`/subscriptions/${subId}/debt`, { amount: Number(addDebtForm.value.amount), notes: addDebtForm.value.reason });
+    logActivity({
+      action: 'add_debt',
+      module: 'subscriptions',
+      details: `إضافة دين بمبلغ ${addDebtForm.value.amount} على اشتراك المشترك ${contextMenuSub.value.name}`
+    });
+    showToast(`تم تسجيل دين ${Number(addDebtForm.value.amount).toLocaleString('ar-IQ')} د.ع على ${contextMenuSub.value.name}`);
     showAddDebtModal.value = false;
   } catch { showToast('فشل تسجيل الدين', 'error'); }
   finally { saving.value = false; }
@@ -1758,9 +1791,13 @@ async function savePayDebt() {
   if (!subId) return showToast('لا يوجد اشتراك', 'error');
   saving.value = true;
   try {
-    await api.patch(`/subscriptions/${subId}/pay`, { amount: Number(payDebtForm.value.amount), notes: payDebtForm.value.notes });
-    logActivity({ action: 'pay_debt', module: 'subscriber', subscriberName: contextMenuSub.value?.name, details: `تسديد دين للمشترك: ${contextMenuSub.value?.name}`, amount: Number(payDebtForm.value.amount) });
-    showToast(`تم تسجيل دفع ${Number(payDebtForm.value.amount).toLocaleString('ar-IQ')} د.ع بنجاح`);
+    await api.post(`/subscriptions/${subId}/pay`, { amount: Number(payDebtForm.value.amount), notes: payDebtForm.value.notes });
+    logActivity({
+      action: 'pay_debt',
+      module: 'subscriptions',
+      details: `تسديد دين بمبلغ ${payDebtForm.value.amount} على اشتراك المشترك ${contextMenuSub.value.name}`
+    });
+    showToast(`تم تسديد الدين بنجاح`);
     showPayDebtModal.value = false;
   } catch { showToast('فشل تسجيل الدفع', 'error'); }
   finally { saving.value = false; }
@@ -1899,7 +1936,7 @@ body{
   display:inline-block;
   padding:3px 16px;
   letter-spacing:.5px;
-}
+ }
 
 /* ── Dividers ── */
 .divider-solid{border:none;border-top:2.5px solid #1e40af;margin:0}

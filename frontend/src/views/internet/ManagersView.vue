@@ -624,23 +624,24 @@ async function confirmAmount() {
         // إضافة دين (القروض)
         const loans = Number(manager.loans) || 0;
         await api.patch(`/managers/${manager.id}`, { loans: loans + amount });
+        logActivity({ action: 'manager_add_debt', module: 'manager', subscriberName: manager.name, details: `إضافة دين ${amount} على ${manager.name}${depositForm.value.notes ? ' - ' + depositForm.value.notes : ''}`, amount });
       } else {
         // إيداع في الرصيد
         const balance = Number(manager.balance) || 0;
         await api.patch(`/managers/${manager.id}`, { balance: balance + amount });
+        logActivity({ action: 'manager_deposit', module: 'manager', subscriberName: manager.name, details: `إيداع ${amount} في رصيد ${manager.name}${depositForm.value.notes ? ' - ' + depositForm.value.notes : ''}`, amount });
       }
     } else if (amountMode.value === 'withdraw') {
       // سحب من الرصيد
       const balance = Number(manager.balance) || 0;
       await api.patch(`/managers/${manager.id}`, { balance: Math.max(0, balance - amount) });
+      logActivity({ action: 'manager_withdraw', module: 'manager', subscriberName: manager.name, details: `سحب ${amount} من رصيد ${manager.name}${depositForm.value.notes ? ' - ' + depositForm.value.notes : ''}`, amount });
     } else {
       // تسديد دين
       const loans = Number(manager.loans) || 0;
       await api.patch(`/managers/${manager.id}`, { loans: Math.max(0, loans - amount) });
+      logActivity({ action: 'manager_pay_debt', module: 'manager', subscriberName: manager.name, details: `تسديد دين ${amount} للمدير ${manager.name}${depositForm.value.notes ? ' - ' + depositForm.value.notes : ''}`, amount });
     }
-
-    const actionText = amountMode.value === 'deposit' ? (depositForm.value.isDebt ? 'دين' : 'إيداع') : 'سحب';
-    logActivity({ action: `manager_${amountMode.value}`, module: 'manager', subscriberName: manager.name, details: `${actionText} ${amount} على ${manager.name}${depositForm.value.notes ? ' - ' + depositForm.value.notes : ''}`, amount });
 
     showToast('تم تنفيذ العملية بنجاح');
     showAmountModal.value = false;
@@ -902,11 +903,11 @@ async function save() {
     if (!payload.email?.trim()) payload.email = null;
     if (editingId.value) {
       await api.patch(`/managers/${editingId.value}`, payload);
-      logActivity({ action: 'edit_manager', module: 'manager', subscriberName: form.value.name, details: `تعديل بيانات المدير: ${form.value.name}` });
+      logActivity({ action: 'update', module: 'managers', details: `تعديل بيانات المدير: ${form.value.name}` });
       showToast('تم تعديل المدير بنجاح');
     } else {
       await api.post('/managers', payload);
-      logActivity({ action: 'add_manager', module: 'manager', subscriberName: form.value.name, details: `إضافة مدير جديد: ${form.value.name}` });
+      logActivity({ action: 'create', module: 'managers', details: `إضافة مدير جديد: ${form.value.name}` });
       showToast('تم إضافة المدير بنجاح');
     }
     showModal.value = false;
@@ -924,7 +925,7 @@ async function remove(id: number) {
   const mgr = managers.value.find(m => m.id === id);
   try {
     await api.delete(`/managers/${id}`);
-    if (mgr) logActivity({ action: 'delete_manager', module: 'manager', subscriberName: mgr.name, details: `حذف المدير: ${mgr.name}` });
+    if (mgr) logActivity({ action: 'delete', module: 'managers', details: `حذف المدير: ${mgr.name}` });
     showToast('تم حذف المدير بنجاح');
     await loadData();
   } catch (err: any) {

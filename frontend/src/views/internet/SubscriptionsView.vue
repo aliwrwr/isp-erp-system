@@ -982,7 +982,7 @@ async function saveAddDebt() {
       contextMenuSub.value = allSubscriptions.value[idx];
     }
     showAddDebtModal.value = false;
-    logActivity({ action: 'add_debt', module: 'subscription', subscriberName: sub.subscriberName, details: `إضافة دين على اشتراك: ${sub.subscriberName}`, amount: addDebtAmount.value });
+    logActivity({ action: 'add_debt', module: 'subscriptions', subscriberName: sub.subscriberName, details: `إضافة دين على اشتراك: ${sub.subscriberName}`, amount: addDebtAmount.value });
     showToast('تمت إضافة الدين بنجاح');
   } catch {
     showToast('فشل إضافة الدين', 'error');
@@ -1007,13 +1007,7 @@ async function savePayDebt() {
       contextMenuSub.value = allSubscriptions.value[idx];
     }
     showPayDebtModal.value = false;
-    logActivity({
-      action: 'pay_debt',
-      module: 'subscription',
-      subscriberName: sub.subscriberName,
-      details: `تسديد دين من اشتراك: ${sub.subscriberName}`,
-      amount: payDebtAmount.value
-    });
+    logActivity({ action: 'pay_debt', module: 'subscriptions', subscriberName: sub.subscriberName, details: `تسديد دين على اشتراك: ${sub.subscriberName}`, amount: payDebtAmount.value });
     showToast('تم تسديد الدين بنجاح');
   } catch {
     showToast('فشل تسديد الدين', 'error');
@@ -1046,43 +1040,14 @@ function confirmDelete(s: any) {
 }
 
 async function saveEdit() {
-  const sub = selectedSub.value;
-  if (!sub) return;
-
-  const oldPackageName = sub.packageName;
-  const newPackageName = subscribers.value.find(p => p.id === editForm.value.packageId)?.name;
-
+  if (!selectedSub.value) return;
   saving.value = true;
   try {
-    const payload = { ...editForm.value };
-    if (payload.paymentMethod !== 'partial' && payload.paymentMethod !== 'credit') {
-      payload.paidAmount = payload.price; // Assuming full payment if not partial/credit
-    }
-    const { data } = await api.patch(`/subscriptions/${sub.id}`, payload);
-    const idx = allSubscriptions.value.findIndex(s => s.id === sub.id);
-    if (idx !== -1) {
-      allSubscriptions.value[idx] = { ...allSubscriptions.value[idx], ...data };
-    }
-    showEditModal.value = false;
-
-    // Log package change specifically if it happened
-    if (newPackageName && oldPackageName !== newPackageName) {
-      logActivity({
-        action: 'change_package',
-        module: 'subscription',
-        subscriberName: sub.subscriberName,
-        details: `تغيير باقة ${sub.subscriberName} من ${oldPackageName} إلى ${newPackageName}`,
-      });
-    } else {
-      logActivity({
-        action: 'edit_subscription',
-        module: 'subscription',
-        subscriberName: sub.subscriberName,
-        details: ` تعديل بيانات اشتراك: ${sub.subscriberName}`,
-      });
-    }
-
+    await api.patch(`/subscriptions/${selectedSub.value.id}`, editForm.value);
+    logActivity({ action: 'update', module: 'subscriptions', subscriberName: selectedSub.value.subscriberName, details: ` تعديل اشتراك: ${selectedSub.value.subscriberName}` });
     showToast('تم حفظ التعديلات');
+    showEditModal.value = false;
+    loadData();
   } catch {
     showToast('فشل تحديث الاشتراك', 'error');
   } finally {
@@ -1091,20 +1056,15 @@ async function saveEdit() {
 }
 
 async function deleteRow() {
-  const sub = selectedSub.value;
-  if (!sub) return;
+  if (!selectedSub.value) return;
   saving.value = true;
   try {
-    await api.delete(`/subscriptions/${sub.id}`);
-    allSubscriptions.value = allSubscriptions.value.filter(s => s.id !== sub.id);
-    showDeleteConfirm.value = false;
-    logActivity({
-      action: 'delete_subscription',
-      module: 'subscription',
-      subscriberName: sub.subscriberName,
-      details: `حذف اشتراك: ${sub.subscriberName}`,
-    });
+    await api.delete(`/subscriptions/${selectedSub.value.id}`);
+    logActivity({ action: 'delete', module: 'subscriptions', subscriberName: selectedSub.value.subscriberName, details: `حذف اشتراك: ${selectedSub.value.subscriberName}` });
     showToast('تم حذف الاشتراك');
+    showDeleteConfirm.value = false;
+    selectedSub.value = null;
+    loadData();
   } catch {
     showToast('فشل حذف الاشتراك', 'error');
   } finally {
