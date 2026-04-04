@@ -24,9 +24,9 @@ export class ActivityLog {
   @CreateDateColumn()
   timestamp: Date;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: true, nullable: true })
   user: User;
 
-  @Column()
+  @Column({ nullable: true })
   userId: number;
 }

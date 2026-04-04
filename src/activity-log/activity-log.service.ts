@@ -11,12 +11,14 @@ export class ActivityLogService {
     private activityLogRepository: Repository<ActivityLog>,
   ) {}
 
-  async create(logData: Partial<ActivityLog>, user: User): Promise<ActivityLog> {
+  async create(logData: Partial<ActivityLog>, user: any): Promise<ActivityLog> {
     const newLog = this.activityLogRepository.create({
       ...logData,
-      user,
-      userId: user.id,
+      userId: user?.id ?? null,
     });
+    if (user?.id) {
+      newLog.user = user;
+    }
     return this.activityLogRepository.save(newLog);
   }
 

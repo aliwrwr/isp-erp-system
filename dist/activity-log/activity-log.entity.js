@@ -53,11 +53,11 @@ __decorate([
     __metadata("design:type", Date)
 ], ActivityLog.prototype, "timestamp", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { eager: true }),
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { eager: true, nullable: true }),
     __metadata("design:type", user_entity_1.User)
 ], ActivityLog.prototype, "user", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Number)
 ], ActivityLog.prototype, "userId", void 0);
 exports.ActivityLog = ActivityLog = __decorate([

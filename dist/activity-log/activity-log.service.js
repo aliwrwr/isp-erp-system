@@ -25,9 +25,11 @@ let ActivityLogService = class ActivityLogService {
     async create(logData, user) {
         const newLog = this.activityLogRepository.create({
             ...logData,
-            user,
-            userId: user.id,
+            userId: user?.id ?? null,
         });
+        if (user?.id) {
+            newLog.user = user;
+        }
         return this.activityLogRepository.save(newLog);
     }
     async findAll() {

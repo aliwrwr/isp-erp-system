@@ -17,7 +17,6 @@ const common_1 = require("@nestjs/common");
 const activity_log_service_1 = require("./activity-log.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
-const roles_decorator_1 = require("../auth/decorators/roles.decorator");
 let ActivityLogController = class ActivityLogController {
     activityLogService;
     constructor(activityLogService) {
@@ -33,7 +32,6 @@ let ActivityLogController = class ActivityLogController {
 exports.ActivityLogController = ActivityLogController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('admin', 'manager', 'employee'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -42,7 +40,6 @@ __decorate([
 ], ActivityLogController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)('admin', 'manager'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)

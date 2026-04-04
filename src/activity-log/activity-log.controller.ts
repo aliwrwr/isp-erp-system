@@ -10,13 +10,11 @@ export class ActivityLogController {
   constructor(private readonly activityLogService: ActivityLogService) {}
 
   @Post()
-  @Roles('admin', 'manager', 'employee')
   create(@Body() logData: any, @Req() req) {
     return this.activityLogService.create(logData, req.user);
   }
 
   @Get()
-  @Roles('admin', 'manager')
   findAll() {
     return this.activityLogService.findAll();
   }
