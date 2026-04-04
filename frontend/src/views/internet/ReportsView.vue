@@ -307,7 +307,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { getLocalActivityLog } from "../../utils/activityLog";
+// activityLog import removed – using direct api call below
 import { Bar, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS, Title, Tooltip, Legend, BarElement,
@@ -615,12 +615,17 @@ function printReport() { window.print(); }
 async function loadData() {
   loading.value = true;
   try {
-    const res = await api.get('/subscriptions');
-    allSubs.value = res.data;
-  } catch {
+    const [subsRes, logsRes] = await Promise.allSettled([
+      api.get('/subscriptions'),
+      api.get('/activity-log'),
+    ]);
+    allSubs.value = subsRes.status === 'fulfilled' ? subsRes.value.data : [];
+    managerLogs.value = logsRes.status === 'fulfilled' ? logsRes.value.data : [];
+  } catch (err) {
+    console.error('Failed to load report data:', err);
     allSubs.value = [];
+    managerLogs.value = [];
   } finally {
-    managerLogs.value = getActivityLog();
     loading.value = false;
   }
 }
