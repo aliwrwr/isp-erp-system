@@ -106,7 +106,7 @@
             </tr>
             <tr v-for="t in paginatedTickets" :key="t.id"
               class="border-t border-gray-50 hover:bg-gray-50/70 transition-colors group cursor-context-menu"
-              @contextmenu.prevent="openCtxMenu($event, t)"
+              @contextmenu.prevent="showContextMenu($event, t)"
               @touchstart="onTouchStart($event, t)"
               @touchend="onTouchEnd"
               @touchmove="onTouchEnd">
