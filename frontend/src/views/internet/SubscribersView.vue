@@ -662,6 +662,11 @@
               <i class="fas fa-exchange-alt w-4 text-center text-sky-400"></i>
               <span>تغيير الباقة</span>
             </button>
+            <!-- تمديد -->
+            <button @click="openExtend" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+              <i class="fas fa-calendar-plus w-4 text-center text-teal-500"></i>
+              <span>تمديد</span>
+            </button>
             <!-- تسديد ديون -->
             <button v-if="hasSubscriberPermission('pay_debt')" @click="openPayDebt" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-money-bill-wave w-4 text-center text-green-500"></i>
@@ -1019,6 +1024,136 @@
               تأكيد الدفع
             </button>
           </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ===== Extend Modal ===== -->
+    <transition name="modal">
+      <div v-if="showExtendModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="showExtendModal = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+
+          <!-- Header -->
+          <div class="bg-gradient-to-l from-teal-500 to-emerald-500 px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <i class="fas fa-calendar-plus text-white text-base"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base">تمديد الاشتراك</h3>
+                <p class="text-xs text-teal-100">{{ contextMenuSub?.name }}</p>
+              </div>
+            </div>
+            <button @click="showExtendModal = false" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 text-white transition">
+              <i class="fas fa-times text-sm"></i>
+            </button>
+          </div>
+
+          <div class="p-6 space-y-5">
+
+            <!-- Current expiry info -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-3">الاشتراك الحالي</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-user text-teal-400 text-xs w-4 text-center"></i>
+                  <div>
+                    <p class="text-[10px] text-gray-400">المشترك</p>
+                    <p class="text-sm font-semibold text-secondary">{{ contextMenuSub?.name }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-wifi text-sky-400 text-xs w-4 text-center"></i>
+                  <div>
+                    <p class="text-[10px] text-gray-400">الباقة</p>
+                    <p class="text-sm font-semibold text-secondary">{{ contextMenuSub?.package?.name || '—' }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-calendar-times text-red-400 text-xs w-4 text-center"></i>
+                  <div>
+                    <p class="text-[10px] text-gray-400">تاريخ الانتهاء الحالي</p>
+                    <p class="text-sm font-semibold text-secondary">
+                      {{ extendCurrentEndDate ? new Date(extendCurrentEndDate).toLocaleDateString('ar-IQ') : 'لا يوجد اشتراك' }}
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-hourglass-half text-amber-400 text-xs w-4 text-center"></i>
+                  <div>
+                    <p class="text-[10px] text-gray-400">الأيام المتبقية</p>
+                    <p class="text-sm font-semibold" :class="extendCurrentRemainingDays > 7 ? 'text-emerald-600' : extendCurrentRemainingDays > 0 ? 'text-amber-600' : 'text-red-500'">
+                      {{ extendCurrentRemainingDays > 0 ? extendCurrentRemainingDays + ' يوم' : 'منتهٍ' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Days input -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">
+                عدد أيام التمديد <span class="text-red-500">*</span>
+              </label>
+              <div class="flex items-center gap-2">
+                <button @click="extendForm.days = Math.max(1, Number(extendForm.days) - 1)"
+                  class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition text-lg font-bold flex-shrink-0">−</button>
+                <input
+                  type="number"
+                  v-model="extendForm.days"
+                  min="1"
+                  max="3650"
+                  class="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-center focus:outline-none focus:ring-2 focus:ring-teal-400"
+                />
+                <button @click="extendForm.days = Number(extendForm.days) + 1"
+                  class="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition text-lg font-bold flex-shrink-0">+</button>
+              </div>
+              <!-- Quick select -->
+              <div class="flex gap-2 mt-2 flex-wrap">
+                <button v-for="d in [7, 15, 30, 60, 90]" :key="d"
+                  @click="extendForm.days = d"
+                  :class="['px-3 py-1 rounded-lg text-xs font-semibold transition border', Number(extendForm.days) === d ? 'bg-teal-500 text-white border-teal-500' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-teal-300 hover:text-teal-600']"
+                >{{ d }} يوم</button>
+              </div>
+            </div>
+
+            <!-- New expiry preview -->
+            <div v-if="extendNewEndDate" class="flex items-center gap-3 bg-teal-50 border border-teal-100 rounded-xl px-4 py-3">
+              <i class="fas fa-calendar-check text-teal-500 text-sm flex-shrink-0"></i>
+              <div>
+                <p class="text-[10px] text-gray-400">تاريخ الانتهاء الجديد بعد التمديد</p>
+                <p class="text-base font-bold text-teal-700">{{ new Date(extendNewEndDate).toLocaleDateString('ar-IQ') }}</p>
+              </div>
+              <div class="mr-auto text-right">
+                <p class="text-[10px] text-gray-400">مدة إضافية</p>
+                <p class="text-sm font-bold text-teal-600">+ {{ extendForm.days }} يوم</p>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1.5">سبب التمديد / ملاحظة</label>
+              <input
+                type="text"
+                v-model="extendForm.notes"
+                placeholder="مثال: هدية / تعويض انقطاع / ..."
+                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+            </div>
+
+          </div>
+
+          <!-- Footer -->
+          <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <button @click="showExtendModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold rounded-xl transition">إلغاء</button>
+            <button @click="saveExtend" :disabled="saving || !extendCurrentSubId"
+              class="px-6 py-2.5 bg-gradient-to-l from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shadow-sm shadow-teal-200">
+              <i v-if="saving" class="fas fa-spinner fa-spin text-xs"></i>
+              <i v-else class="fas fa-calendar-plus text-xs"></i>
+              {{ saving ? 'جاري التمديد...' : 'تأكيد التمديد' }}
+            </button>
+          </div>
+
         </div>
       </div>
     </transition>
@@ -1876,6 +2011,72 @@ async function saveAddDebt() {
     showAddDebtModal.value = false;
   } catch { showToast('فشل تسجيل الدين', 'error'); }
   finally { saving.value = false; }
+}
+
+// ===================== EXTEND (تمديد) MODAL =====================
+const showExtendModal = ref(false);
+const extendCurrentSubId = ref<number | null>(null);
+const extendCurrentEndDate = ref<string | null>(null);
+const extendForm = ref({ days: 30, notes: '' });
+
+const extendCurrentRemainingDays = computed(() => {
+  if (!extendCurrentEndDate.value) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = new Date(extendCurrentEndDate.value);
+  end.setHours(0, 0, 0, 0);
+  return Math.ceil((end.getTime() - today.getTime()) / 86400000);
+});
+
+const extendNewEndDate = computed(() => {
+  const days = Number(extendForm.value.days);
+  if (!days || days < 1) return null;
+  // Extend from current end date (or today if expired)
+  const base = extendCurrentEndDate.value
+    ? new Date(Math.max(new Date(extendCurrentEndDate.value).getTime(), Date.now()))
+    : new Date();
+  base.setDate(base.getDate() + days);
+  return base.toISOString().split('T')[0];
+});
+
+function openExtend() {
+  closeContextMenu();
+  const sub = contextMenuSub.value;
+  if (!sub) return;
+  const latest = getLatestSub(sub);
+  extendCurrentSubId.value = latest?.id ?? null;
+  extendCurrentEndDate.value = latest?.endDate ?? null;
+  extendForm.value = { days: 30, notes: '' };
+  showExtendModal.value = true;
+}
+
+async function saveExtend() {
+  const days = Number(extendForm.value.days);
+  if (!days || days < 1) return showToast('يرجى إدخال عدد أيام صحيح', 'error');
+  if (!extendCurrentSubId.value) return showToast('لا يوجد اشتراك نشط لهذا المشترك', 'error');
+  if (!extendNewEndDate.value) return;
+
+  saving.value = true;
+  try {
+    // Only update the endDate of existing subscription — no financial change
+    await api.patch(`/subscriptions/${extendCurrentSubId.value}`, {
+      endDate: new Date(extendNewEndDate.value).toISOString()
+    });
+
+    logActivity({
+      action: 'extend',
+      module: 'subscriptions',
+      details: `تمديد اشتراك المشترك ${contextMenuSub.value?.name} (${contextMenuSub.value?.username}) لمدة ${days} يوم — تاريخ الانتهاء الجديد: ${new Date(extendNewEndDate.value).toLocaleDateString('ar-IQ')}${ extendForm.value.notes ? ' — السبب: ' + extendForm.value.notes : ''}`
+    });
+
+    showToast(`تم تمديد اشتراك ${contextMenuSub.value?.name} بنجاح لمدة ${days} يوم`);
+    showExtendModal.value = false;
+    await loadData();
+  } catch {
+    showToast('فشل تمديد الاشتراك', 'error');
+  } finally {
+    saving.value = false;
+  }
 }
 
 // ===================== PAY DEBT MODAL =====================
