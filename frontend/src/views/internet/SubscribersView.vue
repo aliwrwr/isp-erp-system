@@ -1146,7 +1146,7 @@
           <!-- Footer -->
           <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
             <button @click="showExtendModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold rounded-xl transition">إلغاء</button>
-            <button @click="saveExtend" :disabled="saving || !extendCurrentSubId"
+            <button @click="saveExtend" :disabled="saving || !extendForm.days || Number(extendForm.days) < 1"
               class="px-6 py-2.5 bg-gradient-to-l from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shadow-sm shadow-teal-200">
               <i v-if="saving" class="fas fa-spinner fa-spin text-xs"></i>
               <i v-else class="fas fa-calendar-plus text-xs"></i>
@@ -2053,23 +2053,41 @@ function openExtend() {
 async function saveExtend() {
   const days = Number(extendForm.value.days);
   if (!days || days < 1) return showToast('يرجى إدخال عدد أيام صحيح', 'error');
-  if (!extendCurrentSubId.value) return showToast('لا يوجد اشتراك نشط لهذا المشترك', 'error');
   if (!extendNewEndDate.value) return;
+
+  const sub = contextMenuSub.value;
+  if (!sub) return;
 
   saving.value = true;
   try {
-    // Only update the endDate of existing subscription — no financial change
-    await api.patch(`/subscriptions/${extendCurrentSubId.value}`, {
-      endDate: new Date(extendNewEndDate.value).toISOString()
-    });
+    const newEndIso = new Date(extendNewEndDate.value).toISOString();
+
+    if (extendCurrentSubId.value) {
+      // مشترك لديه اشتراك حالي — فقط تحديث تاريخ الانتهاء دون أي اثر مالي
+      await api.patch(`/subscriptions/${extendCurrentSubId.value}`, { endDate: newEndIso });
+    } else {
+      // لا يوجد اشتراك — ننشئ اشتراكاً بسعر 0 (بدون أي قيمة مالية)
+      const startIso = new Date().toISOString();
+      const body: any = {
+        subscriber: { id: sub.id },
+        startDate: startIso,
+        endDate: newEndIso,
+        price: 0,
+        paidAmount: 0,
+        paymentMethod: 'free',
+        status: 'active',
+      };
+      if (sub.package?.id) body.package = { id: sub.package.id };
+      await api.post('/subscriptions', body);
+    }
 
     logActivity({
       action: 'extend',
       module: 'subscriptions',
-      details: `تمديد اشتراك المشترك ${contextMenuSub.value?.name} (${contextMenuSub.value?.username}) لمدة ${days} يوم — تاريخ الانتهاء الجديد: ${new Date(extendNewEndDate.value).toLocaleDateString('ar-IQ')}${ extendForm.value.notes ? ' — السبب: ' + extendForm.value.notes : ''}`
+      details: `تمديد اشتراك المشترك ${sub?.name} (${sub?.username}) لمدة ${days} يوم — تاريخ الانتهاء الجديد: ${new Date(extendNewEndDate.value).toLocaleDateString('ar-IQ')}${ extendForm.value.notes ? ' — السبب: ' + extendForm.value.notes : ''}`
     });
 
-    showToast(`تم تمديد اشتراك ${contextMenuSub.value?.name} بنجاح لمدة ${days} يوم`);
+    showToast(`تم تمديد اشتراك ${sub?.name} بنجاح لمدة ${days} يوم`);
     showExtendModal.value = false;
     await loadData();
   } catch {

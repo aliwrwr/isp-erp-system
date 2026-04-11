@@ -19,6 +19,8 @@ class CreateSubscriptionDto {
     startDate;
     endDate;
     price;
+    paidAmount;
+    debtAmount;
     paymentMethod;
     status;
 }
@@ -30,7 +32,7 @@ __decorate([
 ], CreateSubscriptionDto.prototype, "subscriber", void 0);
 __decorate([
     (0, class_validator_1.IsObject)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", package_entity_1.Package)
 ], CreateSubscriptionDto.prototype, "package", void 0);
 __decorate([
@@ -48,6 +50,16 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", Number)
 ], CreateSubscriptionDto.prototype, "price", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateSubscriptionDto.prototype, "paidAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateSubscriptionDto.prototype, "debtAmount", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsObject, IsDate, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsObject, IsDate, IsNumber, IsString, IsOptional } from 'class-validator';
 import { Subscriber } from '../../subscribers/entities/subscriber.entity';
 import { Package } from '../../packages/entities/package.entity';
 
@@ -8,8 +8,8 @@ export class CreateSubscriptionDto {
   subscriber: Subscriber;
 
   @IsObject()
-  @IsNotEmpty()
-  package: Package;
+  @IsOptional()
+  package?: Package;
 
   @IsDate()
   @IsNotEmpty()
@@ -22,6 +22,14 @@ export class CreateSubscriptionDto {
   @IsNumber()
   @IsNotEmpty()
   price: number;
+
+  @IsNumber()
+  @IsOptional()
+  paidAmount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  debtAmount?: number;
 
   @IsString()
   @IsNotEmpty()
