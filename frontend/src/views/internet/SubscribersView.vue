@@ -491,16 +491,88 @@
                 <span class="flex-1 h-px bg-gray-100 inline-block"></span>
                 <span class="text-[10px] font-normal text-gray-300 normal-case">(اختياري)</span>
               </p>
+
+              <!-- Hint when no package selected -->
+              <div v-if="!form.packageId" class="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl mb-4">
+                <i class="fas fa-info-circle text-amber-400 text-sm flex-shrink-0"></i>
+                <p class="text-xs text-amber-700">اختر الباقة أولاً لاحتساب تاريخ الانتهاء تلقائياً</p>
+              </div>
+
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Start Date -->
                 <div>
-                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">تاريخ بدء الاشتراك</label>
-                  <input v-model="form.subStartDate" type="date" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition" />
-                  <p class="text-[11px] text-gray-400 mt-1">سيتم احتساب تاريخ الانتهاء تلقائياً من مدة الباقة</p>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">
+                    <i class="fas fa-calendar-plus text-emerald-400 ml-1 text-[10px]"></i>
+                    تاريخ بدء الاشتراك
+                  </label>
+                  <input
+                    v-model="form.subStartDate"
+                    type="date"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-gray-50 focus:bg-white transition"
+                  />
+                  <p v-if="form.packageId && form.subStartDate" class="text-[11px] text-emerald-600 mt-1">
+                    ⚡ سيتم احتساب تاريخ الانتهاء من مدة الباقة ({{ subFormPackageDuration }} يوم)
+                  </p>
+                  <p v-else class="text-[11px] text-gray-400 mt-1">اتركه فارغاً لتفعيل الاشتراك لاحقاً</p>
                 </div>
+
+                <!-- End Date: auto-preview or manual -->
                 <div>
-                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">تاريخ انتهاء الاشتراك</label>
-                  <input v-model="form.subEndDate" type="date" class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition" />
+                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">
+                    <i class="fas fa-calendar-times text-red-400 ml-1 text-[10px]"></i>
+                    تاريخ انتهاء الاشتراك
+                  </label>
+                  <!-- Auto-calculated preview -->
+                  <div v-if="form.subStartDate && form.packageId && subFormEndDatePreview"
+                    class="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <i class="fas fa-calendar-check text-emerald-500 text-xs flex-shrink-0"></i>
+                    <span class="text-sm font-semibold text-emerald-700">
+                      {{ new Date(subFormEndDatePreview).toLocaleDateString('ar-IQ') }}
+                    </span>
+                    <span class="text-[10px] text-emerald-500 mr-auto">محتسب تلقائياً</span>
+                  </div>
+                  <!-- Manual input -->
+                  <input
+                    v-else
+                    v-model="form.subEndDate"
+                    type="date"
+                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 focus:bg-white transition"
+                    placeholder="أو أدخل التاريخ يدوياً"
+                  />
+                  <p class="text-[11px] text-gray-400 mt-1">يمكنك تعديله يدوياً إذا أردت</p>
                 </div>
+              </div>
+
+              <!-- Remaining Days Preview -->
+              <div v-if="subFormRemainingDays !== null" class="mt-3 flex items-center gap-3 px-4 py-3 rounded-xl border"
+                :class="subFormRemainingDays > 7 ? 'bg-emerald-50 border-emerald-100' : subFormRemainingDays > 0 ? 'bg-amber-50 border-amber-100' : 'bg-red-50 border-red-100'">
+                <i class="fas fa-hourglass-half text-sm flex-shrink-0"
+                  :class="subFormRemainingDays > 7 ? 'text-emerald-400' : subFormRemainingDays > 0 ? 'text-amber-400' : 'text-red-400'"></i>
+                <div>
+                  <p class="text-[10px] text-gray-400">الأيام المتبقية بعد التفعيل</p>
+                  <p class="text-sm font-bold"
+                    :class="subFormRemainingDays > 7 ? 'text-emerald-600' : subFormRemainingDays > 0 ? 'text-amber-600' : 'text-red-600'">
+                    {{ subFormRemainingDays }} يوم
+                  </p>
+                </div>
+              </div>
+
+              <!-- Manual end date override (shown only when auto-calculated) -->
+              <div v-if="form.subStartDate && form.packageId && subFormEndDatePreview" class="mt-3">
+                <button
+                  type="button"
+                  @click="subManualEndDate = !subManualEndDate"
+                  class="text-xs text-indigo-500 hover:text-indigo-700 transition flex items-center gap-1"
+                >
+                  <i :class="subManualEndDate ? 'fas fa-times-circle' : 'fas fa-pen'" class="text-[10px]"></i>
+                  {{ subManualEndDate ? 'إلغاء التعديل اليدوي' : 'تعديل تاريخ الانتهاء يدوياً' }}
+                </button>
+                <input
+                  v-if="subManualEndDate"
+                  v-model="form.subEndDate"
+                  type="date"
+                  class="mt-2 w-full px-3.5 py-2.5 border border-indigo-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-indigo-50 transition"
+                />
               </div>
             </div>
 
@@ -1228,6 +1300,7 @@ watch([search, filterStatus, filterManager, filterPackage], resetPage);
 
 // Auto-fill subscription end date based on package duration
 watch(() => [form.value.subStartDate, form.value.packageId] as const, ([date, pkgId]) => {
+  subManualEndDate.value = false;
   if (date && pkgId) {
     const pkg = packages.value.find((p: any) => p.id === Number(pkgId));
     if (pkg?.duration) {
@@ -1235,7 +1308,41 @@ watch(() => [form.value.subStartDate, form.value.packageId] as const, ([date, pk
       d.setDate(d.getDate() + pkg.duration);
       form.value.subEndDate = d.toISOString().split('T')[0];
     }
+  } else {
+    form.value.subEndDate = '';
   }
+});
+
+// Toggle for manual end date override
+const subManualEndDate = ref(false);
+
+// Computed: end date preview for the form subscription section
+const subFormEndDatePreview = computed(() => {
+  const { subStartDate, packageId } = form.value;
+  if (!subStartDate || !packageId) return null;
+  const pkg = packages.value.find((p: any) => p.id === Number(packageId));
+  if (!pkg?.duration) return null;
+  const d = new Date(subStartDate);
+  d.setDate(d.getDate() + pkg.duration);
+  return d.toISOString().split('T')[0];
+});
+
+// Computed: package duration for label
+const subFormPackageDuration = computed(() => {
+  if (!form.value.packageId) return 0;
+  const pkg = packages.value.find((p: any) => p.id === Number(form.value.packageId));
+  return pkg?.duration ?? 0;
+});
+
+// Computed: remaining days preview
+const subFormRemainingDays = computed(() => {
+  const endDate = subManualEndDate.value ? form.value.subEndDate : subFormEndDatePreview.value;
+  if (!endDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+  return Math.ceil((end.getTime() - today.getTime()) / 86400000);
 });
 
 const expiringCount = computed(() =>
@@ -1271,12 +1378,15 @@ async function loadData() {
 
 function openAdd() {
   editingId.value = null;
-  form.value = { name: '', phone: '', address: '', username: '', password: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, routerId: null, notes: '', subStartDate: '', subEndDate: '' };
+  subManualEndDate.value = false;
+  const today = new Date().toISOString().split('T')[0];
+  form.value = { name: '', phone: '', address: '', username: '', password: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, routerId: null, notes: '', subStartDate: today, subEndDate: '' };
   showModal.value = true;
 }
 
 function openEdit(sub: any) {
   editingId.value = sub.id;
+  subManualEndDate.value = false;
   form.value = {
     name: sub.name,
     phone: sub.phone || '',
@@ -1288,7 +1398,9 @@ function openEdit(sub: any) {
     packageId: sub.package?.id ?? null,
     managerId: sub.manager?.id ?? null,
     routerId: sub.router?.id ?? null,
-    notes: sub.notes || ''
+    notes: sub.notes || '',
+    subStartDate: '',
+    subEndDate: ''
   };
   showModal.value = true;
 }
@@ -1320,8 +1432,10 @@ async function save() {
       const now = new Date();
       const startDt = new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds());
       payload.subStartDate = startDt.toISOString();
-      if (form.value.subEndDate) {
-        const [ey, em, ed] = form.value.subEndDate.split('-').map(Number);
+      // Use manual override if present, otherwise use auto-calculated end date
+      const effectiveEndDate = subManualEndDate.value ? form.value.subEndDate : (subFormEndDatePreview.value || form.value.subEndDate);
+      if (effectiveEndDate) {
+        const [ey, em, ed] = effectiveEndDate.split('-').map(Number);
         const endDt = new Date(ey, em - 1, ed, now.getHours(), now.getMinutes(), now.getSeconds());
         payload.subEndDate = endDt.toISOString();
       }
