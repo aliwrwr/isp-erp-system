@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateSubscriptionDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const subscriber_entity_1 = require("../../subscribers/entities/subscriber.entity");
 const package_entity_1 = require("../../packages/entities/package.entity");
 class UpdateSubscriptionDto {
@@ -35,11 +36,13 @@ __decorate([
     __metadata("design:type", package_entity_1.Package)
 ], UpdateSubscriptionDto.prototype, "package", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Date)
 ], UpdateSubscriptionDto.prototype, "startDate", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Date)
