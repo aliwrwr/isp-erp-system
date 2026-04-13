@@ -1629,15 +1629,19 @@ function getLatestSub(sub: any) {
 }
 
 function getEffectiveStatus(sub: any): 'active' | 'expired' | 'suspended' | 'disabled' {
-  if (sub.status === 'suspended') return 'suspended';
+  // معطّل (محظور من الاتصال) — أعلى أولوية
   if (sub.isEnabled === false) return 'disabled';
+
+  // إذا يوجد اشتراك → الحالة تعتمد على التواريخ فقط
   const latest = getLatestSub(sub);
-  if (!latest) return 'expired';
   if (latest?.endDate) {
     const days = remainingDays(latest.endDate);
-    if (days < 0) return 'expired';
+    return days >= 0 ? 'active' : 'expired';
   }
-  return 'active';
+
+  // لا يوجد اشتراك — استخدم حقل الحالة من قاعدة البيانات
+  if (sub.status === 'suspended') return 'suspended';
+  return 'expired';
 }
 
 function getStatusClass(sub: any): string {
@@ -2079,6 +2083,9 @@ async function saveExtend() {
       if (sub.package?.id) body.package = { id: sub.package.id };
       await api.post('/subscriptions', body);
     }
+
+    // تحديث حالة المشترك إلى فعال لأن لديه تاريخ انتهاء مستقبلي
+    await api.patch(`/subscribers/${sub.id}`, { status: 'active' });
 
     logActivity({
       action: 'extend',

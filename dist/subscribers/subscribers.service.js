@@ -119,6 +119,7 @@ let SubscribersService = class SubscribersService {
                     status: 'active',
                 });
                 await this.subscriptionsRepository.save(subscription);
+                await this.subscribersRepository.update(saved.id, { status: 'active' });
             }
         }
         return this.findOne(saved.id);

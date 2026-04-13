@@ -115,6 +115,8 @@ export class SubscribersService {
           status: 'active',
         });
         await this.subscriptionsRepository.save(subscription);
+        // Update subscriber status to active since they now have a valid subscription
+        await this.subscribersRepository.update(saved.id, { status: 'active' } as any);
       }
     }
 
