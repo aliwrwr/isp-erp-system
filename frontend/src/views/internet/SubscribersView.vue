@@ -1514,8 +1514,7 @@ async function loadData() {
 function openAdd() {
   editingId.value = null;
   subManualEndDate.value = false;
-  const today = new Date().toISOString().split('T')[0];
-  form.value = { name: '', phone: '', address: '', username: '', password: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, routerId: null, notes: '', subStartDate: today, subEndDate: '' };
+  form.value = { name: '', phone: '', address: '', username: '', password: '', ipAddress: '', cabinetSector: '', packageId: null, managerId: null, routerId: null, notes: '', subStartDate: '', subEndDate: '' };
   showModal.value = true;
 }
 

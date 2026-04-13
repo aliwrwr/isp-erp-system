@@ -69,7 +69,7 @@ export class SubscribersService {
     const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod: pmCreate, partialAmount: paCreate, ...rest } = createSubscriberDto as any;
     const subscriber = this.subscribersRepository.create({
       ...rest,
-      status: 'active',
+      status: 'suspended',
       // Use provided password or fall back to username
       password: rest.password?.trim() || rest.username,
       ...(packageId ? { package: { id: packageId } } : {}),
@@ -92,40 +92,29 @@ export class SubscribersService {
       }
     }
 
-    // Auto-create subscription if startDate is provided
-    if (subStartDate && packageId) {
-      const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
-      // Preserve full datetime (time-of-day) so expiry fires at exact creation time
+    // Auto-create subscription if startDate is provided (free/extend style - no financial effect)
+    if (subStartDate) {
       const startDt = new Date(subStartDate);
       let endDate = subEndDate ? new Date(subEndDate) : null;
-      if (!endDate && pkg?.duration) {
-        endDate = new Date(startDt.getTime()); // copy exact time
-        endDate.setDate(endDate.getDate() + pkg.duration);
+      if (!endDate && packageId) {
+        const pkg = await this.packagesRepository.findOne({ where: { id: packageId } });
+        if (pkg?.duration) {
+          endDate = new Date(startDt.getTime());
+          endDate.setDate(endDate.getDate() + pkg.duration);
+        }
       }
       if (endDate) {
-        const createPm = pmCreate || 'cash';
-        const createPaid = createPm === 'partial' ? Number(paCreate || 0) : (createPm === 'cash' ? Number(pkg?.price || 0) : 0);
         const subscription = this.subscriptionsRepository.create({
           subscriber: { id: saved.id } as any,
-          package: { id: packageId } as any,
+          ...(packageId ? { package: { id: packageId } as any } : {}),
           startDate: startDt,
           endDate,
-          price: Number(pkg?.price || 0),
-          paymentMethod: createPm,
-          paidAmount: createPaid,
+          price: 0,
+          paymentMethod: 'free',
+          paidAmount: 0,
           status: 'active',
         });
         await this.subscriptionsRepository.save(subscription);
-
-        // Send WhatsApp activation notification
-        if (this.whatsappService) {
-          this.whatsappService.sendActivationNotification(
-            saved.phone,
-            saved.name,
-            pkg?.name ?? '',
-            endDate,
-          ).catch(() => {});
-        }
       }
     }
 
