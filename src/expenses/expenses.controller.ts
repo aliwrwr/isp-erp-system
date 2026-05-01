@@ -20,8 +20,13 @@ export class ExpensesController {
   }
 
   @Get('stats')
-  stats() {
-    return this.service.stats();
+  stats(
+    @Query('search')   search?: string,
+    @Query('category') category?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo')   dateTo?: string,
+  ) {
+    return this.service.stats({ search, category, dateFrom, dateTo });
   }
 
   @Post()

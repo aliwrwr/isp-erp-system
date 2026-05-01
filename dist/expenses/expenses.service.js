@@ -49,11 +49,33 @@ let ExpensesService = class ExpensesService {
             pages: Math.ceil(total / take),
         }));
     }
-    async stats() {
+    async stats(filters) {
         const now = new Date();
         const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
             .toISOString().slice(0, 10);
+        const hasFilters = filters && (filters.dateFrom || filters.dateTo || filters.category || filters.search);
+        if (hasFilters) {
+            const qb = this.repo.createQueryBuilder('e');
+            if (filters.category && filters.category !== 'all')
+                qb.andWhere('e.category = :category', { category: filters.category });
+            if (filters.dateFrom)
+                qb.andWhere('e.date >= :dateFrom', { dateFrom: filters.dateFrom });
+            if (filters.dateTo)
+                qb.andWhere('e.date <= :dateTo', { dateTo: filters.dateTo });
+            if (filters.search)
+                qb.andWhere('(e.recipientName LIKE :s OR e.description LIKE :s)', { s: `%${filters.search}%` });
+            const filtered = await qb.getMany();
+            const amounts = filtered.map(e => Number(e.amount));
+            const total = amounts.reduce((s, v) => s + v, 0);
+            return {
+                monthTotal: total,
+                count: filtered.length,
+                max: amounts.length ? Math.max(...amounts) : 0,
+                min: amounts.length ? Math.min(...amounts) : 0,
+                isFiltered: true,
+            };
+        }
         const [all, monthly] = await Promise.all([
             this.repo.find(),
             this.repo.find({ where: { date: (0, typeorm_2.Between)(monthStart, monthEnd) } }),
@@ -62,9 +84,10 @@ let ExpensesService = class ExpensesService {
         const amounts = all.map(e => Number(e.amount));
         return {
             monthTotal,
-            count: all.length,
+            count: monthly.length,
             max: amounts.length ? Math.max(...amounts) : 0,
             min: amounts.length ? Math.min(...amounts) : 0,
+            isFiltered: false,
         };
     }
     create(dto) {

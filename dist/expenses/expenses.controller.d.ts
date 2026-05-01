@@ -8,11 +8,12 @@ export declare class ExpensesController {
         page: number;
         pages: number;
     }>;
-    stats(): Promise<{
+    stats(search?: string, category?: string, dateFrom?: string, dateTo?: string): Promise<{
         monthTotal: number;
         count: number;
         max: number;
         min: number;
+        isFiltered: boolean;
     }>;
     create(dto: any): Promise<import("./entities/expense.entity").Expense>;
     update(id: string, dto: any): Promise<import("./entities/expense.entity").Expense | null>;

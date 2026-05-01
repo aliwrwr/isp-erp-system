@@ -16,11 +16,17 @@ export declare class ExpensesService {
         page: number;
         pages: number;
     }>;
-    stats(): Promise<{
+    stats(filters?: {
+        search?: string;
+        category?: string;
+        dateFrom?: string;
+        dateTo?: string;
+    }): Promise<{
         monthTotal: number;
         count: number;
         max: number;
         min: number;
+        isFiltered: boolean;
     }>;
     create(dto: Partial<Expense>): Promise<Expense>;
     update(id: number, dto: Partial<Expense>): Promise<Expense | null>;

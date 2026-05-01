@@ -24,8 +24,8 @@ let ExpensesController = class ExpensesController {
     findAll(search, category, dateFrom, dateTo, page, limit) {
         return this.service.findAll({ search, category, dateFrom, dateTo, page: Number(page) || 1, limit: Number(limit) || 20 });
     }
-    stats() {
-        return this.service.stats();
+    stats(search, category, dateFrom, dateTo) {
+        return this.service.stats({ search, category, dateFrom, dateTo });
     }
     create(dto) {
         return this.service.create(dto);
@@ -52,8 +52,12 @@ __decorate([
 ], ExpensesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('stats'),
+    __param(0, (0, common_1.Query)('search')),
+    __param(1, (0, common_1.Query)('category')),
+    __param(2, (0, common_1.Query)('dateFrom')),
+    __param(3, (0, common_1.Query)('dateTo')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], ExpensesController.prototype, "stats", null);
 __decorate([

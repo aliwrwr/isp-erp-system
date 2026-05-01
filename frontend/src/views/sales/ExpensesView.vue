@@ -12,8 +12,8 @@
 
     <!-- Stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      <StatsCard title="مصروفات الشهر"  :value="fmt(stats.monthTotal)" icon="fas fa-calendar-alt" color="#E74C3C" />
-      <StatsCard title="إجمالي السجلات" :value="String(stats.count)"    icon="fas fa-list"        color="#F39C12" />
+      <StatsCard :title="stats.isFiltered ? 'إجمالي الفترة المختارة' : 'مصروفات الشهر'" :value="fmt(stats.monthTotal)" icon="fas fa-calendar-alt" color="#E74C3C" />
+      <StatsCard :title="stats.isFiltered ? 'عدد السجلات المفلترة' : 'سجلات الشهر'"    :value="String(stats.count)"    icon="fas fa-list"        color="#F39C12" />
       <StatsCard title="أعلى مصروف"     :value="fmt(stats.max)"         icon="fas fa-arrow-up"    color="#8E44AD" />
       <StatsCard title="أقل مصروف"      :value="fmt(stats.min)"         icon="fas fa-arrow-down"  color="#2980B9" />
     </div>
@@ -299,7 +299,7 @@ const pages       = ref(1);
 const currentPage = ref(1);
 const perPage     = 20;
 const loading     = ref(false);
-const stats       = ref({ monthTotal: 0, count: 0, max: 0, min: 0 });
+const stats       = ref({ monthTotal: 0, count: 0, max: 0, min: 0, isFiltered: false });
 
 const search         = ref('');
 const filterCategory = ref('all');
@@ -365,7 +365,15 @@ async function loadData() {
 }
 
 async function loadStats() {
-  try { const { data } = await api.get('/expenses/stats'); stats.value = data; } catch {}
+  try {
+    const params: any = {};
+    if (search.value)                    params.search   = search.value;
+    if (filterCategory.value !== 'all') params.category = filterCategory.value;
+    if (dateFrom.value)                  params.dateFrom = dateFrom.value;
+    if (dateTo.value)                    params.dateTo   = dateTo.value;
+    const { data } = await api.get('/expenses/stats', { params });
+    stats.value = data;
+  } catch {}
 }
 
 function onSearch() {
