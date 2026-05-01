@@ -215,9 +215,11 @@
                     class="grid gap-1 py-1.5 px-1 rounded-lg hover:bg-gray-50/80 transition items-center"
                     :class="isRowAnySelected(activeGroup.key, item.key) ? 'bg-hr/5 hover:bg-hr/5' : ''"
                     style="grid-template-columns: 1fr repeat(4, 58px)">
-                    <!-- Row label - static indicator only (no auto-select on click) -->
-                    <div class="text-xs font-medium pr-1 text-right flex items-center gap-1.5"
-                      :class="isRowAnySelected(activeGroup.key, item.key) ? 'text-hr font-bold' : 'text-gray-600'">
+                    <!-- Row label: click to toggle ALL actions for this page -->
+                    <div class="text-xs font-medium pr-1 text-right flex items-center gap-1.5 cursor-pointer select-none"
+                      :class="isRowAnySelected(activeGroup.key, item.key) ? 'text-hr font-bold' : 'text-gray-600'"
+                      @click="toggleAllRow(activeGroup.key, item.key)"
+                      title="اضغط لتحديد/إلغاء كل صلاحيات هذه الصفحة">
                       <i :class="isRowAllSelected(activeGroup.key, item.key)
                         ? 'fas fa-check-circle text-hr'
                         : isRowAnySelected(activeGroup.key, item.key)
@@ -334,30 +336,33 @@ const permissionGroups = [
   {
     key: 'internet', label: 'نظام الإنترنت', icon: 'fas fa-wifi', color: '#2980B9',
     items: [
-      { key: 'subscribers',   label: 'المشتركين'     },
-      { key: 'connected',     label: 'المتصلين'      },
-      { key: 'packages',      label: 'الباقات'       },
-      { key: 'subscriptions', label: 'الاشتراكات'    },
-      { key: 'routers',       label: 'الراوترات'     },
-      { key: 'payments',      label: 'المدفوعات'     },
-      { key: 'reports',       label: 'التقارير'      },
-      { key: 'managers',      label: 'المدراء'       },
-      { key: 'log',           label: 'سجل العمليات'  },
-      { key: 'whatsapp',      label: 'واتساب'        },
-      { key: 'settings',      label: 'الإعدادات'     },
+      { key: 'subscribers',      label: 'المشتركين'        },
+      { key: 'connected',        label: 'المتصلين'         },
+      { key: 'packages',         label: 'الباقات'          },
+      { key: 'subscriptions',    label: 'الاشتراكات'       },
+      { key: 'routers',          label: 'الراوترات'        },
+      { key: 'reports',          label: 'التقارير'         },
+      { key: 'managers',         label: 'المدراء'          },
+      { key: 'groups',           label: 'مجموعات المدراء'  },
+      { key: 'permissions',      label: 'الصلاحيات'        },
+      { key: 'log',              label: 'سجل العمليات'     },
+      { key: 'whatsapp',         label: 'واتساب'           },
+      { key: 'settings',         label: 'الإعدادات'        },
+      { key: 'management_reports', label: 'التقارير الإدارية' },
     ],
   },
   {
     key: 'sales', label: 'نظام المبيعات', icon: 'fas fa-cash-register', color: '#27AE60',
     items: [
       { key: 'pos',        label: 'نقطة البيع'  },
-      { key: 'products',   label: 'المنتجات'   },
-      { key: 'customers',  label: 'العملاء'    },
-      { key: 'categories', label: 'التصنيفات'  },
-      { key: 'invoices',   label: 'الفواتير'   },
-      { key: 'expenses',   label: 'المصروفات'  },
-      { key: 'inventory',  label: 'المخزون'    },
-      { key: 'suppliers',  label: 'الموردين'   },
+      { key: 'products',   label: 'المنتجات'    },
+      { key: 'customers',  label: 'العملاء'     },
+      { key: 'categories', label: 'التصنيفات'   },
+      { key: 'invoices',   label: 'الفواتير'    },
+      { key: 'cashbox',    label: 'الصندوق'     },
+      { key: 'expenses',   label: 'المصروفات'   },
+      { key: 'inventory',  label: 'المخزون'     },
+      { key: 'suppliers',  label: 'الموردين'    },
     ],
   },
   {
@@ -372,21 +377,25 @@ const permissionGroups = [
   {
     key: 'support', label: 'الدعم الفني', icon: 'fas fa-headset', color: '#E67E22',
     items: [
-      { key: 'tickets',     label: 'التذاكر' },
-      { key: 'technicians', label: 'الفنيين' },
+      { key: 'tickets',     label: 'التذاكر'  },
+      { key: 'technicians', label: 'الفنيين'  },
     ],
   },
   {
-    key: 'messaging', label: 'الرسائل', icon: 'fas fa-envelope', color: '#16A085',
+    key: 'messaging', label: 'الرسائل', icon: 'fab fa-whatsapp', color: '#16A085',
     items: [
-      { key: 'send',      label: 'إرسال رسائل' },
-      { key: 'templates', label: 'القوالب'     },
-      { key: 'history',   label: 'السجل'       },
+      { key: 'whatsapp_internet',     label: 'واتساب الإنترنت'    },
+      { key: 'whatsapp_installments', label: 'واتساب الأقساط'     },
+      { key: 'whatsapp_support',      label: 'واتساب الدعم الفني' },
+      { key: 'send',                  label: 'إرسال رسائل'        },
+      { key: 'templates',             label: 'القوالب'             },
+      { key: 'history',               label: 'سجل الرسائل'        },
     ],
   },
   {
     key: 'restaurant', label: 'نظام المطاعم', icon: 'fas fa-utensils', color: '#D35400',
     items: [
+      { key: 'pos',          label: 'نقطة البيع'   },
       { key: 'menu',         label: 'قائمة الطعام' },
       { key: 'tables',       label: 'الطاولات'     },
       { key: 'orders',       label: 'الطلبات'      },
@@ -394,15 +403,17 @@ const permissionGroups = [
       { key: 'reservations', label: 'الحجوزات'     },
       { key: 'expenses',     label: 'المصروفات'    },
       { key: 'reports',      label: 'التقارير'     },
+      { key: 'settings',     label: 'الإعدادات'    },
     ],
   },
   {
     key: 'installments', label: 'نظام الأقساط', icon: 'fas fa-hand-holding-usd', color: '#6366F1',
     items: [
-      { key: 'customers', label: 'العملاء'  },
-      { key: 'contracts', label: 'العقود'   },
-      { key: 'payments',  label: 'الدفعات'  },
-      { key: 'reports',   label: 'التقارير' },
+      { key: 'customers', label: 'العملاء'   },
+      { key: 'contracts', label: 'العقود'    },
+      { key: 'payments',  label: 'الدفعات'   },
+      { key: 'reports',   label: 'التقارير'  },
+      { key: 'settings',  label: 'الإعدادات' },
     ],
   },
 ];
