@@ -2,13 +2,14 @@ import { CashboxService } from './cashbox.service';
 export declare class CashboxController {
     private readonly service;
     constructor(service: CashboxService);
-    summary(): Promise<{
+    summary(search?: string, type?: string, source?: string, dateFrom?: string, dateTo?: string): Promise<{
         balance: number;
         totalIn: number;
         totalOut: number;
         monthIn: number;
         monthOut: number;
         monthCount: number;
+        isFiltered: boolean;
     }>;
     ledger(search?: string, type?: string, source?: string, dateFrom?: string, dateTo?: string, page?: string, limit?: string): Promise<{
         data: any;

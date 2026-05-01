@@ -12,72 +12,103 @@ export class CashboxService {
   ) {}
 
   // ─── Summary Stats ──────────────────────────────────────────────────────────
-  async summary() {
+  async summary(filters?: { search?: string; type?: string; source?: string; dateFrom?: string; dateTo?: string }) {
     const now = new Date();
     const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
     const lastOfMonth  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-31`;
 
-    // Total paid invoices (all time)
-    const invTotal = await this.dataSource.query(
-      `SELECT COALESCE(SUM(paidAmount), 0) AS val FROM invoices WHERE paymentStatus = 'paid'`
-    );
-    // Total expenses (all time)
-    const expTotal = await this.dataSource.query(
-      `SELECT COALESCE(SUM(amount), 0) AS val FROM expenses`
-    );
-    // Total manual in (all time)
-    const manInTotal = await this.dataSource.query(
-      `SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'in'`
-    );
-    // Total manual out (all time)
-    const manOutTotal = await this.dataSource.query(
-      `SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'out'`
-    );
+    // ── Global balance (always all-time, unfiltered) ───────────────────────
+    const invTotal    = await this.dataSource.query(`SELECT COALESCE(SUM(paidAmount), 0) AS val FROM invoices WHERE paymentStatus = 'paid'`);
+    const expTotal    = await this.dataSource.query(`SELECT COALESCE(SUM(amount), 0) AS val FROM expenses`);
+    const manInTotal  = await this.dataSource.query(`SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'in'`);
+    const manOutTotal = await this.dataSource.query(`SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'out'`);
 
-    // This month in
-    const monthIn = await this.dataSource.query(
-      `SELECT COALESCE(SUM(paidAmount), 0) AS val FROM invoices WHERE paymentStatus = 'paid' AND DATE(date) >= ? AND DATE(date) <= ?`,
-      [firstOfMonth, lastOfMonth]
-    );
-    const monthManIn = await this.dataSource.query(
-      `SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'in' AND date >= ? AND date <= ?`,
-      [firstOfMonth, lastOfMonth]
-    );
-
-    // This month out
-    const monthOut = await this.dataSource.query(
-      `SELECT COALESCE(SUM(amount), 0) AS val FROM expenses WHERE date >= ? AND date <= ?`,
-      [firstOfMonth, lastOfMonth]
-    );
-    const monthManOut = await this.dataSource.query(
-      `SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'out' AND date >= ? AND date <= ?`,
-      [firstOfMonth, lastOfMonth]
-    );
-
-    // This month count
-    const monthCount = await this.dataSource.query(`
-      SELECT COUNT(*) AS cnt FROM (
-        SELECT id FROM invoices WHERE paymentStatus = 'paid' AND DATE(date) >= ? AND DATE(date) <= ?
-        UNION ALL
-        SELECT id FROM expenses WHERE date >= ? AND date <= ?
-        UNION ALL
-        SELECT id FROM cashbox_manual WHERE date >= ? AND date <= ?
-      )
-    `, [firstOfMonth, lastOfMonth, firstOfMonth, lastOfMonth, firstOfMonth, lastOfMonth]);
-
-    const totalIn  = Number(invTotal[0].val)  + Number(manInTotal[0].val);
+    const totalIn  = Number(invTotal[0].val) + Number(manInTotal[0].val);
     const totalOut = Number(expTotal[0].val) + Number(manOutTotal[0].val);
     const balance  = totalIn - totalOut;
-    const mthIn    = Number(monthIn[0].val) + Number(monthManIn[0].val);
-    const mthOut   = Number(monthOut[0].val) + Number(monthManOut[0].val);
+
+    // ── Period stats: filtered or current-month ────────────────────────────
+    const hasFilters = filters && (filters.dateFrom || filters.dateTo || filters.type || filters.source || filters.search);
+
+    const unionSQL = `
+      SELECT 'invoice' AS source, CAST(i.id AS TEXT) AS sourceId, 'in' AS type,
+             CAST(i.paidAmount AS REAL) AS amount,
+             COALESCE(i.customerName, 'عميل') || ' - فاتورة #' || i.invoiceNumber AS description,
+             DATE(i.date) AS date
+      FROM invoices i WHERE i.paymentStatus = 'paid' AND i.paidAmount > 0
+      UNION ALL
+      SELECT 'expense', CAST(e.id AS TEXT), 'out', CAST(e.amount AS REAL),
+             COALESCE(e.recipientName,'') || CASE WHEN e.description IS NOT NULL AND e.description != '' THEN ' - ' || e.description ELSE '' END,
+             e.date
+      FROM expenses e
+      UNION ALL
+      SELECT 'manual', CAST(m.id AS TEXT), m.type, CAST(m.amount AS REAL), m.description, m.date
+      FROM cashbox_manual m
+    `;
+
+    let periodIn: number, periodOut: number, periodCount: number, isFiltered: boolean;
+
+    if (hasFilters) {
+      const whereClauses: string[] = [];
+      const params: any[] = [];
+      if (filters.type)     { whereClauses.push(`type = ?`);              params.push(filters.type); }
+      if (filters.source)   { whereClauses.push(`source = ?`);            params.push(filters.source); }
+      if (filters.dateFrom) { whereClauses.push(`date >= ?`);             params.push(filters.dateFrom); }
+      if (filters.dateTo)   { whereClauses.push(`date <= ?`);             params.push(filters.dateTo); }
+      if (filters.search)   { whereClauses.push(`description LIKE ?`);    params.push(`%${filters.search}%`); }
+      const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+      const agg = await this.dataSource.query(
+        `SELECT
+           COALESCE(SUM(CASE WHEN type = 'in'  THEN amount ELSE 0 END), 0) AS inVal,
+           COALESCE(SUM(CASE WHEN type = 'out' THEN amount ELSE 0 END), 0) AS outVal,
+           COUNT(*) AS cnt
+         FROM (${unionSQL}) combined ${whereSQL}`,
+        params,
+      );
+      periodIn    = Number(agg[0].inVal);
+      periodOut   = Number(agg[0].outVal);
+      periodCount = Number(agg[0].cnt);
+      isFiltered  = true;
+    } else {
+      // Current month (default)
+      const monthIn = await this.dataSource.query(
+        `SELECT COALESCE(SUM(paidAmount), 0) AS val FROM invoices WHERE paymentStatus = 'paid' AND DATE(date) >= ? AND DATE(date) <= ?`,
+        [firstOfMonth, lastOfMonth],
+      );
+      const monthManIn = await this.dataSource.query(
+        `SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'in' AND date >= ? AND date <= ?`,
+        [firstOfMonth, lastOfMonth],
+      );
+      const monthOut = await this.dataSource.query(
+        `SELECT COALESCE(SUM(amount), 0) AS val FROM expenses WHERE date >= ? AND date <= ?`,
+        [firstOfMonth, lastOfMonth],
+      );
+      const monthManOut = await this.dataSource.query(
+        `SELECT COALESCE(SUM(amount), 0) AS val FROM cashbox_manual WHERE type = 'out' AND date >= ? AND date <= ?`,
+        [firstOfMonth, lastOfMonth],
+      );
+      const monthCount = await this.dataSource.query(`
+        SELECT COUNT(*) AS cnt FROM (
+          SELECT id FROM invoices WHERE paymentStatus = 'paid' AND DATE(date) >= ? AND DATE(date) <= ?
+          UNION ALL SELECT id FROM expenses WHERE date >= ? AND date <= ?
+          UNION ALL SELECT id FROM cashbox_manual WHERE date >= ? AND date <= ?
+        )
+      `, [firstOfMonth, lastOfMonth, firstOfMonth, lastOfMonth, firstOfMonth, lastOfMonth]);
+      periodIn    = Number(monthIn[0].val) + Number(monthManIn[0].val);
+      periodOut   = Number(monthOut[0].val) + Number(monthManOut[0].val);
+      periodCount = Number(monthCount[0].cnt);
+      isFiltered  = false;
+    }
 
     return {
       balance,
       totalIn,
       totalOut,
-      monthIn:  mthIn,
-      monthOut: mthOut,
-      monthCount: Number(monthCount[0].cnt),
+      monthIn:    periodIn,
+      monthOut:   periodOut,
+      monthCount: periodCount,
+      isFiltered,
     };
   }
 

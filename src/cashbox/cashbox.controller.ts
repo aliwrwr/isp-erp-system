@@ -8,8 +8,14 @@ export class CashboxController {
   constructor(private readonly service: CashboxService) {}
 
   @Get('summary')
-  summary() {
-    return this.service.summary();
+  summary(
+    @Query('search')   search?: string,
+    @Query('type')     type?: string,
+    @Query('source')   source?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo')   dateTo?: string,
+  ) {
+    return this.service.summary({ search, type, source, dateFrom, dateTo });
   }
 
   @Get('ledger')

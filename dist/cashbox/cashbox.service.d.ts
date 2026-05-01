@@ -4,13 +4,20 @@ export declare class CashboxService {
     private readonly manualRepo;
     private readonly dataSource;
     constructor(manualRepo: Repository<CashboxManual>, dataSource: DataSource);
-    summary(): Promise<{
+    summary(filters?: {
+        search?: string;
+        type?: string;
+        source?: string;
+        dateFrom?: string;
+        dateTo?: string;
+    }): Promise<{
         balance: number;
         totalIn: number;
         totalOut: number;
         monthIn: number;
         monthOut: number;
         monthCount: number;
+        isFiltered: boolean;
     }>;
     ledger(query: {
         search?: string;

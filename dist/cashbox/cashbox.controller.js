@@ -21,8 +21,8 @@ let CashboxController = class CashboxController {
     constructor(service) {
         this.service = service;
     }
-    summary() {
-        return this.service.summary();
+    summary(search, type, source, dateFrom, dateTo) {
+        return this.service.summary({ search, type, source, dateFrom, dateTo });
     }
     ledger(search, type, source, dateFrom, dateTo, page, limit) {
         return this.service.ledger({
@@ -41,8 +41,13 @@ let CashboxController = class CashboxController {
 exports.CashboxController = CashboxController;
 __decorate([
     (0, common_1.Get)('summary'),
+    __param(0, (0, common_1.Query)('search')),
+    __param(1, (0, common_1.Query)('type')),
+    __param(2, (0, common_1.Query)('source')),
+    __param(3, (0, common_1.Query)('dateFrom')),
+    __param(4, (0, common_1.Query)('dateTo')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], CashboxController.prototype, "summary", null);
 __decorate([

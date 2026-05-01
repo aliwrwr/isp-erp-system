@@ -279,13 +279,17 @@ const statsCards = ref([
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 function debouncedSearch() {
   if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { currentPage.value = 1; loadLedger() }, 400)
+  searchTimer = setTimeout(() => { currentPage.value = 1; reload() }, 400)
 }
-function onFilterChange() { currentPage.value = 1; loadLedger() }
+function onFilterChange() { currentPage.value = 1; reload() }
 function clearFilters() {
   search.value = ''; filterType.value = ''; filterSource.value = ''
   dateFrom.value = ''; dateTo.value = ''
-  currentPage.value = 1; loadLedger()
+  currentPage.value = 1; reload()
+}
+
+function reload() {
+  return Promise.all([loadLedger(), loadSummary()])
 }
 
 async function loadLedger() {
@@ -311,11 +315,24 @@ async function loadLedger() {
 
 async function loadSummary() {
   try {
-    const res = await api.get('/cashbox/summary')
+    const res = await api.get('/cashbox/summary', {
+      params: {
+        search:   search.value   || undefined,
+        type:     filterType.value   || undefined,
+        source:   filterSource.value || undefined,
+        dateFrom: dateFrom.value || undefined,
+        dateTo:   dateTo.value   || undefined,
+      }
+    })
     const s = res.data
-    statsCards.value[0].value = Number(s.balance).toLocaleString() + ' د.ع'
-    statsCards.value[1].value = Number(s.monthIn).toLocaleString() + ' د.ع'
-    statsCards.value[2].value = Number(s.monthOut).toLocaleString() + ' د.ع'
+    const isFiltered = s.isFiltered
+    statsCards.value[0].label = 'رصيد الصندوق'
+    statsCards.value[1].label = isFiltered ? 'وارد الفترة المختارة'  : 'وارد هذا الشهر'
+    statsCards.value[2].label = isFiltered ? 'صادر الفترة المختارة'  : 'صادر هذا الشهر'
+    statsCards.value[3].label = isFiltered ? 'حركات الفترة المختارة' : 'حركات هذا الشهر'
+    statsCards.value[0].value = Number(s.balance).toLocaleString()    + ' د.ع'
+    statsCards.value[1].value = Number(s.monthIn).toLocaleString()    + ' د.ع'
+    statsCards.value[2].value = Number(s.monthOut).toLocaleString()   + ' د.ع'
     statsCards.value[3].value = Number(s.monthCount).toLocaleString()
   } catch (e) { console.error(e) }
 }
