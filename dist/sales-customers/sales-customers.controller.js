@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const permissions_decorator_1 = require("../auth/decorators/permissions.decorator");
 const sales_customers_service_1 = require("./sales-customers.service");
 const create_sales_customer_dto_1 = require("./dto/create-sales-customer.dto");
 const update_sales_customer_dto_1 = require("./dto/update-sales-customer.dto");
@@ -55,6 +56,7 @@ exports.SalesCustomersController = SalesCustomersController;
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff'),
+    (0, permissions_decorator_1.Permissions)('sales.customers', 'sales.pos', 'sales.invoices'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_sales_customer_dto_1.CreateSalesCustomerDto]),
@@ -63,6 +65,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff', 'Accountant'),
+    (0, permissions_decorator_1.Permissions)('sales.customers', 'sales.pos', 'sales.invoices'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
@@ -70,6 +73,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff', 'Accountant'),
+    (0, permissions_decorator_1.Permissions)('sales.customers', 'sales.pos', 'sales.invoices'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -78,6 +82,7 @@ __decorate([
 __decorate([
     (0, common_1.Patch)(':id'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff'),
+    (0, permissions_decorator_1.Permissions)('sales.customers', 'sales.pos'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -87,6 +92,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, roles_decorator_1.Roles)('Super Admin'),
+    (0, permissions_decorator_1.Permissions)('sales.customers'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -95,6 +101,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id/invoices'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff', 'Accountant'),
+    (0, permissions_decorator_1.Permissions)('sales.customers', 'sales.pos', 'sales.invoices'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -103,6 +110,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/payment'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff', 'Accountant'),
+    (0, permissions_decorator_1.Permissions)('sales.customers', 'sales.pos'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -112,6 +120,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/charge'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff'),
+    (0, permissions_decorator_1.Permissions)('sales.customers', 'sales.pos'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),

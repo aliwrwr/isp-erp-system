@@ -24,14 +24,14 @@ export class CategoriesController {
 
   @Get()
   @Roles('Super Admin', 'Sales Staff')
-  @Permissions('sales.categories')
+  @Permissions('sales.categories', 'sales.pos')
   findAll() {
     return this.categoriesService.findAll();
   }
 
   @Get(':id')
   @Roles('Super Admin', 'Sales Staff')
-  @Permissions('sales.categories')
+  @Permissions('sales.categories', 'sales.pos')
   findOne(@Param('id') id: string) {
     return this.categoriesService.findOne(+id);
   }

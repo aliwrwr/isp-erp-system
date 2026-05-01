@@ -24,14 +24,14 @@ export class ProductsController {
 
   @Get()
   @Roles('Super Admin', 'Sales Staff')
-  @Permissions('sales.products')
+  @Permissions('sales.products', 'sales.pos')
   findAll() {
     return this.productsService.findAll();
   }
 
   @Get(':id')
   @Roles('Super Admin', 'Sales Staff')
-  @Permissions('sales.products')
+  @Permissions('sales.products', 'sales.pos')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(+id);
   }

@@ -17,21 +17,21 @@ export class InvoicesController {
 
   @Post()
   @Roles('Super Admin', 'Sales Staff')
-  @Permissions('sales.invoices')
+  @Permissions('sales.invoices', 'sales.pos')
   create(@Body() createInvoiceDto: CreateInvoiceDto) {
     return this.invoicesService.create(createInvoiceDto);
   }
 
   @Get()
   @Roles('Super Admin', 'Sales Staff', 'Accountant')
-  @Permissions('sales.invoices')
+  @Permissions('sales.invoices', 'sales.pos')
   findAll() {
     return this.invoicesService.findAll();
   }
 
   @Get(':id')
   @Roles('Super Admin', 'Sales Staff', 'Accountant')
-  @Permissions('sales.invoices')
+  @Permissions('sales.invoices', 'sales.pos')
   findOne(@Param('id') id: string) {
     return this.invoicesService.findOne(+id);
   }

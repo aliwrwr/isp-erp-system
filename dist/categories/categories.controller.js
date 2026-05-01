@@ -56,7 +56,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff'),
-    (0, permissions_decorator_1.Permissions)('sales.categories'),
+    (0, permissions_decorator_1.Permissions)('sales.categories', 'sales.pos'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
@@ -64,7 +64,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Sales Staff'),
-    (0, permissions_decorator_1.Permissions)('sales.categories'),
+    (0, permissions_decorator_1.Permissions)('sales.categories', 'sales.pos'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
