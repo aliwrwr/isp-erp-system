@@ -41,7 +41,13 @@ let RolesGuard = class RolesGuard {
         }
         if (requiredPermissions) {
             const userPerms = user.permissions ?? [];
-            const hasPerm = requiredPermissions.some((perm) => userPerms.some((up) => up === perm || up.startsWith(perm + '.')));
+            const hasPerm = requiredPermissions.some((perm) => {
+                const sysKey = perm.split('.')[0];
+                return userPerms.some((up) => up === '*' ||
+                    up === (sysKey + '.*') ||
+                    up === perm ||
+                    up.startsWith(perm + '.'));
+            });
             if (hasPerm)
                 return true;
         }

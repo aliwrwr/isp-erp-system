@@ -36,13 +36,22 @@ export class RolesGuard implements CanActivate {
     }
 
     // Check department permissions
-    // Supports both exact match ('internet.subscribers')
-    // and prefix match ('internet.subscribers.create' satisfies 'internet.subscribers')
+    // Supports:
+    //   '*'           → global super admin
+    //   'internet.*'  → full system wildcard (matches any internet.xxx.yyy)
+    //   'sales.products' → exact prefix match
+    //   'sales.products.view' → specific action (satisfies 'sales.products')
     if (requiredPermissions) {
       const userPerms: string[] = user.permissions ?? [];
-      const hasPerm = requiredPermissions.some((perm) =>
-        userPerms.some((up) => up === perm || up.startsWith(perm + '.')),
-      );
+      const hasPerm = requiredPermissions.some((perm) => {
+        const sysKey = perm.split('.')[0];
+        return userPerms.some((up) =>
+          up === '*' ||                        // global wildcard
+          up === (sysKey + '.*') ||            // system-level wildcard (e.g. 'internet.*')
+          up === perm ||                       // exact match
+          up.startsWith(perm + '.'),           // stored perm is more specific than required
+        );
+      });
       if (hasPerm) return true;
     }
 

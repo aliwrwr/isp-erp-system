@@ -623,17 +623,17 @@
 
           <div class="py-1">
             <!-- تفعيل -->
-            <button @click="openActivateModal" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
+            <button v-if="hasSubscriberPermission('add')" @click="openActivateModal" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors">
               <i class="fas fa-check-circle w-4 text-center"></i>
               <span>تفعيل</span>
             </button>
             <!-- الغاء -->
-            <button @click="suspendSub" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-orange-500 hover:bg-orange-50 transition-colors">
+            <button v-if="hasSubscriberPermission('edit')" @click="suspendSub" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-orange-500 hover:bg-orange-50 transition-colors">
               <i class="fas fa-pause-circle w-4 text-center"></i>
               <span>إلغاء الاشتراك</span>
             </button>
             <!-- تعطيل / إلغاء التعطيل -->
-            <button @click="toggleEnabled" class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
+            <button v-if="hasSubscriberPermission('edit')" @click="toggleEnabled" class="w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors"
               :class="contextMenuSub?.isEnabled !== false ? 'text-red-600 hover:bg-red-50' : 'text-teal-600 hover:bg-teal-50'">
               <i class="w-4 text-center" :class="contextMenuSub?.isEnabled !== false ? 'fas fa-ban' : 'fas fa-check-circle'"></i>
               <span>{{ contextMenuSub?.isEnabled !== false ? 'تعطيل' : 'إلغاء التعطيل' }}</span>
@@ -653,17 +653,17 @@
               <span>عرض التفاصيل</span>
             </button>
             <!-- تعديل -->
-            <button @click="openEditFromMenu" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button v-if="hasSubscriberPermission('edit')" @click="openEditFromMenu" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-pen w-4 text-center text-blue-400"></i>
               <span>تعديل</span>
             </button>
             <!-- تغيير الباقة -->
-            <button @click="openChangePackage" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button v-if="hasSubscriberPermission('edit')" @click="openChangePackage" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-exchange-alt w-4 text-center text-sky-400"></i>
               <span>تغيير الباقة</span>
             </button>
             <!-- تمديد -->
-            <button @click="openExtend" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            <button v-if="hasSubscriberPermission('edit')" @click="openExtend" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
               <i class="fas fa-calendar-plus w-4 text-center text-teal-500"></i>
               <span>تمديد</span>
             </button>
@@ -694,7 +694,7 @@
             <div class="my-1 border-t border-gray-100"></div>
 
             <!-- حذف -->
-            <button @click="deleteFromMenu" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors">
+            <button v-if="hasSubscriberPermission('delete')" @click="deleteFromMenu" class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors">
               <i class="fas fa-trash w-4 text-center"></i>
               <span>حذف</span>
             </button>
@@ -1376,7 +1376,17 @@ import SubscriberDetailsModal from './components/SubscriberDetailsModal.vue';
 const auth = useAuthStore();
 
 function hasSubscriberPermission(action: string) {
-  return auth.hasPermission(`internet.subscribers.${action}`);
+  // Map non-standard context-menu actions to the standard 4 permission verbs
+  // so that employees assigned view/add/edit/delete see the same as admin
+  const actionMap: Record<string, string> = {
+    'sync':          'edit',
+    'pay_debt':      'add',
+    'add_debt':      'add',
+    'print_invoice': 'view',
+    'send_message':  'view',
+  };
+  const mapped = actionMap[action] ?? action;
+  return auth.hasPermission(`internet.subscribers.${mapped}`);
 }
 
 const form = ref({

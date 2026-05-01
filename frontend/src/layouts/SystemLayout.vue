@@ -196,7 +196,7 @@ const routePermissions: Record<string, string> = {
   '/sales/customers': 'sales.customers',
   '/sales/categories': 'sales.categories',
   '/sales/invoices': 'sales.invoices',
-  '/sales/cashbox': 'sales.expenses',
+  '/sales/cashbox': 'sales.cashbox',
   '/sales/expenses': 'sales.expenses',
   '/sales/inventory': 'sales.inventory',
   '/sales/suppliers': 'sales.suppliers',
@@ -212,12 +212,12 @@ const routePermissions: Record<string, string> = {
   '/messaging/whatsapp-internet': 'messaging.whatsapp_internet',
   '/messaging/whatsapp-installments': 'messaging.whatsapp_installments',
   '/messaging/whatsapp-support': 'messaging.whatsapp_support',
+  '/restaurant/pos': 'restaurant.pos',
   '/restaurant/menu': 'restaurant.menu',
   '/restaurant/tables': 'restaurant.tables',
   '/restaurant/orders': 'restaurant.orders',
   '/restaurant/kitchen': 'restaurant.kitchen',
   '/restaurant/reservations': 'restaurant.reservations',
-  '/restaurant/pos': 'restaurant.orders',
   '/restaurant/expenses': 'restaurant.expenses',
   '/restaurant/reports': 'restaurant.reports',
   '/restaurant/settings': 'restaurant.settings',
@@ -225,6 +225,7 @@ const routePermissions: Record<string, string> = {
   '/installments/contracts': 'installments.contracts',
   '/installments/payments': 'installments.payments',
   '/installments/reports': 'installments.reports',
+  '/installments/settings': 'installments.settings',
 };
 
 const menuItems = computed(() => {

@@ -6,7 +6,7 @@
         <h2 class="text-lg font-bold text-secondary">المنتجات</h2>
         <p class="text-xs text-gray-400 mt-0.5">{{ products.length }} منتج مسجل</p>
       </div>
-      <button @click="openAdd"
+      <button v-if="auth.isSuperAdmin || auth.hasPermission('sales.products.add')" @click="openAdd"
         class="bg-sales hover:opacity-90 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-sm shadow-sales/30">
         <i class="fas fa-plus text-xs"></i> إضافة منتج
       </button>
@@ -109,12 +109,12 @@
                 </span>
               </td>
               <td class="px-5 py-3.5">
-                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button @click="openEdit(p)"
+                <div v-if="auth.isSuperAdmin || auth.hasPermission('sales.products.edit') || auth.hasPermission('sales.products.delete')" class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <button v-if="auth.isSuperAdmin || auth.hasPermission('sales.products.edit')" @click="openEdit(p)"
                     class="w-8 h-8 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition">
                     <i class="fas fa-edit text-xs"></i>
                   </button>
-                  <button @click="remove(p.id)"
+                  <button v-if="auth.isSuperAdmin || auth.hasPermission('sales.products.delete')" @click="remove(p.id)"
                     class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-400 flex items-center justify-center transition">
                     <i class="fas fa-trash text-xs"></i>
                   </button>
@@ -128,7 +128,7 @@
 
     <!-- Selected bar -->
     <transition name="slide-up">
-      <div v-if="selectedIds.size > 0"
+      <div v-if="selectedIds.size > 0 && (auth.isSuperAdmin || auth.hasPermission('sales.products.delete'))"
         class="mt-3 px-4 py-2.5 bg-sales/10 border border-sales/20 rounded-xl flex items-center justify-between text-sm">
         <span class="text-sales font-semibold">
           <i class="fas fa-check-square ml-1"></i>
@@ -347,6 +347,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import api from '../../api';
+import { useAuthStore } from '../../stores/auth';
+const auth = useAuthStore();
 
 const products = ref<any[]>([]);
 const categories = ref<any[]>([]);
