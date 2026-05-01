@@ -43,9 +43,19 @@ export const useAuthStore = defineStore('auth', {
     hasPermission() {
       return (perm: string) => {
         if (this.isSuperAdmin) return true;
+        // System-level wildcard: 'internet.*' grants full access to all 'internet.xxx.yyy'
+        const sysKey = perm.split('.')[0];
+        if (this.permissions.includes(sysKey + '.*')) return true;
         // Exact match OR any stored permission starts with perm + '.' (new action-based format)
         return this.permissions.includes(perm) ||
                this.permissions.some((p: string) => p.startsWith(perm + '.'));
+      };
+    },
+    // Returns true if the user has full admin rights over a specific system
+    isSystemAdmin() {
+      return (system: string) => {
+        if (this.isSuperAdmin) return true;
+        return this.permissions.includes(system + '.*');
       };
     },
     hasSystemAccess() {

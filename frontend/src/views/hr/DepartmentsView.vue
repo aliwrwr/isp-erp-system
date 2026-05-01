@@ -184,7 +184,9 @@
                     class="px-3 py-2.5 text-[11px] whitespace-nowrap transition flex items-center gap-1.5 relative -mb-px">
                     <i :class="group.icon" class="text-[10px]"></i>
                     {{ group.label }}
-                    <span v-if="getGroupPermCount(group.key)"
+                    <!-- Crown badge when system admin is enabled -->
+                    <i v-if="form.permissions?.includes(group.key + '.*')" class="fas fa-crown text-amber-400 text-[9px]"></i>
+                    <span v-else-if="getGroupPermCount(group.key)"
                       class="bg-hr text-white rounded-full px-1.5 text-[9px] leading-4 font-bold">
                       {{ getGroupPermCount(group.key) }}
                     </span>
@@ -193,6 +195,33 @@
 
                 <!-- Matrix -->
                 <div class="p-3 bg-white" v-if="activeGroup">
+
+                  <!-- System Admin Toggle -->
+                  <div class="flex items-center justify-between mb-2.5 rounded-xl px-3 py-2 border transition-all"
+                    :class="isSystemAdminEnabled(activeGroup.key) ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-200'">
+                    <div class="flex items-center gap-2">
+                      <i class="fas fa-crown text-sm transition-colors"
+                        :class="isSystemAdminEnabled(activeGroup.key) ? 'text-amber-500' : 'text-gray-300'"></i>
+                      <div>
+                        <div class="text-xs font-bold transition-colors"
+                          :class="isSystemAdminEnabled(activeGroup.key) ? 'text-amber-700' : 'text-gray-500'">
+                          مدير النظام الكامل
+                        </div>
+                        <div class="text-[10px] leading-tight transition-colors"
+                          :class="isSystemAdminEnabled(activeGroup.key) ? 'text-amber-500' : 'text-gray-400'">
+                          {{ isSystemAdminEnabled(activeGroup.key) ? 'صلاحيات كاملة مثل المدير بالضبط ✓' : 'تفعيل لمنح صلاحيات مثل المدير تماماً' }}
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button"
+                      @click="toggleSystemAdmin(activeGroup.key)"
+                      class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none"
+                      :class="isSystemAdminEnabled(activeGroup.key) ? 'bg-amber-500' : 'bg-gray-300'">
+                      <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300"
+                        :class="isSystemAdminEnabled(activeGroup.key) ? 'translate-x-6' : 'translate-x-1'"></span>
+                    </button>
+                  </div>
+
                   <!-- Column Headers -->
                   <div class="grid gap-1 mb-1" style="grid-template-columns: 1fr repeat(4, 58px)">
                     <div class="text-[10px] font-bold text-gray-400 pr-2">الصفحة / الوحدة</div>
@@ -471,10 +500,28 @@ function selectAllSystem(sys: string) {
   const group = permissionGroups.find(g => g.key === sys);
   if (!group) return;
   const all = group.items.flatMap(i => actions.map(a => permKey(sys, i.key, a.key)));
-  form.value.permissions = [...new Set([...form.value.permissions, ...all])];
+  // Add system wildcard so the employee has FULL admin-like access to this system
+  form.value.permissions = [...new Set([...form.value.permissions, ...all, `${sys}.*`])];
 }
 function clearSystem(sys: string) {
-  form.value.permissions = form.value.permissions.filter(p => !p.startsWith(sys + '.'));
+  // Remove both individual permissions and the system wildcard
+  form.value.permissions = form.value.permissions.filter(
+    p => !p.startsWith(sys + '.') && p !== `${sys}.*`
+  );
+}
+
+// ─── System Admin toggle ──────────────────────────────────────
+function isSystemAdminEnabled(sys: string) {
+  return form.value.permissions.includes(`${sys}.*`);
+}
+function toggleSystemAdmin(sys: string) {
+  if (isSystemAdminEnabled(sys)) {
+    // Remove wildcard only — keep individual permissions as-is
+    form.value.permissions = form.value.permissions.filter(p => p !== `${sys}.*`);
+  } else {
+    // Grant full system admin: add wildcard + all individual permissions
+    selectAllSystem(sys);
+  }
 }
 
 // ─── Global select/clear ─────────────────────────────────────
@@ -482,7 +529,9 @@ function selectAllPermissions() {
   const all = permissionGroups.flatMap(g =>
     g.items.flatMap(i => actions.map(a => permKey(g.key, i.key, a.key)))
   );
-  form.value.permissions = [...new Set(all)];
+  // Add all system wildcards too
+  const wildcards = permissionGroups.map(g => `${g.key}.*`);
+  form.value.permissions = [...new Set([...all, ...wildcards])];
 }
 function clearAllPermissions() {
   form.value.permissions = [];
