@@ -28,7 +28,7 @@
             class="w-full pr-8 pl-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sales" />
         </div>
         <!-- Category -->
-        <select v-model="filterCategory" @change="loadData"
+        <select v-model="filterCategory" @change="reload"
           class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sales">
           <option value="all">كل التصنيفات</option>
           <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
@@ -36,13 +36,13 @@
         <!-- Date From -->
         <div class="relative">
           <label class="absolute -top-2 right-3 bg-white px-1 text-[10px] text-gray-400">من</label>
-          <input v-model="dateFrom" @change="loadData" type="date"
+          <input v-model="dateFrom" @change="reload" type="date"
             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sales" />
         </div>
         <!-- Date To -->
         <div class="relative">
           <label class="absolute -top-2 right-3 bg-white px-1 text-[10px] text-gray-400">إلى</label>
-          <input v-model="dateTo" @change="loadData" type="date"
+          <input v-model="dateTo" @change="reload" type="date"
             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sales" />
         </div>
       </div>
@@ -50,15 +50,15 @@
       <div v-if="hasFilters" class="flex flex-wrap gap-2 mt-3">
         <span v-if="search" class="inline-flex items-center gap-1 bg-sales/10 text-sales text-xs px-2 py-1 rounded-full">
           <i class="fas fa-search text-[10px]"></i> {{ search }}
-          <button @click="search=''; loadData()" class="ml-1 hover:text-red-500"><i class="fas fa-times text-[10px]"></i></button>
+          <button @click="search=''; reload()" class="ml-1 hover:text-red-500"><i class="fas fa-times text-[10px]"></i></button>
         </span>
         <span v-if="filterCategory!=='all'" class="inline-flex items-center gap-1 bg-purple-50 text-purple-600 text-xs px-2 py-1 rounded-full">
           <i class="fas fa-tag text-[10px]"></i> {{ catLabel(filterCategory) }}
-          <button @click="filterCategory='all'; loadData()" class="ml-1 hover:text-red-500"><i class="fas fa-times text-[10px]"></i></button>
+          <button @click="filterCategory='all'; reload()" class="ml-1 hover:text-red-500"><i class="fas fa-times text-[10px]"></i></button>
         </span>
         <span v-if="dateFrom||dateTo" class="inline-flex items-center gap-1 bg-amber-50 text-amber-600 text-xs px-2 py-1 rounded-full">
           <i class="fas fa-calendar text-[10px]"></i> {{ dateFrom || '...' }} — {{ dateTo || '...' }}
-          <button @click="dateFrom=''; dateTo=''; loadData()" class="ml-1 hover:text-red-500"><i class="fas fa-times text-[10px]"></i></button>
+          <button @click="dateFrom=''; dateTo=''; reload()" class="ml-1 hover:text-red-500"><i class="fas fa-times text-[10px]"></i></button>
         </span>
         <button @click="clearFilters" class="text-xs text-gray-400 hover:text-red-500 underline">مسح الكل</button>
       </div>
@@ -378,7 +378,12 @@ async function loadStats() {
 
 function onSearch() {
   if (searchTimeout) clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => { currentPage.value = 1; loadData(); }, 400);
+  searchTimeout = setTimeout(() => { currentPage.value = 1; Promise.all([loadData(), loadStats()]); }, 400);
+}
+
+function reload() {
+  currentPage.value = 1;
+  return Promise.all([loadData(), loadStats()]);
 }
 
 function goPage(p: number) {
@@ -389,7 +394,7 @@ function goPage(p: number) {
 
 function clearFilters() {
   search.value = ''; filterCategory.value = 'all'; dateFrom.value = ''; dateTo.value = '';
-  currentPage.value = 1; loadData();
+  currentPage.value = 1; Promise.all([loadData(), loadStats()]);
 }
 
 // ── CRUD ──────────────────────────────────────────────────────
