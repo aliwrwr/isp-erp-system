@@ -756,15 +756,27 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <i class="fas fa-box text-amber-400 text-xs w-4 text-center"></i>
-                  <div>
+                  <div class="flex-1 min-w-0">
                     <p class="text-[10px] text-gray-400">الباقة</p>
                     <p class="text-sm font-semibold text-secondary">{{ activatePackage?.name || '—' }}</p>
                   </div>
                 </div>
               </div>
 
+              <!-- Package selector -->
+              <div class="mt-3 pt-3 border-t border-gray-200">
+                <label class="block text-[11px] font-bold text-gray-500 mb-1.5">تغيير الباقة (اختياري)</label>
+                <select v-model="activateForm.packageId"
+                  class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer">
+                  <option :value="null">— بدون باقة —</option>
+                  <option v-for="p in packages" :key="p.id" :value="p.id">
+                    {{ p.name }} — {{ Number(p.price).toLocaleString('ar-IQ') }} د.ع
+                  </option>
+                </select>
+              </div>
+
               <!-- Package price highlight -->
-              <div v-if="activatePackage" class="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+              <div v-if="activatePackage" class="mt-3 flex items-center justify-between bg-emerald-50 px-3 py-2.5 rounded-xl border border-emerald-100">
                 <span class="text-xs text-gray-500">سعر الباقة</span>
                 <span class="text-base font-bold text-emerald-600">{{ Number(activatePackage.price).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-500">د.ع</span></span>
               </div>
@@ -1733,13 +1745,13 @@ const activateForm = ref({
   partialAmount: '' as string | number,
   notes: '',
   startDate: '',
+  packageId: null as number | null,
 });
 const activateResult = ref<{ endDate: string; remainingDays: number } | null>(null);
 
 const activatePackage = computed(() => {
-  const sub = contextMenuSub.value;
-  if (!sub) return null;
-  if (sub.package?.id) return packages.value.find((p: any) => p.id === sub.package.id) || sub.package;
+  const pkgId = activateForm.value.packageId;
+  if (pkgId) return packages.value.find((p: any) => p.id === pkgId) || null;
   return null;
 });
 
@@ -1768,11 +1780,22 @@ function openActivateModal() {
   const sub = contextMenuSub.value;
   closeContextMenu();
   if (!sub) return;
+
+  // تحديد الباقة: أولاً من الباقة الحالية، ثم من آخر اشتراك سابق
+  let defaultPackageId: number | null = sub.package?.id ?? null;
+  if (!defaultPackageId && sub.subscriptions?.length) {
+    const sorted = [...sub.subscriptions].sort(
+      (a: any, b: any) => new Date(b.startDate ?? 0).getTime() - new Date(a.startDate ?? 0).getTime()
+    );
+    defaultPackageId = sorted[0]?.package?.id ?? null;
+  }
+
   activateForm.value = {
     paymentMethod: 'cash',
     partialAmount: '',
     notes: '',
     startDate: new Date().toISOString().split('T')[0],
+    packageId: defaultPackageId,
   };
   activateResult.value = null;
   showActivateModal.value = true;
@@ -1793,7 +1816,7 @@ async function saveActivate() {
       subStartDate: startDt.toISOString(),
       paymentMethod: activateForm.value.paymentMethod,
     };
-    if (sub.package?.id) payload.packageId = sub.package.id;
+    if (activateForm.value.packageId) payload.packageId = activateForm.value.packageId;
     if (activateForm.value.notes.trim()) payload.notes = activateForm.value.notes.trim();
     if (activateForm.value.paymentMethod === 'partial' && activateForm.value.partialAmount) {
       payload.partialAmount = Number(activateForm.value.partialAmount);
