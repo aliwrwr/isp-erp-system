@@ -125,10 +125,10 @@ let SubscribersService = class SubscribersService {
         return this.findOne(saved.id);
     }
     findAll() {
-        return this.subscribersRepository.find({ relations: ['manager', 'package', 'subscriptions', 'router'] });
+        return this.subscribersRepository.find({ relations: ['manager', 'package', 'subscriptions', 'subscriptions.package', 'router'] });
     }
     findOne(id) {
-        return this.subscribersRepository.findOne({ where: { id }, relations: ['manager', 'package', 'subscriptions', 'router'] });
+        return this.subscribersRepository.findOne({ where: { id }, relations: ['manager', 'package', 'subscriptions', 'subscriptions.package', 'router'] });
     }
     async update(id, updateSubscriberDto) {
         const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod, partialAmount, ...rest } = updateSubscriberDto;
@@ -173,6 +173,7 @@ let SubscribersService = class SubscribersService {
             if (endDate) {
                 const paymentMethod = updateSubscriberDto.paymentMethod || 'cash';
                 const paidAmt = paymentMethod === 'partial' ? Number(partialAmount || 0) : (paymentMethod === 'cash' ? Number(pkg?.price || 0) : 0);
+                const debtAmt = Math.max(0, Number(pkg?.price || 0) - paidAmt);
                 const subscription = this.subscriptionsRepository.create({
                     subscriber: { id },
                     package: { id: packageId },
@@ -181,6 +182,7 @@ let SubscribersService = class SubscribersService {
                     price: Number(pkg?.price || 0),
                     paymentMethod,
                     paidAmount: paidAmt,
+                    debtAmount: debtAmt,
                     status: 'active',
                 });
                 await this.subscriptionsRepository.save(subscription);

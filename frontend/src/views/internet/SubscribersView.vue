@@ -1937,11 +1937,17 @@ const changePackageForm = ref({ packageId: '' as any, startDate: '' });
 const showDetailsModal = ref(false);
 const detailSub = ref<any>(null);
 
-function openDetailsFromMenu() {
+async function openDetailsFromMenu() {
   const sub = contextMenuSub.value;
   closeContextMenu();
   if (!sub) return;
-  detailSub.value = sub;
+  // جلب بيانات محدّثة مع كامل الاشتراكات والديون
+  try {
+    const { data } = await api.get(`/subscribers/${sub.id}`);
+    detailSub.value = data;
+  } catch {
+    detailSub.value = sub; // fallback للبيانات المحلية
+  }
   showDetailsModal.value = true;
 }
 
