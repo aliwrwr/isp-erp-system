@@ -50,13 +50,13 @@
                 <p class="text-base font-bold text-emerald-600">{{ Number(subscriber?.balance || 0).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-400">د.ع</span></p>
               </div>
             </div>
-            <div class="px-6 py-4 flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-file-invoice-dollar text-red-400 text-sm"></i>
+            <div class="px-6 py-4 flex items-center gap-3" :class="totalDebt > 0 ? 'bg-red-50/40' : ''">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" :class="totalDebt > 0 ? 'bg-red-100' : 'bg-red-50'">
+                <i class="fas fa-file-invoice-dollar text-sm" :class="totalDebt > 0 ? 'text-red-500' : 'text-red-300'"></i>
               </div>
               <div>
-                <p class="text-[11px] text-gray-400">الديون</p>
-                <p class="text-base font-bold text-red-500">{{ Number(subscriber?.debt || 0).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-400">د.ع</span></p>
+                <p class="text-[11px] text-gray-400">إجمالي الديون</p>
+                <p class="text-base font-bold" :class="totalDebt > 0 ? 'text-red-600' : 'text-gray-400'">{{ Number(totalDebt).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-400">د.ع</span></p>
               </div>
             </div>
             <div class="px-6 py-4 flex items-center gap-3">
@@ -228,6 +228,42 @@
               </div>
             </div>
 
+            <!-- ===== Section: تفصيل الديون ===== -->
+            <div v-if="totalDebt > 0">
+              <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <i class="fas fa-file-invoice-dollar text-red-400 text-xs"></i>
+                <span class="text-red-500">تفصيل الديون</span>
+                <span class="flex-1 h-px bg-red-100 inline-block"></span>
+                <span class="text-[10px] font-bold text-red-500 normal-case">
+                  الإجمالي: {{ Number(totalDebt).toLocaleString('ar-IQ') }} د.ع
+                </span>
+              </p>
+              <div class="space-y-2">
+                <div v-for="sub in subsWithDebt" :key="sub.id"
+                  class="flex items-center justify-between px-4 py-3 bg-red-50 border border-red-100 rounded-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <i class="fas fa-wifi text-red-400 text-xs"></i>
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold text-gray-700">{{ sub.package?.name || 'باقة غير محددة' }}</p>
+                      <p class="text-[10px] text-gray-400">
+                        {{ sub.startDate ? fmtDate(sub.startDate) : '—' }}
+                        <span v-if="sub.endDate"> ← {{ fmtDate(sub.endDate) }}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div class="text-left">
+                    <p class="text-sm font-bold text-red-600">{{ Number(sub.debtAmount).toLocaleString('ar-IQ') }} د.ع</p>
+                    <p class="text-[10px] text-gray-400">
+                      مدفوع: {{ Number(sub.paidAmount || 0).toLocaleString('ar-IQ') }}
+                      / {{ Number(sub.price || 0).toLocaleString('ar-IQ') }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- ===== Section: ملاحظات ===== -->
             <div v-if="subscriber?.notes">
               <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -259,6 +295,8 @@
                       <th class="px-4 py-3 text-right text-[11px] font-bold text-gray-400">تاريخ البدء</th>
                       <th class="px-4 py-3 text-right text-[11px] font-bold text-gray-400">تاريخ الانتهاء</th>
                       <th class="px-4 py-3 text-right text-[11px] font-bold text-gray-400">المبلغ</th>
+                      <th class="px-4 py-3 text-right text-[11px] font-bold text-gray-400">مدفوع</th>
+                      <th class="px-4 py-3 text-right text-[11px] font-bold text-red-400">دين</th>
                       <th class="px-4 py-3 text-center text-[11px] font-bold text-gray-400">الحالة</th>
                     </tr>
                   </thead>
@@ -273,7 +311,7 @@
                     </tr>
                     <tr v-for="(sub, i) in sortedSubscriptions" :key="sub.id"
                       class="hover:bg-gray-50/70 transition-colors"
-                      :class="i === 0 ? 'bg-indigo-50/40' : ''">
+                      :class="[i === 0 ? 'bg-indigo-50/40' : '', Number(sub.debtAmount || 0) > 0 ? 'border-r-2 border-red-300' : '']">
                       <td class="px-4 py-3 text-xs text-gray-400">{{ i + 1 }}</td>
                       <td class="px-4 py-3">
                         <div class="flex items-center gap-1.5">
@@ -284,6 +322,15 @@
                       <td class="px-4 py-3 text-xs text-gray-500">{{ sub.startDate ? fmtDate(sub.startDate) : '—' }}</td>
                       <td class="px-4 py-3 text-xs text-gray-500">{{ sub.endDate ? fmtDate(sub.endDate) : '—' }}</td>
                       <td class="px-4 py-3 text-xs font-semibold text-emerald-700">{{ sub.price != null ? Number(sub.price).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</td>
+                      <td class="px-4 py-3 text-xs font-semibold text-blue-600">{{ sub.paidAmount != null ? Number(sub.paidAmount).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</td>
+                      <td class="px-4 py-3">
+                        <span v-if="Number(sub.debtAmount || 0) > 0"
+                          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-[10px] font-bold">
+                          <i class="fas fa-exclamation-circle text-[8px]"></i>
+                          {{ Number(sub.debtAmount).toLocaleString('ar-IQ') }} د.ع
+                        </span>
+                        <span v-else class="text-[10px] text-emerald-500 font-semibold">مسدد</span>
+                      </td>
                       <td class="px-4 py-3 text-center">
                         <span v-if="i === 0" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-semibold">
                           <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
@@ -356,6 +403,20 @@ const remainingDays = computed(() => {
   if (!endDate) return 0
   const diff = new Date(endDate).getTime() - Date.now()
   return Math.ceil(diff / 86400000)
+})
+
+const totalDebt = computed(() => {
+  const subs = props.subscriber?.subscriptions
+  if (!subs?.length) return 0
+  return subs.reduce((sum: number, s: any) => sum + Number(s.debtAmount || 0), 0)
+})
+
+const subsWithDebt = computed(() => {
+  const subs = props.subscriber?.subscriptions
+  if (!subs?.length) return []
+  return [...subs]
+    .filter((s: any) => Number(s.debtAmount || 0) > 0)
+    .sort((a: any, b: any) => new Date(b.startDate ?? 0).getTime() - new Date(a.startDate ?? 0).getTime())
 })
 </script>
 
