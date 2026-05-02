@@ -38,10 +38,11 @@
           </button>
         </div>
         <!-- Filter: Month/Year -->
-        <select v-model="filterYear" @change="quickFilter = ''" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        <select v-model="filterYear" @change="onYearMonthChange" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+          <option value="">كل السنوات</option>
           <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
         </select>
-        <select v-model="filterMonth" @change="quickFilter = ''" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+        <select v-model="filterMonth" @change="onYearMonthChange" class="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
           <option value="">كل الأشهر</option>
           <option v-for="(name, idx) in monthNames" :key="idx" :value="idx + 1">{{ name }}</option>
         </select>
@@ -320,7 +321,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,
 // ─── State ───────────────────────────────────────────────
 const loading = ref(false);
 const allSubs = ref<any[]>([]);
-const filterYear = ref(new Date().getFullYear());
+const filterYear = ref<number | ''>(new Date().getFullYear());
 const filterMonth = ref<number | ''>('');
 const quickFilter = ref<'today' | 'yesterday' | 'week' | ''>('');
 const quickDateFrom = ref<Date | null>(null);
@@ -353,7 +354,15 @@ function setQuickFilter(mode: 'today' | 'yesterday' | 'week' | '') {
   } else {
     quickDateFrom.value = null;
     quickDateTo.value   = null;
+    filterYear.value  = '';
+    filterMonth.value = '';
   }
+}
+
+function onYearMonthChange() {
+  quickFilter.value    = '';
+  quickDateFrom.value  = null;
+  quickDateTo.value    = null;
 }
 
 const monthNames = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
@@ -379,7 +388,7 @@ const filteredSubs = computed(() => {
       return d >= quickDateFrom.value && d <= quickDateTo.value;
     }
     // Normal year/month filter
-    if (d.getFullYear() !== filterYear.value) return false;
+    if (filterYear.value && d.getFullYear() !== filterYear.value) return false;
     if (filterMonth.value && d.getMonth() + 1 !== filterMonth.value) return false;
     return true;
   });
