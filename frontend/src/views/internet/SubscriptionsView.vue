@@ -897,9 +897,9 @@ const baseRows = computed(() => {
 // ── Stats: always from baseRows (unaffected by payment filter) ────
 const stats = computed(() => {
   const rows = baseRows.value;
-  const cashRows    = rows.filter((s: any) => s.paymentMethod === 'cash'    && !isPaidSub(s));
-  const creditRows  = rows.filter((s: any) => s.paymentMethod === 'credit'  && !isPaidSub(s));
-  const partialRows = rows.filter((s: any) => s.paymentMethod === 'partial' && !isPaidSub(s));
+  const cashRows    = rows.filter((s: any) => s.paymentMethod === 'cash');
+  const creditRows  = rows.filter((s: any) => s.paymentMethod === 'credit');
+  const partialRows = rows.filter((s: any) => s.paymentMethod === 'partial');
   const paidRows    = rows.filter(isPaidSub);
   const sum = (arr: any[]) => arr.reduce((t: number, s: any) => t + Number(s.price || 0), 0);
   return {
@@ -921,15 +921,15 @@ const uniquePackages = computed(() =>
 );
 
 // ── filteredRows: baseRows + payment filter ────────────────────────
-// cash/credit/partial → only UNPAID ones for that method
-// paid               → fully paid regardless of method
+// cash/credit/partial → ALL subscriptions of that method (paid or not)
+// paid               → fully paid regardless of payment method
 const filteredRows = computed(() => {
   let rows = baseRows.value;
   if (filterPayment.value) {
     if (filterPayment.value === 'paid') {
       rows = rows.filter(isPaidSub);
     } else {
-      rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value && !isPaidSub(s));
+      rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value);
     }
   }
   return rows;
