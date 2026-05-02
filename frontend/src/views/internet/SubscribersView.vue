@@ -708,57 +708,65 @@
 
     <!-- ===== Activate Subscriber Modal ===== -->
     <transition name="modal">
-      <div v-if="showActivateModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="showActivateModal = false">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div v-if="showActivateModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center sm:p-4"
+        @click.self="showActivateModal = false">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col max-h-[92dvh] sm:max-h-[88vh]">
+
+          <!-- Drag handle (mobile only) -->
+          <div class="flex justify-center pt-3 pb-1 sm:hidden flex-shrink-0">
+            <div class="w-10 h-1 rounded-full bg-gray-300"></div>
+          </div>
 
           <!-- Header -->
-          <div class="bg-gradient-to-l from-emerald-500 to-teal-500 px-6 py-5 flex items-center justify-between">
+          <div class="bg-gradient-to-l from-emerald-500 to-teal-500 px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <i class="fas fa-bolt text-white text-base"></i>
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                <i class="fas fa-bolt text-white text-sm sm:text-base"></i>
               </div>
               <div>
-                <h3 class="font-bold text-white text-base">تفعيل المشترك</h3>
-                <p class="text-xs text-emerald-100">{{ contextMenuSub?.name }}</p>
+                <h3 class="font-bold text-white text-sm sm:text-base">تفعيل المشترك</h3>
+                <p class="text-xs text-emerald-100 truncate max-w-[180px] sm:max-w-none">{{ contextMenuSub?.name }}</p>
               </div>
             </div>
-            <button @click="showActivateModal = false" class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 text-white transition">
+            <button @click="showActivateModal = false"
+              class="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 active:bg-white/40 text-white transition touch-manipulation">
               <i class="fas fa-times text-sm"></i>
             </button>
           </div>
 
-          <div class="p-6 space-y-5">
+          <div class="px-4 py-4 sm:px-6 sm:py-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
 
             <!-- Subscriber Info Card -->
             <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100">
               <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-3">بيانات المشترك</p>
               <div class="grid grid-cols-2 gap-3">
-                <div class="flex items-center gap-2">
-                  <i class="fas fa-user text-emerald-400 text-xs w-4 text-center"></i>
-                  <div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <i class="fas fa-user text-emerald-400 text-xs w-4 text-center flex-shrink-0"></i>
+                  <div class="min-w-0">
                     <p class="text-[10px] text-gray-400">الاسم</p>
-                    <p class="text-sm font-semibold text-secondary">{{ contextMenuSub?.name }}</p>
+                    <p class="text-sm font-semibold text-secondary truncate">{{ contextMenuSub?.name }}</p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <i class="fas fa-phone text-blue-400 text-xs w-4 text-center"></i>
-                  <div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <i class="fas fa-phone text-blue-400 text-xs w-4 text-center flex-shrink-0"></i>
+                  <div class="min-w-0">
                     <p class="text-[10px] text-gray-400">الهاتف</p>
-                    <p class="text-sm font-semibold text-secondary">{{ contextMenuSub?.phone || '—' }}</p>
+                    <p class="text-sm font-semibold text-secondary truncate">{{ contextMenuSub?.phone || '—' }}</p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <i class="fas fa-user-circle text-purple-400 text-xs w-4 text-center"></i>
-                  <div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <i class="fas fa-user-circle text-purple-400 text-xs w-4 text-center flex-shrink-0"></i>
+                  <div class="min-w-0">
                     <p class="text-[10px] text-gray-400">اسم الدخول</p>
-                    <p class="text-sm font-semibold text-secondary font-mono">{{ contextMenuSub?.username || '—' }}</p>
+                    <p class="text-sm font-semibold text-secondary font-mono truncate">{{ contextMenuSub?.username || '—' }}</p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <i class="fas fa-box text-amber-400 text-xs w-4 text-center"></i>
-                  <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 min-w-0">
+                  <i class="fas fa-box text-amber-400 text-xs w-4 text-center flex-shrink-0"></i>
+                  <div class="min-w-0">
                     <p class="text-[10px] text-gray-400">الباقة</p>
-                    <p class="text-sm font-semibold text-secondary">{{ activatePackage?.name || '—' }}</p>
+                    <p class="text-sm font-semibold text-secondary truncate">{{ activatePackage?.name || '—' }}</p>
                   </div>
                 </div>
               </div>
@@ -767,7 +775,7 @@
               <div class="mt-3 pt-3 border-t border-gray-200">
                 <label class="block text-[11px] font-bold text-gray-500 mb-1.5">تغيير الباقة (اختياري)</label>
                 <select v-model="activateForm.packageId"
-                  class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer">
+                  class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 cursor-pointer touch-manipulation">
                   <option :value="null">— بدون باقة —</option>
                   <option v-for="p in packages" :key="p.id" :value="p.id">
                     {{ p.name }} — {{ Number(p.price).toLocaleString('ar-IQ') }} د.ع
@@ -808,21 +816,21 @@
               <div class="grid grid-cols-3 gap-2">
                 <button
                   @click="activateForm.paymentMethod = 'cash'"
-                  :class="['flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition font-semibold text-xs', activateForm.paymentMethod === 'cash' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-white text-gray-500 hover:border-emerald-200 hover:bg-emerald-50/50']"
+                  :class="['flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition font-semibold text-xs touch-manipulation', activateForm.paymentMethod === 'cash' ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-gray-200 bg-white text-gray-500 hover:border-emerald-200 hover:bg-emerald-50/50']"
                 >
                   <i class="fas fa-money-bill-wave text-base"></i>
                   نقداً
                 </button>
                 <button
                   @click="activateForm.paymentMethod = 'credit'"
-                  :class="['flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition font-semibold text-xs', activateForm.paymentMethod === 'credit' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50/50']"
+                  :class="['flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition font-semibold text-xs touch-manipulation', activateForm.paymentMethod === 'credit' ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50/50']"
                 >
                   <i class="fas fa-clock text-base"></i>
                   آجل
                 </button>
                 <button
                   @click="activateForm.paymentMethod = 'partial'"
-                  :class="['flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition font-semibold text-xs', activateForm.paymentMethod === 'partial' ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-gray-200 bg-white text-gray-500 hover:border-orange-200 hover:bg-orange-50/50']"
+                  :class="['flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition font-semibold text-xs touch-manipulation', activateForm.paymentMethod === 'partial' ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-gray-200 bg-white text-gray-500 hover:border-orange-200 hover:bg-orange-50/50']"
                 >
                   <i class="fas fa-coins text-base"></i>
                   جزئي
@@ -864,7 +872,8 @@
                       :max="Number(activatePackage?.price || 0)"
                       min="0"
                       placeholder="0"
-                      class="w-full pl-16 pr-4 py-2.5 bg-white border border-orange-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      inputmode="numeric"
+                      class="w-full pl-16 pr-4 py-3 bg-white border border-orange-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">د.ع</span>
                   </div>
@@ -877,14 +886,14 @@
             </div>
 
             <!-- Start date -->
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">تاريخ بدء الاشتراك</label>
-                <input type="date" v-model="activateForm.startDate" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                <input type="date" v-model="activateForm.startDate" class="w-full px-4 py-3 sm:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1.5">تاريخ الانتهاء (محتسب)</label>
-                <div class="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <div class="flex items-center gap-2 px-4 py-3 sm:py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
                   <i class="fas fa-calendar-check text-emerald-400 text-xs"></i>
                   <span class="text-sm font-semibold text-emerald-700">{{ activateEndDatePreview ? new Date(activateEndDatePreview).toLocaleDateString('ar-IQ') : '—' }}</span>
                 </div>
@@ -893,7 +902,7 @@
 
             <!-- Days remaining preview -->
             <div v-if="activateRemainingPreview !== null" class="flex items-center gap-3 bg-sky-50 border border-sky-100 rounded-xl px-4 py-3">
-              <i class="fas fa-hourglass-half text-sky-400 text-sm"></i>
+              <i class="fas fa-hourglass-half text-sky-400 text-sm flex-shrink-0"></i>
               <div>
                 <p class="text-xs text-gray-500">الأيام المتبقية بعد التفعيل</p>
                 <p class="text-sm font-bold" :class="activateRemainingPreview > 7 ? 'text-emerald-600' : activateRemainingPreview > 0 ? 'text-amber-600' : 'text-red-600'">{{ activateRemainingPreview }} يوم</p>
@@ -903,15 +912,20 @@
             <!-- Notes -->
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1.5">ملاحظات</label>
-              <textarea v-model="activateForm.notes" rows="2" placeholder="أي ملاحظات إضافية على عملية التفعيل..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"></textarea>
+              <textarea v-model="activateForm.notes" rows="2" placeholder="أي ملاحظات إضافية على عملية التفعيل..."
+                class="w-full px-4 py-3 sm:py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none"></textarea>
             </div>
 
           </div>
 
           <!-- Footer -->
-          <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-            <button @click="showActivateModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold rounded-xl transition">إلغاء</button>
-            <button @click="saveActivate" :disabled="saving" class="px-6 py-2.5 bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition flex items-center gap-2 shadow-sm shadow-emerald-200">
+          <div class="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0 sm:justify-between flex-shrink-0">
+            <button @click="showActivateModal = false"
+              class="w-full sm:w-auto px-5 py-3 sm:py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-600 text-sm font-semibold rounded-xl transition touch-manipulation text-center">
+              إلغاء
+            </button>
+            <button @click="saveActivate" :disabled="saving"
+              class="w-full sm:w-auto px-6 py-3 sm:py-2.5 bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 active:from-emerald-700 active:to-teal-700 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 shadow-sm shadow-emerald-200 touch-manipulation">
               <i v-if="saving" class="fas fa-spinner fa-spin text-xs"></i>
               <i v-else class="fas fa-bolt text-xs"></i>
               {{ saving ? 'جاري التفعيل...' : 'تفعيل الاشتراك' }}
@@ -2696,8 +2710,16 @@ async function sendMessage() {
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity .25s, transform .25s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-8px) translateX(-50%) !important; }
-.modal-enter-active, .modal-leave-active { transition: opacity .2s; }
+.modal-enter-active, .modal-leave-active { transition: opacity .25s ease; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
-.modal-enter-active .bg-white, .modal-leave-active .bg-white { transition: transform .2s; }
-.modal-enter-from .bg-white { transform: scale(.95); }
+/* Desktop: scale-in */
+@media (min-width: 640px) {
+  .modal-enter-active .bg-white, .modal-leave-active .bg-white { transition: transform .25s ease, opacity .25s ease; }
+  .modal-enter-from .bg-white, .modal-leave-to .bg-white { transform: scale(.95); opacity: 0; }
+}
+/* Mobile: slide-up from bottom */
+@media (max-width: 639px) {
+  .modal-enter-active .bg-white, .modal-leave-active .bg-white { transition: transform .3s cubic-bezier(0.32, 0.72, 0, 1); }
+  .modal-enter-from .bg-white, .modal-leave-to .bg-white { transform: translateY(100%); }
+}
 </style>
