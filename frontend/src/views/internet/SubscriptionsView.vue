@@ -16,87 +16,6 @@
       </button>
     </div>
 
-    <!-- ── Today Summary Cards ──────────────────────────────────── -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-
-      <!-- إجمالي المحصل اليوم -->
-      <div class="relative bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 shadow-md overflow-hidden">
-        <div class="absolute -top-3 -left-3 w-20 h-20 bg-white/10 rounded-full"></div>
-        <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-3">
-            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <i class="fas fa-hand-holding-usd text-white text-sm"></i>
-            </div>
-            <span class="text-[10px] font-semibold text-white/70 bg-white/15 px-2 py-0.5 rounded-full">اليوم</span>
-          </div>
-          <p class="text-white/80 text-xs font-medium mb-1">إجمالي المحصل</p>
-          <p class="text-white font-black text-xl leading-none font-mono">
-            {{ todayStats.collected.toLocaleString('ar-IQ') }}
-          </p>
-          <p class="text-white/60 text-[10px] mt-1">نقدي + جزئي · د.ع</p>
-        </div>
-      </div>
-
-      <!-- إجمالي الديون -->
-      <div class="relative bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-4 shadow-md overflow-hidden">
-        <div class="absolute -top-3 -left-3 w-20 h-20 bg-white/10 rounded-full"></div>
-        <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-3">
-            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <i class="fas fa-exclamation-triangle text-white text-sm"></i>
-            </div>
-            <span class="text-[10px] font-semibold text-white/70 bg-white/15 px-2 py-0.5 rounded-full">اليوم</span>
-          </div>
-          <p class="text-white/80 text-xs font-medium mb-1">إجمالي الديون</p>
-          <p class="text-white font-black text-xl leading-none font-mono">
-            {{ todayStats.totalDebt.toLocaleString('ar-IQ') }}
-          </p>
-          <p class="text-white/60 text-[10px] mt-1">المبالغ غير المسددة · د.ع</p>
-        </div>
-      </div>
-
-      <!-- إجمالي التسديدات -->
-      <div class="relative bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-4 shadow-md overflow-hidden">
-        <div class="absolute -top-3 -left-3 w-20 h-20 bg-white/10 rounded-full"></div>
-        <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-3">
-            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <i class="fas fa-wallet text-white text-sm"></i>
-            </div>
-            <span class="text-[10px] font-semibold text-white/70 bg-white/15 px-2 py-0.5 rounded-full">اليوم</span>
-          </div>
-          <p class="text-white/80 text-xs font-medium mb-1">إجمالي التسديدات</p>
-          <p class="text-white font-black text-xl leading-none font-mono">
-            {{ todayStats.debtPayments.toLocaleString('ar-IQ') }}
-          </p>
-          <p class="text-white/60 text-[10px] mt-1">آجل + جزئي · د.ع</p>
-        </div>
-      </div>
-
-      <!-- إجمالي التفعيلات -->
-      <div class="relative bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 shadow-md overflow-hidden">
-        <div class="absolute -top-3 -left-3 w-20 h-20 bg-white/10 rounded-full"></div>
-        <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
-        <div class="relative z-10">
-          <div class="flex items-center justify-between mb-3">
-            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <i class="fas fa-bolt text-white text-sm"></i>
-            </div>
-            <span class="text-[10px] font-semibold text-white/70 bg-white/15 px-2 py-0.5 rounded-full">اليوم</span>
-          </div>
-          <p class="text-white/80 text-xs font-medium mb-1">إجمالي التفعيلات</p>
-          <p class="text-white font-black text-xl leading-none font-mono">
-            {{ todayStats.activations }}
-          </p>
-          <p class="text-white/60 text-[10px] mt-1">نقدي · آجل · جزئي</p>
-        </div>
-      </div>
-
-    </div>
-
     <!-- ── Stats Cards ─────────────────────────────────────────── -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
 
@@ -1132,38 +1051,6 @@ const editPriceDiff = computed(() => editPriceNew.value - Number(editPriceSub.va
 const editPriceRemaining = computed(() => Math.max(0, editPriceNew.value + Number(editPriceSub.value?.debtAmount || 0) - Number(editPriceSub.value?.paidAmount || 0)));
 
 const totalItems = computed(() => allSubscriptions.value.length);
-
-// ── Today Stats ──────────────────────────────────────────────────
-const todayStats = computed(() => {
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
-  const todaySubs = allSubscriptions.value.filter((s: any) => {
-    if (!s.startDate) return false;
-    const d = new Date(s.startDate);
-    return d >= startOfDay && d <= endOfDay;
-  });
-
-  // إجمالي المحصل = مجموع paidAmount من النقدي والجزئي (المحصل فعلاً عند التفعيل)
-  const collected = todaySubs
-    .filter((s: any) => s.paymentMethod === 'cash' || s.paymentMethod === 'partial')
-    .reduce((sum: number, s: any) => sum + Number(s.paidAmount || 0), 0);
-
-  // إجمالي الديون = مجموع المبالغ المتبقية غير المسددة من اشتراكات اليوم
-  const totalDebt = todaySubs.reduce((sum: number, s: any) =>
-    sum + Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0)), 0);
-
-  // إجمالي التسديدات = ما تم تحصيله من اشتراكات الآجل والجزئي معاً
-  const debtPayments = todaySubs
-    .filter((s: any) => s.paymentMethod === 'credit' || s.paymentMethod === 'partial')
-    .reduce((sum: number, s: any) => sum + Number(s.paidAmount || 0), 0);
-
-  // إجمالي التفعيلات = عدد اشتراكات اليوم بكل الطرق
-  const activations = todaySubs.length;
-
-  return { collected, totalDebt, debtPayments, activations };
-});
 
 // ── Helper: is subscription fully paid ───────────────────────────
 const isPaidSub = (s: any) => {
