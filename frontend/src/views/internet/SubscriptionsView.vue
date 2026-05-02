@@ -231,20 +231,22 @@
                 </span>
               </td>
               <td class="px-4 py-3">
-                <div class="flex flex-col gap-0.5">
+                <div class="flex flex-col gap-0.5 group/price cursor-pointer" @click.stop="openEditPrice(s)" title="انقر لتعديل السعر">
                   <template v-if="Number(s.debtAmount) > 0">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-700">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-red-50 text-red-700 group-hover/price:bg-red-100 transition">
                       <span class="font-mono">{{ Number(s.price).toLocaleString('ar-IQ') }}</span>
                       <span class="opacity-60">+</span>
                       <span class="font-mono">{{ Number(s.debtAmount).toLocaleString('ar-IQ') }}</span>
                       <span class="opacity-70">| إضافة دين</span>
+                      <i class="fas fa-pen text-[9px] opacity-0 group-hover/price:opacity-60 transition mr-1"></i>
                     </span>
                   </template>
                   <template v-else>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold"
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold group-hover/price:opacity-80 transition"
                       :class="getAmountInfo(s).colorClass">
                       <span v-if="getAmountInfo(s).amount !== null" class="font-mono">{{ Number(getAmountInfo(s).amount).toLocaleString('ar-IQ') }}</span>
                       {{ getAmountInfo(s).label }}
+                      <i class="fas fa-pen text-[9px] opacity-0 group-hover/price:opacity-60 transition mr-1"></i>
                     </span>
                   </template>
                 </div>
@@ -815,6 +817,98 @@
     </div>
   </transition>
 
+  <!-- ── Edit Price Modal ── -->
+  <transition name="modal-fade">
+    <div v-if="showEditPriceModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showEditPriceModal = false">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-l from-violet-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+              <i class="fas fa-tag text-white text-sm"></i>
+            </div>
+            <div>
+              <p class="text-white font-bold text-sm">تعديل سعر الاشتراك</p>
+              <p class="text-white/70 text-xs mt-0.5">{{ editPriceSub?.subscriberName }}</p>
+            </div>
+          </div>
+          <button @click="showEditPriceModal = false" class="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+            <i class="fas fa-times text-white text-xs"></i>
+          </button>
+        </div>
+
+        <div class="p-6 space-y-5">
+          <!-- Old / New price cards -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gray-50 rounded-xl p-3 text-center">
+              <p class="text-[10px] text-gray-400 mb-1">السعر الحالي</p>
+              <p class="text-lg font-black font-mono text-gray-600">{{ Number(editPriceSub?.price || 0).toLocaleString('ar-IQ') }}</p>
+              <p class="text-[10px] text-gray-400">د.ع</p>
+            </div>
+            <div class="bg-violet-50 rounded-xl p-3 text-center border-2 border-violet-200">
+              <p class="text-[10px] text-violet-500 mb-1">السعر الجديد</p>
+              <p class="text-lg font-black font-mono" :class="editPriceNew > 0 ? 'text-violet-700' : 'text-gray-300'">{{ editPriceNew > 0 ? Number(editPriceNew).toLocaleString('ar-IQ') : '—' }}</p>
+              <p class="text-[10px] text-violet-400">د.ع</p>
+            </div>
+          </div>
+
+          <!-- Input -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-2">السعر الجديد <span class="text-red-400">*</span></label>
+            <input
+              v-model.number="editPriceNew"
+              type="number" min="0" step="500"
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none text-sm font-mono text-right transition"
+              placeholder="أدخل السعر الجديد..."
+              @keyup.enter="saveEditPrice"
+              ref="editPriceInputRef"
+            />
+          </div>
+
+          <!-- Diff banner -->
+          <div v-if="editPriceDiff !== 0" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold"
+            :class="editPriceDiff > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'">
+            <i class="fas" :class="editPriceDiff > 0 ? 'fa-arrow-up' : 'fa-arrow-down'"></i>
+            <span>{{ editPriceDiff > 0 ? 'زيادة' : 'تخفيض' }} {{ Math.abs(editPriceDiff).toLocaleString('ar-IQ') }} د.ع</span>
+          </div>
+
+          <!-- Recalculation preview -->
+          <div v-if="editPriceNew > 0" class="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100">
+            <p class="text-xs font-bold text-gray-500 mb-3">معاينة الحساب بعد التعديل</p>
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-500">السعر الجديد</span>
+              <span class="font-mono font-semibold text-gray-700">{{ Number(editPriceNew).toLocaleString('ar-IQ') }} د.ع</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="text-gray-500">المدفوع</span>
+              <span class="font-mono font-semibold text-emerald-600">{{ Number(editPriceSub?.paidAmount || 0).toLocaleString('ar-IQ') }} د.ع</span>
+            </div>
+            <div v-if="Number(editPriceSub?.debtAmount || 0) > 0" class="flex justify-between text-xs">
+              <span class="text-gray-500">دين مضاف</span>
+              <span class="font-mono font-semibold text-orange-500">+ {{ Number(editPriceSub?.debtAmount).toLocaleString('ar-IQ') }} د.ع</span>
+            </div>
+            <div class="border-t border-gray-200 pt-2 flex justify-between text-xs font-bold"
+              :class="editPriceRemaining > 0 ? 'text-red-600' : 'text-emerald-600'">
+              <span>{{ editPriceRemaining > 0 ? 'المتبقي بعد التعديل' : 'الحالة' }}</span>
+              <span class="font-mono">{{ editPriceRemaining > 0 ? editPriceRemaining.toLocaleString('ar-IQ') + ' د.ع' : 'مسدد بالكامل ✓' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 pb-5 flex justify-end gap-3">
+          <button @click="showEditPriceModal = false" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-100 transition text-gray-600">إلغاء</button>
+          <button @click="saveEditPrice" :disabled="saving || editPriceNew <= 0 || editPriceDiff === 0"
+            class="px-5 py-2 text-sm font-medium bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-xl transition shadow-sm flex items-center gap-2">
+            <i v-if="saving" class="fas fa-spinner fa-spin text-xs"></i>
+            <i v-else class="fas fa-save text-xs"></i>
+            حفظ السعر
+          </button>
+        </div>
+      </div>
+    </div>
+  </transition>
+
 </template>
 
 <script setup lang="ts">
@@ -857,6 +951,15 @@ const addDebtAmount = ref(0);
 // Pay Debt modal state
 const showPayDebtModal = ref(false);
 const payDebtAmount = ref(0);
+
+// Edit Price modal state
+const showEditPriceModal = ref(false);
+const editPriceSub = ref<any>(null);
+const editPriceNew = ref(0);
+const editPriceInputRef = ref<HTMLInputElement | null>(null);
+
+const editPriceDiff = computed(() => editPriceNew.value - Number(editPriceSub.value?.price || 0));
+const editPriceRemaining = computed(() => Math.max(0, editPriceNew.value + Number(editPriceSub.value?.debtAmount || 0) - Number(editPriceSub.value?.paidAmount || 0)));
 
 const totalItems = computed(() => allSubscriptions.value.length);
 
@@ -1111,6 +1214,34 @@ function cancelLongPress() {
 function ctxViewDetails() { openView(contextMenuSub.value); closeContextMenu(); }
 function ctxAddDebt() { addDebtAmount.value = 0; showAddDebtModal.value = true; closeContextMenu(); }
 function ctxPayDebt() { payDebtAmount.value = 0; showPayDebtModal.value = true; closeContextMenu(); }
+
+function openEditPrice(s: any) {
+  editPriceSub.value = s;
+  editPriceNew.value = Number(s.price || 0);
+  showEditPriceModal.value = true;
+  // focus input on next tick
+  setTimeout(() => editPriceInputRef.value?.focus(), 80);
+}
+
+async function saveEditPrice() {
+  const sub = editPriceSub.value;
+  if (!sub || editPriceNew.value <= 0 || editPriceDiff.value === 0) return;
+  saving.value = true;
+  try {
+    await api.patch(`/subscriptions/${sub.id}`, { price: editPriceNew.value });
+    const idx = allSubscriptions.value.findIndex((s: any) => s.id === sub.id);
+    if (idx !== -1) {
+      allSubscriptions.value[idx] = { ...allSubscriptions.value[idx], price: editPriceNew.value };
+    }
+    showEditPriceModal.value = false;
+    logActivity({ action: 'update', module: 'subscriptions', subscriberName: sub.subscriberName, details: `تعديل سعر اشتراك ${sub.subscriberName}: ${Number(sub.price).toLocaleString('ar-IQ')} → ${Number(editPriceNew.value).toLocaleString('ar-IQ')} د.ع` });
+    showToast('تم تعديل السعر بنجاح');
+  } catch {
+    showToast('فشل تعديل السعر', 'error');
+  } finally {
+    saving.value = false;
+  }
+}
 function ctxPrint() { printSubscription(contextMenuSub.value); closeContextMenu(); }
 function ctxDelete() { confirmDelete(contextMenuSub.value); closeContextMenu(); }
 
