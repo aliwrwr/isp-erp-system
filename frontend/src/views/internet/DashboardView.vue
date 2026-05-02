@@ -481,9 +481,16 @@ const todayStr = computed(() => {
 const todayStats = computed(() => {
   const today = todayStr.value;
   const todaySubs = subscriptionsData.value.filter((s: any) => {
-    if (!s.startDate) return false;
-    // نأخذ الـ 10 أحرف الأولى لمقارنة التاريخ فقط (YYYY-MM-DD)
-    return String(s.startDate).slice(0, 10) === today;
+    // نستخدم createdAt (وقت إنشاء السجل الفعلي) — أكثر دقة من startDate
+    // startDate يضعه المستخدم يدوياً وقد يكون بتاريخ مختلف
+    const raw = s.createdAt || s.startDate;
+    if (!raw) return false;
+    // تحويل لـ Date object ثم مقارنة بالتوقيت المحلي
+    const d = new Date(raw);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}` === today;
   });
 
   // إجمالي المحصل = paidAmount من النقدي والجزئي (محصّل فعلياً لحظة التفعيل)

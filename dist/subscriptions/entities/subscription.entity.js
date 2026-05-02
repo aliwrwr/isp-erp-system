@@ -25,6 +25,7 @@ let Subscription = class Subscription {
     paidAmount;
     debtAmount;
     notes;
+    createdAt;
 };
 exports.Subscription = Subscription;
 __decorate([
@@ -71,6 +72,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true, default: '' }),
     __metadata("design:type", String)
 ], Subscription.prototype, "notes", void 0);
+__decorate([
+    (0, typeorm_1.CreateDateColumn)(),
+    __metadata("design:type", Date)
+], Subscription.prototype, "createdAt", void 0);
 exports.Subscription = Subscription = __decorate([
     (0, typeorm_1.Entity)('subscriptions')
 ], Subscription);

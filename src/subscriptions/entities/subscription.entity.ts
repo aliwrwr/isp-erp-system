@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { Subscriber } from '../../subscribers/entities/subscriber.entity';
 import { Package } from '../../packages/entities/package.entity';
 
@@ -36,4 +36,7 @@ export class Subscription {
 
   @Column({ type: 'text', nullable: true, default: '' })
   notes: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

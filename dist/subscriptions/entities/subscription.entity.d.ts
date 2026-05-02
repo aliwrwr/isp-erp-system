@@ -12,4 +12,5 @@ export declare class Subscription {
     paidAmount: number;
     debtAmount: number;
     notes: string;
+    createdAt: Date;
 }
