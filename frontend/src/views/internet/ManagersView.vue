@@ -103,6 +103,7 @@
       <div v-if="contextMenu.show" class="fixed inset-0 z-[300]" @click="closeContextMenu" @contextmenu.prevent></div>
       <teleport to="body">
         <div
+          ref="ctxMenuElRef"
           v-if="contextMenu.show"
           class="fixed z-[301] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden w-56"
           :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
@@ -456,7 +457,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import api from '../../api';
 import { logActivity } from '../../utils/activityLog';
 
@@ -541,19 +542,24 @@ function toggleSelectAll(e: Event) {
 }
 
 const contextMenu = ref({ show: false, x: 0, y: 0 });
+const ctxMenuElRef = ref<HTMLElement | null>(null);
 const contextMenuManager = ref<any>(null);
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
 function showContextMenu(event: MouseEvent, manager: any) {
   event.preventDefault();
   contextMenuManager.value = manager;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  let x = event.clientX;
-  let y = event.clientY;
-  if (x + 220 > vw) x = vw - 230;
-  if (y + 320 > vh) y = Math.max(8, vh - 330);
-  contextMenu.value = { show: true, x, y };
+  contextMenu.value = { show: true, x: event.clientX, y: event.clientY };
+  nextTick(() => {
+    const el = ctxMenuElRef.value;
+    if (!el) return;
+    const gap = 8;
+    let x = event.clientX;
+    let y = event.clientY;
+    if (x + el.offsetWidth + gap > window.innerWidth) x = Math.max(gap, event.clientX - el.offsetWidth);
+    if (y + el.offsetHeight + gap > window.innerHeight) y = Math.max(gap, event.clientY - el.offsetHeight);
+    contextMenu.value = { show: true, x, y };
+  });
 }
 
 function startLongPress(event: MouseEvent | TouchEvent, manager: any) {

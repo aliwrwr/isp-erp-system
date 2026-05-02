@@ -279,6 +279,7 @@
     <!-- ── Context Menu ── -->
     <Teleport to="body">
       <div v-if="ctxMenu.visible"
+        ref="ctxMenuElRef"
         class="fixed z-[200] bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 w-52 text-sm overflow-hidden"
         :style="{ top: ctxMenu.y + 'px', left: ctxMenu.x + 'px' }"
         @click.stop>
@@ -641,7 +642,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import api from '../../api';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -705,16 +706,21 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ── Context Menu ──────────────────────────────────────────────────────────────
 const ctxMenu = ref<{ visible: boolean; x: number; y: number; conn: Connection | null }>({ visible: false, x: 0, y: 0, conn: null });
+const ctxMenuElRef = ref<HTMLElement | null>(null);
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
 function openContextMenu(e: MouseEvent, conn: Connection) {
-  const margin = 8;
-  const menuW = 208, menuH = 200;
-  let x = e.clientX + margin;
-  let y = e.clientY + margin;
-  if (x + menuW > window.innerWidth)  x = e.clientX - menuW - margin;
-  if (y + menuH > window.innerHeight) y = e.clientY - menuH - margin;
-  ctxMenu.value = { visible: true, x, y, conn };
+  ctxMenu.value = { visible: true, x: e.clientX, y: e.clientY, conn };
+  nextTick(() => {
+    const el = ctxMenuElRef.value;
+    if (!el) return;
+    const gap = 8;
+    let x = e.clientX;
+    let y = e.clientY;
+    if (x + el.offsetWidth + gap > window.innerWidth) x = Math.max(gap, e.clientX - el.offsetWidth);
+    if (y + el.offsetHeight + gap > window.innerHeight) y = Math.max(gap, e.clientY - el.offsetHeight);
+    ctxMenu.value = { ...ctxMenu.value, x: Math.max(gap, x), y: Math.max(gap, y) };
+  });
 }
 function startLongPress(e: MouseEvent, conn: Connection) {
   if (e.button !== 0) return;

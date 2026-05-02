@@ -260,6 +260,7 @@
   <!-- Context Menu -->
   <transition name="ctx">
     <div v-if="showContextMenu"
+      ref="ctxMenuElRef"
       class="fixed z-[300] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden w-52"
       :style="{ top: contextMenuPos.y + 'px', left: contextMenuPos.x + 'px' }"
       @click.stop>
@@ -739,7 +740,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import api from '../../api';
 import { logActivity } from '../../utils/activityLog';
 
@@ -764,6 +765,7 @@ const toast = ref({ show: false, message: '', type: 'success' });
 
 // Context menu state
 const showContextMenu = ref(false);
+const ctxMenuElRef = ref<HTMLElement | null>(null);
 const contextMenuSub = ref<any>(null);
 const contextMenuPos = ref({ x: 0, y: 0 });
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -930,11 +932,18 @@ function openContextMenu(event: MouseEvent | TouchEvent, s: any) {
     x = (event as MouseEvent).clientX;
     y = (event as MouseEvent).clientY;
   }
-  // Keep menu inside viewport
-  x = Math.min(x, window.innerWidth - 220);
-  y = Math.min(y, window.innerHeight - 280);
-  contextMenuPos.value = { x: Math.max(4, x), y: Math.max(4, y) };
+  contextMenuPos.value = { x, y };
   showContextMenu.value = true;
+  nextTick(() => {
+    const el = ctxMenuElRef.value;
+    if (!el) return;
+    const gap = 6;
+    let nx = x;
+    let ny = y;
+    if (nx + el.offsetWidth + gap > window.innerWidth) nx = Math.max(gap, x - el.offsetWidth);
+    if (ny + el.offsetHeight + gap > window.innerHeight) ny = Math.max(gap, y - el.offsetHeight);
+    contextMenuPos.value = { x: Math.max(gap, nx), y: Math.max(gap, ny) };
+  });
 }
 
 function closeViewModal() {

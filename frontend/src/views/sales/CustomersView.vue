@@ -582,7 +582,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../api';
 
@@ -671,13 +671,17 @@ const ctx = ref({ visible: false, x: 0, y: 0, customer: null as any });
 
 function openCtx(e: MouseEvent | PointerEvent, c: any) {
   e.preventDefault();
-  const margin = 8;
-  let x = e.clientX + margin;
-  let y = e.clientY + margin;
-  // Clamp to viewport (approximate menu size 208x320)
-  if (x + 220 > window.innerWidth)  x = e.clientX - 220;
-  if (y + 340 > window.innerHeight) y = e.clientY - 340;
-  ctx.value = { visible: true, x, y, customer: c };
+  ctx.value = { visible: true, x: e.clientX, y: e.clientY, customer: c };
+  nextTick(() => {
+    const el = ctxMenu.value;
+    if (!el) return;
+    const gap = 8;
+    let x = e.clientX;
+    let y = e.clientY;
+    if (x + el.offsetWidth + gap > window.innerWidth) x = Math.max(gap, e.clientX - el.offsetWidth);
+    if (y + el.offsetHeight + gap > window.innerHeight) y = Math.max(gap, e.clientY - el.offsetHeight);
+    ctx.value = { ...ctx.value, x: Math.max(gap, x), y: Math.max(gap, y) };
+  });
 }
 function closeCtx() { ctx.value.visible = false; }
 

@@ -180,7 +180,7 @@
     <Teleport to="body">
       <Transition name="ctx-fade">
         <div v-if="ctx.show" class="fixed inset-0 z-[200]" @click="closeCtx" @contextmenu.prevent="closeCtx">
-          <div class="absolute bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-52 py-1" :style="ctxStyle" @click.stop>
+          <div class="absolute bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden w-52 py-1" ref="ctxMenuElRef" :style="ctxStyle" @click.stop>
             <button @click="ctxAction('detail')" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 transition">
               <div class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0"><i class="fas fa-eye text-indigo-600 text-xs"></i></div>
               <span class="font-medium">عرض التفاصيل</span>
@@ -332,7 +332,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, reactive, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../api';
 
@@ -393,13 +393,21 @@ async function load() {
 const router = useRouter();
 const ctx = reactive({ show: false, x: 0, y: 0, target: null as any });
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-const ctxStyle = computed(() => {
-  const W = 210, H = 245;
-  const x = ctx.x + W > window.innerWidth ? ctx.x - W : ctx.x;
-  const y = ctx.y + H > window.innerHeight ? ctx.y - H : ctx.y;
-  return { left: `${x}px`, top: `${y}px` };
-});
-function openCtx(event: MouseEvent, item: any) { ctx.x = event.clientX; ctx.y = event.clientY; ctx.target = item; ctx.show = true; }
+const ctxMenuElRef = ref<HTMLElement | null>(null);
+const ctxStyle = computed(() => ({ left: `${ctx.x}px`, top: `${ctx.y}px` }));
+function openCtx(event: MouseEvent, item: any) {
+  ctx.x = event.clientX; ctx.y = event.clientY; ctx.target = item; ctx.show = true;
+  nextTick(() => {
+    const el = ctxMenuElRef.value;
+    if (!el) return;
+    const gap = 6;
+    let x = event.clientX;
+    let y = event.clientY;
+    if (x + el.offsetWidth + gap > window.innerWidth) x = Math.max(gap, event.clientX - el.offsetWidth);
+    if (y + el.offsetHeight + gap > window.innerHeight) y = Math.max(gap, event.clientY - el.offsetHeight);
+    ctx.x = x; ctx.y = y;
+  });
+}
 function closeCtx() { ctx.show = false; }
 function onTouchStart(event: TouchEvent, item: any) {
   longPressTimer = setTimeout(() => {

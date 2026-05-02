@@ -246,6 +246,7 @@
     <!-- Context Menu -->
     <Teleport to="body">
       <div v-if="ctxMenu.show"
+        ref="ctxMenuElRef"
         class="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 min-w-[200px]"
         :style="{ top: ctxMenu.y + 'px', left: ctxMenu.x + 'px' }"
         @click.stop>
@@ -676,7 +677,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import api from '../../api';
 
 const ticketsData = ref<any[]>([]);
@@ -725,6 +726,7 @@ const hideSubscriberDropdown = () => {
 
 // Context Menu
 const ctxMenu = ref({ show: false, x: 0, y: 0, ticket: null as any });
+const ctxMenuElRef = ref<HTMLElement | null>(null);
 let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Details Modal
@@ -787,13 +789,17 @@ function cancelLongPress() {
 
 function showContextMenu(event: MouseEvent, ticket: any) {
   event.preventDefault();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  let x = event.clientX;
-  let y = event.clientY;
-  if (x + 200 > vw) x = vw - 210;
-  if (y + 300 > vh) y = vh - 310;
-  ctxMenu.value = { show: true, x, y, ticket };
+  ctxMenu.value = { show: true, x: event.clientX, y: event.clientY, ticket };
+  nextTick(() => {
+    const el = ctxMenuElRef.value;
+    if (!el) return;
+    const gap = 8;
+    let x = event.clientX;
+    let y = event.clientY;
+    if (x + el.offsetWidth + gap > window.innerWidth) x = Math.max(gap, event.clientX - el.offsetWidth);
+    if (y + el.offsetHeight + gap > window.innerHeight) y = Math.max(gap, event.clientY - el.offsetHeight);
+    ctxMenu.value = { show: true, x, y, ticket };
+  });
 }
 
 const ctxViewDetails = () => {
