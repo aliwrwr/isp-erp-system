@@ -237,6 +237,124 @@
         </div>
       </div>
 
+      <!-- ─── Debt Payments Section ─── -->
+      <div v-if="debtPaymentsStats.details.length > 0" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Header -->
+        <div class="px-5 py-4 border-b border-gray-100">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <h3 class="font-bold text-secondary text-sm flex items-center gap-2">
+              <i class="fas fa-hand-holding-usd text-violet-500"></i> تفاصيل تسديد الديون
+            </h3>
+            <div class="flex items-center gap-3 flex-wrap">
+              <div class="flex items-center gap-2 bg-violet-50 border border-violet-100 rounded-xl px-3 py-1.5">
+                <span class="text-xs text-violet-500 font-medium">إجمالي مُسدَّد</span>
+                <span class="text-sm font-black text-violet-700 font-mono">{{ debtPaymentsStats.totalPaid.toLocaleString() }} <span class="text-xs font-normal">د.ع</span></span>
+              </div>
+              <div class="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-1.5">
+                <span class="text-xs text-red-400 font-medium">إجمالي متبقي</span>
+                <span class="text-sm font-black text-red-600 font-mono">{{ debtPaymentsStats.totalRemaining.toLocaleString() }} <span class="text-xs font-normal">د.ع</span></span>
+              </div>
+            </div>
+          </div>
+          <!-- Progress bar: نسبة التحصيل من الديون -->
+          <div class="mt-3" v-if="debtPaymentsStats.totalPaid + debtPaymentsStats.totalRemaining > 0">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] text-gray-400">نسبة تحصيل الديون</span>
+              <span class="text-[10px] font-bold text-violet-600">
+                {{ Math.round(debtPaymentsStats.totalPaid / (debtPaymentsStats.totalPaid + debtPaymentsStats.totalRemaining) * 100) }}%
+              </span>
+            </div>
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-l from-violet-500 to-purple-400 rounded-full transition-all duration-500"
+                :style="{width: Math.round(debtPaymentsStats.totalPaid / (debtPaymentsStats.totalPaid + debtPaymentsStats.totalRemaining) * 100) + '%'}"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">#</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">المشترك</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">الباقة</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">سعر الاشتراك</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">المُسدَّد</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">المتبقي</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">الحالة</th>
+                <th class="px-5 py-3 text-right text-xs font-semibold text-gray-400">نسبة التسديد</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, i) in debtPaymentsStats.details" :key="i"
+                class="border-t border-gray-50 hover:bg-gray-50"
+                :class="row.status === 'credit' ? 'opacity-60' : ''">
+                <td class="px-5 py-3 text-gray-400 text-xs">{{ i + 1 }}</td>
+                <td class="px-5 py-3 font-semibold text-secondary">{{ row.name }}</td>
+                <td class="px-5 py-3">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-xs">
+                    {{ row.package }}
+                  </span>
+                </td>
+                <td class="px-5 py-3 font-mono text-gray-700">
+                  {{ row.price.toLocaleString() }}
+                  <span v-if="row.extra > 0" class="text-orange-400 text-xs mr-1">+{{ row.extra.toLocaleString() }}</span>
+                  <span class="text-xs text-gray-400"> د.ع</span>
+                </td>
+                <td class="px-5 py-3">
+                  <span v-if="row.paid > 0" class="font-mono font-semibold text-emerald-600">
+                    {{ row.paid.toLocaleString() }} <span class="text-xs text-gray-400">د.ع</span>
+                  </span>
+                  <span v-else class="text-gray-300 text-xs">لم يُسدَّد</span>
+                </td>
+                <td class="px-5 py-3">
+                  <span v-if="row.remaining > 0" class="font-mono font-semibold text-red-500">
+                    {{ row.remaining.toLocaleString() }} <span class="text-xs text-gray-400">د.ع</span>
+                  </span>
+                  <span v-else class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 text-xs font-semibold">
+                    <i class="fas fa-check text-[9px]"></i> مسدد
+                  </span>
+                </td>
+                <td class="px-5 py-3">
+                  <span v-if="row.status === 'partial'" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                    <i class="fas fa-adjust text-[9px]"></i> جزئي
+                  </span>
+                  <span v-else class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100 text-orange-600 text-xs font-semibold">
+                    <i class="fas fa-clock text-[9px]"></i> آجل
+                  </span>
+                </td>
+                <td class="px-5 py-3">
+                  <div v-if="row.status === 'partial'" class="flex items-center gap-2">
+                    <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden w-20">
+                      <div class="h-full bg-gradient-to-l from-violet-500 to-purple-400 rounded-full"
+                        :style="{width: Math.round(row.paid / (row.price + row.extra) * 100) + '%'}"
+                      ></div>
+                    </div>
+                    <span class="text-xs font-semibold text-violet-700">
+                      {{ Math.round(row.paid / (row.price + row.extra) * 100) }}%
+                    </span>
+                  </div>
+                  <span v-else class="text-gray-300 text-xs">0%</span>
+                </td>
+              </tr>
+            </tbody>
+            <!-- Totals row -->
+            <tfoot v-if="debtPaymentsStats.details.length > 0">
+              <tr class="border-t-2 border-gray-200 bg-gray-50 font-semibold">
+                <td class="px-5 py-3" colspan="4">الإجمالي</td>
+                <td class="px-5 py-3 text-emerald-600 font-mono">{{ debtPaymentsStats.totalPaid.toLocaleString() }} <span class="text-xs font-normal text-gray-400">د.ع</span></td>
+                <td class="px-5 py-3 text-red-500 font-mono">{{ debtPaymentsStats.totalRemaining.toLocaleString() }} <span class="text-xs font-normal text-gray-400">د.ع</span></td>
+                <td colspan="2" class="px-5 py-3">
+                  <span class="text-xs text-gray-500">المُسدَّد مضمَّن في <span class="text-violet-600 font-bold">إجمالي المحصّل</span></span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
       <!-- ─── Package Revenue Table ─── -->
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100">
@@ -444,6 +562,57 @@ const totalDebt = computed(() =>
     return s + Math.max(0, Number(x.price || 0) + Number(x.debtAmount || 0) - Number(x.paidAmount || 0));
   }, 0)
 );
+
+// ─── Debt Payment Stats ──────────────────────────────────────
+// سديدات الديون: اشتراكات آجل تم تسديد جزء أو كل مبلغها
+// partial = دفع جزء من الدين   |   credit = لم يُسدَّد بعد
+// تُعدّ آجل مسددة كلياً عندما تنتقل إلى cash بعد كان credit/partial
+const debtPaymentsStats = computed(() => {
+  const subs = filteredSubs.value;
+
+  // اشتراكات فيها دفع جزئي (partial) — مؤكد أنها كانت آجل
+  const partialSubs = subs.filter(s => s.paymentMethod === 'partial');
+
+  // اشتراكات آجل لم تُسدَّد بعد
+  const unpaidCreditSubs = subs.filter(s => s.paymentMethod === 'credit');
+
+  const totalPartialPaid = partialSubs.reduce((sum, s) => sum + Number(s.paidAmount || 0), 0);
+  const totalPartialRemaining = partialSubs.reduce((sum, s) =>
+    sum + Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0)), 0
+  );
+
+  // قائمة تفصيلية مرتبة حسب المبلغ المتبقي
+  const details = [
+    ...partialSubs.map(s => ({
+      name: s.subscriber?.name || s.subscriberName || '—',
+      package: s.package?.name || s.packageName || '—',
+      price: Number(s.price || 0),
+      paid: Number(s.paidAmount || 0),
+      extra: Number(s.debtAmount || 0),
+      remaining: Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0)),
+      status: 'partial' as const,
+      startDate: s.startDate,
+    })),
+    ...unpaidCreditSubs.map(s => ({
+      name: s.subscriber?.name || s.subscriberName || '—',
+      package: s.package?.name || s.packageName || '—',
+      price: Number(s.price || 0),
+      paid: 0,
+      extra: Number(s.debtAmount || 0),
+      remaining: Number(s.price || 0) + Number(s.debtAmount || 0),
+      status: 'credit' as const,
+      startDate: s.startDate,
+    })),
+  ].sort((a, b) => b.remaining - a.remaining);
+
+  return {
+    totalPaid: totalPartialPaid,
+    totalRemaining: totalPartialRemaining + unpaidCreditSubs.reduce((sum, s) => sum + Number(s.price || 0) + Number(s.debtAmount || 0), 0),
+    partialCount: partialSubs.length,
+    unpaidCount: unpaidCreditSubs.length,
+    details,
+  };
+});
 const overallRate = computed(() => {
   if (!totalRevenue.value) return 0;
   return Math.round((totalCollected.value / totalRevenue.value) * 100);
@@ -459,6 +628,7 @@ const summaryCards = computed(() => [
   { label: 'إجمالي الإيرادات', value: totalRevenue.value.toLocaleString() + ' د.ع', icon: 'fas fa-coins', color: '#27AE60' },
   { label: 'إجمالي المحصّل', value: totalCollected.value.toLocaleString() + ' د.ع', icon: 'fas fa-hand-holding-usd', color: '#1ABC9C' },
   { label: 'إجمالي الديون', value: totalDebt.value.toLocaleString() + ' د.ع', icon: 'fas fa-exclamation-triangle', color: '#E74C3C', sub: totalDebt.value > 0 ? (filteredSubs.value.filter(s => Math.max(0, Number(s.price||0) + Number(s.debtAmount||0) - Number(s.paidAmount||0)) > 0).length + ' مشترك') : '', subColor: 'text-red-400' },
+  { label: 'تسديد الديون', value: debtPaymentsStats.value.totalPaid.toLocaleString() + ' د.ع', icon: 'fas fa-hand-holding-usd', color: '#8B5CF6', sub: debtPaymentsStats.value.partialCount > 0 ? (debtPaymentsStats.value.partialCount + ' مشترك سدّد جزئياً') : (debtPaymentsStats.value.unpaidCount > 0 ? debtPaymentsStats.value.unpaidCount + ' آجل بدون تسديد' : 'لا توجد ديون'), subColor: debtPaymentsStats.value.partialCount > 0 ? 'text-violet-500' : 'text-gray-400' },
   { label: 'إجمالي إيداعات المدراء', value: totalManagerDeposits.value.toLocaleString() + ' د.ع', icon: 'fas fa-university', color: '#22C55E' },
   { label: 'إجمالي سحوبات المدراء', value: totalManagerWithdrawals.value.toLocaleString() + ' د.ع', icon: 'fas fa-wallet', color: '#F59E0B' },
   { label: 'إجمالي تسديد ديون المدراء', value: totalManagerDebtPayments.value.toLocaleString() + ' د.ع', icon: 'fas fa-hand-holding-medical', color: '#3B82F6' },
