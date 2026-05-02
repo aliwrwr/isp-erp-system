@@ -782,6 +782,26 @@
               </div>
             </div>
 
+            <!-- ⚠️ تحذير الديون السابقة -->
+            <div v-if="activateExistingDebt > 0"
+              class="flex items-start gap-3 p-4 rounded-2xl border-2 border-red-200 bg-red-50">
+              <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fas fa-exclamation-triangle text-red-500 text-base"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-red-700">تحذير: يوجد ديون غير مسددة</p>
+                <p class="text-xs text-red-600 mt-1 leading-relaxed">
+                  هذا المشترك لديه ديون مستحقة بقيمة
+                  <strong class="text-red-700 text-sm">{{ Number(activateExistingDebt).toLocaleString('ar-IQ') }} د.ع</strong>
+                  — يُنصح بتسديد الديون قبل التفعيل أو اختيار طريقة الدفع المناسبة.
+                </p>
+                <div class="mt-2.5 flex items-center gap-2 pt-2.5 border-t border-red-200">
+                  <i class="fas fa-info-circle text-red-400 text-xs flex-shrink-0"></i>
+                  <p class="text-[11px] text-red-500">يمكن تسديد الديون بعد التفعيل عبر خيار "تسديد ديون" من قائمة المشترك</p>
+                </div>
+              </div>
+            </div>
+
             <!-- Payment Method -->
             <div>
               <p class="text-xs font-bold text-gray-600 mb-2.5">طريقة الدفع</p>
@@ -1774,6 +1794,18 @@ const activatePartialRemaining = computed(() => {
   const price = Number(pkg?.price || 0);
   const partial = Number(activateForm.value.partialAmount || 0);
   return Math.max(0, price - partial);
+});
+
+// إجمالي الديون السابقة على المشترك قبل التفعيل الجديد
+const activateExistingDebt = computed(() => {
+  const subs = contextMenuSub.value?.subscriptions;
+  if (!subs?.length) return 0;
+  return subs.reduce((sum: number, s: any) => {
+    const debt = Number(s.debtAmount || 0) > 0
+      ? Number(s.debtAmount)
+      : Math.max(0, Number(s.price || 0) - Number(s.paidAmount || 0));
+    return sum + debt;
+  }, 0);
 });
 
 function openActivateModal() {
