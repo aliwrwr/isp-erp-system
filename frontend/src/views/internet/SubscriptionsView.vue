@@ -921,13 +921,17 @@ const uniquePackages = computed(() =>
 );
 
 // ── filteredRows: baseRows + payment filter ────────────────────────
-// cash/credit/partial → ALL subscriptions of that method (paid or not)
-// paid               → fully paid regardless of payment method
+// cash    → all cash subscriptions (paid on the spot, no debt)
+// credit  → credit with remaining unpaid debt only
+// partial → partial with remaining unpaid debt only
+// paid    → fully settled regardless of original method
 const filteredRows = computed(() => {
   let rows = baseRows.value;
   if (filterPayment.value) {
     if (filterPayment.value === 'paid') {
       rows = rows.filter(isPaidSub);
+    } else if (filterPayment.value === 'credit' || filterPayment.value === 'partial') {
+      rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value && !isPaidSub(s));
     } else {
       rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value);
     }

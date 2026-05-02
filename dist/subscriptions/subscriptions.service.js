@@ -66,10 +66,26 @@ let SubscriptionsService = class SubscriptionsService {
         if (!sub)
             return null;
         const newPaid = Number(sub.paidAmount || 0) + amount;
+        const price = Number(sub.price || 0);
+        const debt = Number(sub.debtAmount || 0);
+        const total = price + debt;
+        let newPaymentMethod = sub.paymentMethod || 'cash';
+        if (newPaymentMethod === 'credit' || newPaymentMethod === 'partial') {
+            if (total > 0 && newPaid >= total) {
+                newPaymentMethod = 'cash';
+            }
+            else if (newPaid > 0) {
+                newPaymentMethod = 'partial';
+            }
+        }
         const existingNotes = sub.notes || '';
         const newNote = notes ? `[تسديد: ${amount} د.ع] ${notes}` : `[تسديد: ${amount} د.ع]`;
         const updatedNotes = existingNotes ? `${existingNotes}\n${newNote}` : newNote;
-        await this.subscriptionsRepository.update(id, { paidAmount: newPaid, notes: updatedNotes });
+        await this.subscriptionsRepository.update(id, {
+            paidAmount: newPaid,
+            paymentMethod: newPaymentMethod,
+            notes: updatedNotes,
+        });
         return this.findOne(id);
     }
     async addDebt(id, amount, notes) {

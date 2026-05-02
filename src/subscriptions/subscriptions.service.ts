@@ -75,10 +75,30 @@ export class SubscriptionsService {
     const sub = await this.findOne(id);
     if (!sub) return null;
     const newPaid = Number(sub.paidAmount || 0) + amount;
+    const price   = Number(sub.price || 0);
+    const debt    = Number((sub as any).debtAmount || 0);
+    const total   = price + debt;
+
+    // Auto-update paymentMethod based on payment state
+    let newPaymentMethod: string = (sub as any).paymentMethod || 'cash';
+    if (newPaymentMethod === 'credit' || newPaymentMethod === 'partial') {
+      if (total > 0 && newPaid >= total) {
+        // Fully paid — mark as cash (no remaining debt)
+        newPaymentMethod = 'cash';
+      } else if (newPaid > 0) {
+        // Partially paid — still has remaining debt
+        newPaymentMethod = 'partial';
+      }
+    }
+
     const existingNotes = sub.notes || '';
     const newNote = notes ? `[تسديد: ${amount} د.ع] ${notes}` : `[تسديد: ${amount} د.ع]`;
     const updatedNotes = existingNotes ? `${existingNotes}\n${newNote}` : newNote;
-    await this.subscriptionsRepository.update(id, { paidAmount: newPaid, notes: updatedNotes } as any);
+    await this.subscriptionsRepository.update(id, {
+      paidAmount: newPaid,
+      paymentMethod: newPaymentMethod,
+      notes: updatedNotes,
+    } as any);
     return this.findOne(id);
   }
 
