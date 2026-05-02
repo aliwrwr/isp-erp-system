@@ -481,16 +481,16 @@ const todayStr = computed(() => {
 const todayStats = computed(() => {
   const today = todayStr.value;
   const todaySubs = subscriptionsData.value.filter((s: any) => {
-    // نستخدم createdAt (وقت إنشاء السجل الفعلي) — أكثر دقة من startDate
-    // startDate يضعه المستخدم يدوياً وقد يكون بتاريخ مختلف
-    const raw = s.createdAt || s.startDate;
-    if (!raw) return false;
-    // تحويل لـ Date object ثم مقارنة بالتوقيت المحلي
-    const d = new Date(raw);
+    if (!s.startDate) return false;
+    // نستخدم new Date() ثم نستخرج التاريخ بالتوقيت المحلي
+    // هذا يحل مشكلة UTC offset: المستخدم يختار 2026-05-03 لكن
+    // SQLite يخزنها كـ 2026-05-02T21:00:00Z (UTC) - بدون getDate() المحلي ستظهر كأمس
+    const d = new Date(s.startDate);
+    if (isNaN(d.getTime())) return false;
     const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}` === today;
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const dy = String(d.getDate()).padStart(2, '0');
+    return `${y}-${mo}-${dy}` === today;
   });
 
   // إجمالي المحصل = paidAmount من النقدي والجزئي (محصّل فعلياً لحظة التفعيل)
