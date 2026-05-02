@@ -260,20 +260,32 @@ export class BackupService {
 
   private async localBackup() {
     try {
+      if (!fs.existsSync(DB_PATH)) {
+        this.logger.error('Local backup skipped: DB file not found at ' + DB_PATH);
+        return;
+      }
+      const dbSize = fs.statSync(DB_PATH).size;
+      if (dbSize < 1024) {
+        this.logger.warn('Local backup skipped: DB file is suspiciously small (' + dbSize + ' bytes)');
+        return;
+      }
+
       const backupDir = path.resolve(process.cwd(), 'backups');
       if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir);
+        fs.mkdirSync(backupDir, { recursive: true });
       }
       const now = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
       const backupPath = path.resolve(backupDir, `isp-erp-backup-${now}.sqlite`);
       fs.copyFileSync(DB_PATH, backupPath);
-      this.logger.log(`Local backup saved at: ${backupPath}`);
+      this.logger.log(`Local backup saved: ${backupPath} (${Math.round(dbSize / 1024)} KB)`);
 
-      const files = fs.readdirSync(backupDir).filter(f => f.endsWith('.sqlite'));
-      if (files.length > 20) {
-        files.sort().reverse();
-        const filesToDelete = files.slice(20);
-        for (const file of filesToDelete) {
+      // Keep last 30 backups (7.5 days at 4/day)
+      const files = fs.readdirSync(backupDir)
+        .filter(f => f.endsWith('.sqlite'))
+        .sort()
+        .reverse();
+      if (files.length > 30) {
+        for (const file of files.slice(30)) {
           try { fs.unlinkSync(path.resolve(backupDir, file)); } catch(e) {}
         }
       }
