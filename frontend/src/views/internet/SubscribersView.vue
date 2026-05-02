@@ -2221,7 +2221,7 @@ async function savePayDebt() {
   if (!subId) return showToast('لا يوجد اشتراك', 'error');
   saving.value = true;
   try {
-    await api.post(`/subscriptions/${subId}/pay`, { amount: Number(payDebtForm.value.amount), notes: payDebtForm.value.notes });
+    await api.patch(`/subscriptions/${subId}/pay`, { amount: Number(payDebtForm.value.amount), notes: payDebtForm.value.notes });
     logActivity({
       action: 'pay_debt',
       module: 'subscriptions',
