@@ -2,11 +2,83 @@
   <div class="flex flex-col gap-4">
 
     <!-- Page Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between flex-wrap gap-2">
       <div>
         <h2 class="text-xl font-bold text-secondary">الاشتراكات</h2>
-        <p class="text-sm text-gray-400 mt-0.5">إجمالي {{ totalItems }} اشتراك</p>
+        <p class="text-sm text-gray-400 mt-0.5">
+          إجمالي {{ totalItems }} اشتراك
+          <span v-if="anyFilter" class="text-indigo-500 font-semibold"> · يعرض {{ filteredRows.length }} نتيجة</span>
+        </p>
       </div>
+      <button v-if="anyFilter" @click="filterPayment='';filterDateFrom='';filterDateTo='';filterPackage='';search=''"
+        class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition">
+        <i class="fas fa-times-circle"></i> مسح الفلاتر
+      </button>
+    </div>
+
+    <!-- ── Stats Cards ─────────────────────────────────────────── -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+
+      <!-- Total -->
+      <div @click="filterPayment=''" :class="['cursor-pointer rounded-2xl p-4 border-2 transition shadow-sm', !filterPayment ? 'border-indigo-400 bg-indigo-50' : 'border-gray-100 bg-white hover:border-indigo-200 hover:bg-indigo-50/40']">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-list text-indigo-500 text-xs"></i>
+          </div>
+          <p class="text-xs font-semibold text-gray-500">إجمالي</p>
+        </div>
+        <p class="text-lg font-black text-indigo-700 leading-none">{{ stats.total.count }}<span class="text-xs font-medium text-gray-400 mr-1">اشتراك</span></p>
+        <p class="text-xs font-bold text-indigo-500 mt-1.5 font-mono">{{ stats.total.amount.toLocaleString('ar-IQ') }} <span class="text-[10px] font-normal text-gray-400">د.ع</span></p>
+      </div>
+
+      <!-- Cash -->
+      <div @click="filterPayment = filterPayment === 'cash' ? '' : 'cash'" :class="['cursor-pointer rounded-2xl p-4 border-2 transition shadow-sm', filterPayment === 'cash' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-100 bg-white hover:border-emerald-200 hover:bg-emerald-50/40']">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-money-bill-wave text-emerald-500 text-xs"></i>
+          </div>
+          <p class="text-xs font-semibold text-gray-500">نقداً</p>
+        </div>
+        <p class="text-lg font-black text-emerald-700 leading-none">{{ stats.cash.count }}<span class="text-xs font-medium text-gray-400 mr-1">اشتراك</span></p>
+        <p class="text-xs font-bold text-emerald-500 mt-1.5 font-mono">{{ stats.cash.amount.toLocaleString('ar-IQ') }} <span class="text-[10px] font-normal text-gray-400">د.ع</span></p>
+      </div>
+
+      <!-- Credit -->
+      <div @click="filterPayment = filterPayment === 'credit' ? '' : 'credit'" :class="['cursor-pointer rounded-2xl p-4 border-2 transition shadow-sm', filterPayment === 'credit' ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-white hover:border-orange-200 hover:bg-orange-50/40']">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-clock text-orange-500 text-xs"></i>
+          </div>
+          <p class="text-xs font-semibold text-gray-500">آجل</p>
+        </div>
+        <p class="text-lg font-black text-orange-700 leading-none">{{ stats.credit.count }}<span class="text-xs font-medium text-gray-400 mr-1">اشتراك</span></p>
+        <p class="text-xs font-bold text-orange-500 mt-1.5 font-mono">{{ stats.credit.amount.toLocaleString('ar-IQ') }} <span class="text-[10px] font-normal text-gray-400">د.ع</span></p>
+      </div>
+
+      <!-- Partial -->
+      <div @click="filterPayment = filterPayment === 'partial' ? '' : 'partial'" :class="['cursor-pointer rounded-2xl p-4 border-2 transition shadow-sm', filterPayment === 'partial' ? 'border-blue-400 bg-blue-50' : 'border-gray-100 bg-white hover:border-blue-200 hover:bg-blue-50/40']">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-coins text-blue-500 text-xs"></i>
+          </div>
+          <p class="text-xs font-semibold text-gray-500">جزئي</p>
+        </div>
+        <p class="text-lg font-black text-blue-700 leading-none">{{ stats.partial.count }}<span class="text-xs font-medium text-gray-400 mr-1">اشتراك</span></p>
+        <p class="text-xs font-bold text-blue-500 mt-1.5 font-mono">{{ stats.partial.amount.toLocaleString('ar-IQ') }} <span class="text-[10px] font-normal text-gray-400">د.ع</span></p>
+      </div>
+
+      <!-- Paid -->
+      <div @click="filterPayment = filterPayment === 'paid' ? '' : 'paid'" :class="['cursor-pointer rounded-2xl p-4 border-2 transition shadow-sm col-span-2 sm:col-span-1', filterPayment === 'paid' ? 'border-teal-400 bg-teal-50' : 'border-gray-100 bg-white hover:border-teal-200 hover:bg-teal-50/40']">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-check-circle text-teal-500 text-xs"></i>
+          </div>
+          <p class="text-xs font-semibold text-gray-500">مسددة</p>
+        </div>
+        <p class="text-lg font-black text-teal-700 leading-none">{{ stats.paid.count }}<span class="text-xs font-medium text-gray-400 mr-1">اشتراك</span></p>
+        <p class="text-xs font-bold text-teal-500 mt-1.5 font-mono">{{ stats.paid.amount.toLocaleString('ar-IQ') }} <span class="text-[10px] font-normal text-gray-400">د.ع</span></p>
+      </div>
+
     </div>
 
     <!-- Table Card -->
@@ -44,18 +116,24 @@
               <option value="cash" class="text-gray-800">نقداً</option>
               <option value="credit" class="text-gray-800">آجل</option>
               <option value="partial" class="text-gray-800">جزئي</option>
+              <option value="paid" class="text-gray-800">مسددة</option>
             </select>
           </div>
 
-          <!-- Filter by start date -->
-          <div class="relative min-w-[165px]">
+          <!-- Filter date from -->
+          <div class="relative min-w-[155px]">
             <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-white/60 text-xs pointer-events-none"></i>
-            <input
-              v-model="filterDate"
-              type="date"
-              title="تصفية بتاريخ الاشتراك"
-              class="w-full pr-8 pl-3 py-2 text-sm border border-white/30 rounded-xl bg-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/60 transition text-white"
-            />
+            <input v-model="filterDateFrom" type="date" title="من تاريخ"
+              class="w-full pr-8 pl-3 py-2 text-sm border border-white/30 rounded-xl bg-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/60 transition text-white placeholder-white/60"
+              placeholder="من تاريخ" />
+          </div>
+
+          <!-- Filter date to -->
+          <div class="relative min-w-[155px]">
+            <i class="fas fa-calendar-check absolute right-3 top-1/2 -translate-y-1/2 text-white/60 text-xs pointer-events-none"></i>
+            <input v-model="filterDateTo" type="date" title="إلى تاريخ"
+              class="w-full pr-8 pl-3 py-2 text-sm border border-white/30 rounded-xl bg-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/60 transition text-white placeholder-white/60"
+              placeholder="إلى تاريخ" />
           </div>
 
           <!-- Spacer -->
@@ -750,7 +828,9 @@ const loading = ref(false);
 const search = ref('');
 const filterPackage = ref('');
 const filterPayment = ref('');
-const filterDate = ref('');
+const filterDateFrom = ref('');
+const filterDateTo = ref('');
+const filterDate = ref(''); // legacy – keep for compat
 const currentPage = ref(1);
 const pageSize = ref(10);
 
@@ -780,6 +860,34 @@ const payDebtAmount = ref(0);
 
 const totalItems = computed(() => allSubscriptions.value.length);
 
+// ── Stats computed from filteredRows ──────────────────────────────
+const stats = computed(() => {
+  const rows = filteredRows.value;
+  const isPaid = (s: any) => {
+    const price = Number(s.price || 0);
+    const debt  = Number(s.debtAmount || 0);
+    const paid  = Number(s.paidAmount || 0);
+    return (price + debt) > 0 && paid >= (price + debt);
+  };
+  const cashRows    = rows.filter((s: any) => s.paymentMethod === 'cash'    && !isPaid(s));
+  const creditRows  = rows.filter((s: any) => s.paymentMethod === 'credit'  && !isPaid(s));
+  const partialRows = rows.filter((s: any) => s.paymentMethod === 'partial' && !isPaid(s));
+  const paidRows    = rows.filter(isPaid);
+  const sum = (arr: any[]) => arr.reduce((t: number, s: any) => t + Number(s.price || 0), 0);
+  return {
+    total:   { count: rows.length,        amount: rows.reduce((t: number, s: any) => t + Number(s.price || 0), 0) },
+    cash:    { count: cashRows.length,    amount: sum(cashRows) },
+    credit:  { count: creditRows.length,  amount: sum(creditRows) },
+    partial: { count: partialRows.length, amount: sum(partialRows) },
+    paid:    { count: paidRows.length,    amount: sum(paidRows) },
+  };
+});
+
+const anyFilter = computed(() =>
+  !!search.value || !!filterPackage.value || !!filterPayment.value ||
+  !!filterDateFrom.value || !!filterDateTo.value
+);
+
 const uniquePackages = computed(() =>
   [...new Set(allSubscriptions.value.map((s: any) => s.packageName).filter(Boolean))].sort()
 );
@@ -795,8 +903,22 @@ const filteredRows = computed(() => {
     );
   }
   if (filterPackage.value) rows = rows.filter((s: any) => s.packageName === filterPackage.value);
-  if (filterPayment.value) rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value);
-  if (filterDate.value) rows = rows.filter((s: any) => s.startDate && s.startDate.startsWith(filterDate.value));
+  if (filterPayment.value) {
+    if (filterPayment.value === 'paid') {
+      rows = rows.filter((s: any) => {
+        const price = Number(s.price || 0);
+        const debt = Number(s.debtAmount || 0);
+        const paid = Number(s.paidAmount || 0);
+        return paid >= (price + debt) && (price + debt) > 0;
+      });
+    } else {
+      rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value);
+    }
+  }
+  if (filterDateFrom.value) rows = rows.filter((s: any) => s.startDate && s.startDate >= filterDateFrom.value);
+  if (filterDateTo.value)   rows = rows.filter((s: any) => s.startDate && s.startDate <= filterDateTo.value + 'T23:59:59');
+  if (filterDate.value && !filterDateFrom.value && !filterDateTo.value)
+    rows = rows.filter((s: any) => s.startDate && s.startDate.startsWith(filterDate.value));
   return rows;
 });
 
