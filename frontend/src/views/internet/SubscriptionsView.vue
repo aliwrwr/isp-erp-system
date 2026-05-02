@@ -860,22 +860,50 @@ const payDebtAmount = ref(0);
 
 const totalItems = computed(() => allSubscriptions.value.length);
 
-// ── Stats computed from filteredRows ──────────────────────────────
+// ── Helper: is subscription fully paid ───────────────────────────
+const isPaidSub = (s: any) => {
+  const price = Number(s.price || 0);
+  const debt  = Number(s.debtAmount || 0);
+  const paid  = Number(s.paidAmount || 0);
+  return (price + debt) > 0 && paid >= (price + debt);
+};
+
+// ── baseRows: search + package + date filters (NO payment filter)
+// Stats cards always compute from this so each card shows correct
+// counts regardless of which payment card is currently selected.
+const baseRows = computed(() => {
+  let rows = allSubscriptions.value;
+  if (search.value.trim()) {
+    const q = search.value.trim().toLowerCase();
+    rows = rows.filter((s: any) =>
+      s.subscriberName.toLowerCase().includes(q) ||
+      s.packageName.toLowerCase().includes(q) ||
+      s.phone.includes(q)
+    );
+  }
+  if (filterPackage.value) rows = rows.filter((s: any) => s.packageName === filterPackage.value);
+  if (filterDateFrom.value) {
+    const from = new Date(filterDateFrom.value);
+    rows = rows.filter((s: any) => s.startDate && new Date(s.startDate) >= from);
+  }
+  if (filterDateTo.value) {
+    const to = new Date(filterDateTo.value);
+    to.setHours(23, 59, 59, 999);
+    rows = rows.filter((s: any) => s.startDate && new Date(s.startDate) <= to);
+  }
+  return rows;
+});
+
+// ── Stats: always from baseRows (unaffected by payment filter) ────
 const stats = computed(() => {
-  const rows = filteredRows.value;
-  const isPaid = (s: any) => {
-    const price = Number(s.price || 0);
-    const debt  = Number(s.debtAmount || 0);
-    const paid  = Number(s.paidAmount || 0);
-    return (price + debt) > 0 && paid >= (price + debt);
-  };
-  const cashRows    = rows.filter((s: any) => s.paymentMethod === 'cash'    && !isPaid(s));
-  const creditRows  = rows.filter((s: any) => s.paymentMethod === 'credit'  && !isPaid(s));
-  const partialRows = rows.filter((s: any) => s.paymentMethod === 'partial' && !isPaid(s));
-  const paidRows    = rows.filter(isPaid);
+  const rows = baseRows.value;
+  const cashRows    = rows.filter((s: any) => s.paymentMethod === 'cash'    && !isPaidSub(s));
+  const creditRows  = rows.filter((s: any) => s.paymentMethod === 'credit'  && !isPaidSub(s));
+  const partialRows = rows.filter((s: any) => s.paymentMethod === 'partial' && !isPaidSub(s));
+  const paidRows    = rows.filter(isPaidSub);
   const sum = (arr: any[]) => arr.reduce((t: number, s: any) => t + Number(s.price || 0), 0);
   return {
-    total:   { count: rows.length,        amount: rows.reduce((t: number, s: any) => t + Number(s.price || 0), 0) },
+    total:   { count: rows.length,        amount: sum(rows) },
     cash:    { count: cashRows.length,    amount: sum(cashRows) },
     credit:  { count: creditRows.length,  amount: sum(creditRows) },
     partial: { count: partialRows.length, amount: sum(partialRows) },
@@ -892,33 +920,18 @@ const uniquePackages = computed(() =>
   [...new Set(allSubscriptions.value.map((s: any) => s.packageName).filter(Boolean))].sort()
 );
 
+// ── filteredRows: baseRows + payment filter ────────────────────────
+// cash/credit/partial → only UNPAID ones for that method
+// paid               → fully paid regardless of method
 const filteredRows = computed(() => {
-  let rows = allSubscriptions.value;
-  if (search.value.trim()) {
-    const q = search.value.trim().toLowerCase();
-    rows = rows.filter((s: any) =>
-      s.subscriberName.toLowerCase().includes(q) ||
-      s.packageName.toLowerCase().includes(q) ||
-      s.phone.includes(q)
-    );
-  }
-  if (filterPackage.value) rows = rows.filter((s: any) => s.packageName === filterPackage.value);
+  let rows = baseRows.value;
   if (filterPayment.value) {
     if (filterPayment.value === 'paid') {
-      rows = rows.filter((s: any) => {
-        const price = Number(s.price || 0);
-        const debt = Number(s.debtAmount || 0);
-        const paid = Number(s.paidAmount || 0);
-        return paid >= (price + debt) && (price + debt) > 0;
-      });
+      rows = rows.filter(isPaidSub);
     } else {
-      rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value);
+      rows = rows.filter((s: any) => s.paymentMethod === filterPayment.value && !isPaidSub(s));
     }
   }
-  if (filterDateFrom.value) rows = rows.filter((s: any) => s.startDate && s.startDate >= filterDateFrom.value);
-  if (filterDateTo.value)   rows = rows.filter((s: any) => s.startDate && s.startDate <= filterDateTo.value + 'T23:59:59');
-  if (filterDate.value && !filterDateFrom.value && !filterDateTo.value)
-    rows = rows.filter((s: any) => s.startDate && s.startDate.startsWith(filterDate.value));
   return rows;
 });
 
