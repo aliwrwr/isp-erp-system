@@ -984,43 +984,90 @@
     <!-- ===== Add Debt Modal ===== -->
     <transition name="modal">
       <div v-if="showAddDebtModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="showAddDebtModal = false">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-          <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <!-- Header -->
+          <div class="bg-gradient-to-l from-orange-600 to-amber-500 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
-                <i class="fas fa-file-invoice-dollar text-red-400 text-sm"></i>
+              <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <i class="fas fa-file-invoice-dollar text-white text-sm"></i>
               </div>
               <div>
-                <h3 class="font-bold text-secondary">إضافة دين</h3>
-                <p class="text-xs text-gray-400">{{ contextMenuSub?.name }}</p>
+                <p class="text-white font-bold text-sm">إضافة دين</p>
+                <p class="text-white/70 text-xs mt-0.5">{{ contextMenuSub?.name }}</p>
               </div>
             </div>
-            <button @click="showAddDebtModal = false" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
-              <i class="fas fa-times text-sm"></i>
+            <button @click="showAddDebtModal = false" class="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+              <i class="fas fa-times text-white text-xs"></i>
             </button>
           </div>
-          <div class="p-6 space-y-4">
+
+          <div class="p-5 space-y-4">
+            <!-- اختيار الاشتراك -->
             <div v-if="subscriberSubs.length > 1">
               <label class="block text-xs font-semibold text-gray-600 mb-2">الاشتراك</label>
-              <select v-model="addDebtSubId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              <select v-model="addDebtSubId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition">
                 <option :value="null" disabled>— اختر اشتراكاً —</option>
-                <option v-for="sub in subscriberSubs" :key="sub.id" :value="sub.id">{{ sub.package?.name || '—' }} ({{ formatDateShort(sub.startDate) }})</option>
+                <option v-for="sub in subscriberSubs" :key="sub.id" :value="sub.id">
+                  {{ sub.package?.name || '—' }} ({{ formatDateShort(sub.startDate) }})
+                  — متبقي: {{ Math.max(0, Number(sub.price||0) + Number(sub.debtAmount||0) - Number(sub.paidAmount||0)).toLocaleString('ar-IQ') }} د.ع
+                </option>
               </select>
             </div>
-            <div v-else-if="subscriberSubs.length === 0" class="text-sm text-gray-400">لا توجد اشتراكات لهذا المشترك</div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-2">مبلغ الدين (د.ع)</label>
-              <input type="number" v-model="addDebtForm.amount" placeholder="0" min="0" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            <div v-else-if="subscriberSubs.length === 0" class="text-sm text-gray-400 text-center py-2">لا توجد اشتراكات لهذا المشترك</div>
+
+            <!-- الحالة المالية الحالية -->
+            <div v-if="selectedAddSub" class="grid grid-cols-3 gap-2">
+              <div class="bg-gray-50 rounded-xl p-3 text-center">
+                <p class="text-[10px] text-gray-400 mb-1">سعر الباقة</p>
+                <p class="text-sm font-bold text-gray-700 font-mono">{{ Number(selectedAddSub.price||0).toLocaleString('ar-IQ') }}</p>
+              </div>
+              <div class="bg-emerald-50 rounded-xl p-3 text-center">
+                <p class="text-[10px] text-emerald-500 mb-1">المدفوع</p>
+                <p class="text-sm font-bold text-emerald-700 font-mono">{{ Number(selectedAddSub.paidAmount||0).toLocaleString('ar-IQ') }}</p>
+              </div>
+              <div class="rounded-xl p-3 text-center" :class="selectedAddCurrentDebt > 0 ? 'bg-red-50' : 'bg-green-50'">
+                <p class="text-[10px] mb-1" :class="selectedAddCurrentDebt > 0 ? 'text-red-400' : 'text-green-500'">
+                  {{ selectedAddCurrentDebt > 0 ? 'الدين الحالي' : 'الحالة' }}
+                </p>
+                <p class="text-sm font-bold font-mono" :class="selectedAddCurrentDebt > 0 ? 'text-red-600' : 'text-green-600'">
+                  {{ selectedAddCurrentDebt > 0 ? selectedAddCurrentDebt.toLocaleString('ar-IQ') : 'مسدد ✓' }}
+                </p>
+              </div>
             </div>
+
+            <!-- حقل المبلغ -->
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-2">مبلغ الدين المضاف (د.ع) <span class="text-red-400">*</span></label>
+              <input type="number" v-model="addDebtForm.amount" placeholder="0" min="1" step="500"
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono text-right focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition" />
+            </div>
+
+            <!-- حقل السبب -->
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-2">سبب الدين</label>
-              <input type="text" v-model="addDebtForm.reason" placeholder="مثال: اشتراك شهر مارس..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+              <input type="text" v-model="addDebtForm.reason" placeholder="مثال: تجديد شهر مارس..."
+                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition" />
+            </div>
+
+            <!-- معاينة الدين بعد الإضافة -->
+            <div v-if="Number(addDebtForm.amount) > 0 && selectedAddSub"
+              class="flex items-center justify-between px-4 py-3 rounded-xl border border-orange-200 bg-orange-50">
+              <span class="text-xs text-orange-600 font-medium flex items-center gap-1.5">
+                <i class="fas fa-arrow-up text-[10px]"></i>
+                الدين الجديد بعد الإضافة
+              </span>
+              <span class="font-mono font-black text-orange-700">
+                {{ addDebtAfter.toLocaleString('ar-IQ') }} <span class="text-xs font-normal">د.ع</span>
+              </span>
             </div>
           </div>
-          <div class="px-6 pb-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
-            <button @click="showAddDebtModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold rounded-xl transition">إلغاء</button>
-            <button @click="saveAddDebt" class="px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2">
-              <i class="fas fa-plus text-xs"></i>
+
+          <div class="px-5 pb-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
+            <button @click="showAddDebtModal = false" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-100 transition text-gray-600">إلغاء</button>
+            <button @click="saveAddDebt" :disabled="saving || !addDebtForm.amount || Number(addDebtForm.amount) <= 0"
+              class="px-6 py-2 text-sm font-medium bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl transition shadow-sm flex items-center gap-2">
+              <i v-if="saving" class="fas fa-spinner fa-spin text-xs"></i>
+              <i v-else class="fas fa-plus text-xs"></i>
               تسجيل الدين
             </button>
           </div>
@@ -1031,44 +1078,126 @@
     <!-- ===== Pay Debt Modal ===== -->
     <transition name="modal">
       <div v-if="showPayDebtModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4" @click.self="showPayDebtModal = false">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-          <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <!-- Header -->
+          <div class="bg-gradient-to-l from-emerald-600 to-teal-500 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center">
-                <i class="fas fa-money-bill-wave text-green-500 text-sm"></i>
+              <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <i class="fas fa-hand-holding-usd text-white text-sm"></i>
               </div>
               <div>
-                <h3 class="font-bold text-secondary">تسديد ديون</h3>
-                <p class="text-xs text-gray-400">{{ contextMenuSub?.name }}</p>
+                <p class="text-white font-bold text-sm">تسديد دين</p>
+                <p class="text-white/70 text-xs mt-0.5">{{ contextMenuSub?.name }}</p>
               </div>
             </div>
-            <button @click="showPayDebtModal = false" class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
-              <i class="fas fa-times text-sm"></i>
+            <button @click="showPayDebtModal = false" class="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+              <i class="fas fa-times text-white text-xs"></i>
             </button>
           </div>
-          <div class="p-6 space-y-4">
+
+          <div class="p-5 space-y-4">
+            <!-- اختيار الاشتراك -->
             <div v-if="subscriberSubs.length > 1">
               <label class="block text-xs font-semibold text-gray-600 mb-2">الاشتراك</label>
-              <select v-model="payDebtSubId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+              <select v-model="payDebtSubId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition">
                 <option :value="null" disabled>— اختر اشتراكاً —</option>
-                <option v-for="sub in subscriberSubs" :key="sub.id" :value="sub.id">{{ sub.package?.name || '—' }} ({{ formatDateShort(sub.startDate) }})</option>
+                <option v-for="sub in subscriberSubs" :key="sub.id" :value="sub.id">
+                  {{ sub.package?.name || '—' }} ({{ formatDateShort(sub.startDate) }})
+                  — متبقي: {{ Math.max(0, Number(sub.price||0) + Number(sub.debtAmount||0) - Number(sub.paidAmount||0)).toLocaleString('ar-IQ') }} د.ع
+                </option>
               </select>
             </div>
-            <div v-else-if="subscriberSubs.length === 0" class="text-sm text-gray-400">لا توجد اشتراكات لهذا المشترك</div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-2">المبلغ المدفوع (د.ع)</label>
-              <input type="number" v-model="payDebtForm.amount" placeholder="0" min="0" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            <div v-else-if="subscriberSubs.length === 0" class="text-sm text-gray-400 text-center py-2">لا توجد اشتراكات لهذا المشترك</div>
+
+            <!-- الحالة المالية الحالية -->
+            <div v-if="selectedPaySub" class="grid grid-cols-3 gap-2">
+              <div class="bg-gray-50 rounded-xl p-3 text-center">
+                <p class="text-[10px] text-gray-400 mb-1">سعر الباقة</p>
+                <p class="text-sm font-bold text-gray-700 font-mono">{{ Number(selectedPaySub.price||0).toLocaleString('ar-IQ') }}</p>
+              </div>
+              <div class="bg-emerald-50 rounded-xl p-3 text-center">
+                <p class="text-[10px] text-emerald-500 mb-1">المدفوع</p>
+                <p class="text-sm font-bold text-emerald-700 font-mono">{{ Number(selectedPaySub.paidAmount||0).toLocaleString('ar-IQ') }}</p>
+              </div>
+              <div class="bg-orange-50 rounded-xl p-3 text-center" v-if="Number(selectedPaySub.debtAmount||0) > 0">
+                <p class="text-[10px] text-orange-400 mb-1">دين مضاف</p>
+                <p class="text-sm font-bold text-orange-600 font-mono">{{ Number(selectedPaySub.debtAmount).toLocaleString('ar-IQ') }}</p>
+              </div>
+              <div v-else class="bg-gray-50 rounded-xl p-3 text-center">
+                <p class="text-[10px] text-gray-400 mb-1">الباقة</p>
+                <p class="text-xs font-medium text-gray-500">{{ selectedPaySub.package?.name || '—' }}</p>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-2">ملاحظات</label>
-              <input type="text" v-model="payDebtForm.notes" placeholder="سبب الدفع أو أي ملاحظة..." class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+
+            <!-- بطاقة الدين المستحق -->
+            <div v-if="selectedPaySub && selectedPayDebtTotal > 0"
+              class="flex items-center justify-between px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+              <span class="text-sm text-red-600 font-medium flex items-center gap-2">
+                <i class="fas fa-exclamation-circle text-xs"></i>
+                المبلغ المستحق حالياً
+              </span>
+              <span class="font-mono font-black text-red-700">
+                {{ selectedPayDebtTotal.toLocaleString('ar-IQ') }} <span class="text-xs font-normal">د.ع</span>
+              </span>
+            </div>
+            <div v-else-if="selectedPaySub && selectedPayDebtTotal === 0"
+              class="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-medium">
+              <i class="fas fa-check-circle text-xs"></i>
+              هذا الاشتراك مسدد بالكامل — لا يوجد دين
+            </div>
+
+            <!-- حقل المبلغ -->
+            <div v-if="selectedPayDebtTotal > 0">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-semibold text-gray-600">المبلغ المسدَّد الآن (د.ع)</label>
+                <button @click="payDebtForm.amount = String(selectedPayDebtTotal)"
+                  class="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg transition">
+                  تسديد الكل ({{ selectedPayDebtTotal.toLocaleString('ar-IQ') }})
+                </button>
+              </div>
+              <input type="number" v-model="payDebtForm.amount" :max="selectedPayDebtTotal" placeholder="0" min="1" step="500"
+                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono text-right focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition" />
+            </div>
+
+            <!-- ملاحظات -->
+            <div v-if="selectedPayDebtTotal > 0">
+              <label class="block text-xs font-semibold text-gray-600 mb-2">ملاحظات (اختياري)</label>
+              <input type="text" v-model="payDebtForm.notes" placeholder="سبب الدفع أو أي ملاحظة..."
+                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition" />
+            </div>
+
+            <!-- معاينة المتبقي بعد التسديد -->
+            <div v-if="Number(payDebtForm.amount) > 0 && selectedPayDebtTotal > 0" class="rounded-xl overflow-hidden border"
+              :class="payDebtIsFullPay ? 'border-emerald-200 bg-emerald-50' : 'border-blue-200 bg-blue-50'">
+              <div class="px-4 py-3 flex items-center justify-between">
+                <span class="text-xs font-semibold flex items-center gap-1.5"
+                  :class="payDebtIsFullPay ? 'text-emerald-700' : 'text-blue-700'">
+                  <i class="fas" :class="payDebtIsFullPay ? 'fa-check-double' : 'fa-info-circle'" style="font-size:10px"></i>
+                  {{ payDebtIsFullPay ? 'تسديد كامل ✓' : 'المتبقي بعد التسديد' }}
+                </span>
+                <span class="font-mono font-black text-base" :class="payDebtIsFullPay ? 'text-emerald-700' : 'text-blue-700'">
+                  {{ payDebtIsFullPay ? '0' : payDebtAfter.toLocaleString('ar-IQ') }}
+                  <span class="text-xs font-normal">د.ع</span>
+                </span>
+              </div>
+              <!-- Progress bar -->
+              <div class="h-1.5 bg-white/60">
+                <div class="h-full rounded-full transition-all duration-300"
+                  :class="payDebtIsFullPay ? 'bg-emerald-500' : 'bg-blue-500'"
+                  :style="{width: Math.min(100, Math.round((Number(payDebtForm.amount) / selectedPayDebtTotal) * 100)) + '%'}">
+                </div>
+              </div>
             </div>
           </div>
-          <div class="px-6 pb-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
-            <button @click="showPayDebtModal = false" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-semibold rounded-xl transition">إلغاء</button>
-            <button @click="savePayDebt" class="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-xl transition flex items-center gap-2">
-              <i class="fas fa-check text-xs"></i>
-              تأكيد الدفع
+
+          <div class="px-5 pb-5 flex justify-end gap-3 border-t border-gray-100 pt-4">
+            <button @click="showPayDebtModal = false" class="px-5 py-2 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-100 transition text-gray-600">إلغاء</button>
+            <button @click="savePayDebt"
+              :disabled="saving || !payDebtForm.amount || Number(payDebtForm.amount) <= 0 || selectedPayDebtTotal === 0"
+              class="px-6 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-xl transition shadow-sm flex items-center gap-2">
+              <i v-if="saving" class="fas fa-spinner fa-spin text-xs"></i>
+              <i v-else class="fas fa-check text-xs"></i>
+              تأكيد التسديد
             </button>
           </div>
         </div>
@@ -2054,6 +2183,18 @@ const subscriberSubs = ref<any[]>([]);
 const addDebtSubId = ref<number | null>(null);
 const payDebtSubId = ref<number | null>(null);
 
+// الاشتراك المحدد لإضافة الدين + الدين الحالي قبل وبعد
+const selectedAddSub = computed(() => {
+  if (!addDebtSubId.value) return subscriberSubs.value[0] ?? null;
+  return subscriberSubs.value.find(s => s.id === addDebtSubId.value) ?? null;
+});
+const selectedAddCurrentDebt = computed(() => {
+  const s = selectedAddSub.value;
+  if (!s) return 0;
+  return Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0));
+});
+const addDebtAfter = computed(() => selectedAddCurrentDebt.value + (Number(addDebtForm.value.amount) || 0));
+
 async function loadSubscriberSubs(subscriberId: number) {
   try {
     const { data } = await api.get('/subscriptions');
@@ -2197,6 +2338,25 @@ async function saveExtend() {
 // ===================== PAY DEBT MODAL =====================
 const showPayDebtModal = ref(false);
 const payDebtForm = ref({ amount: '', notes: '' });
+
+// الدين المستحق للاشتراك المحدد حالياً
+const selectedPaySub = computed(() => {
+  if (!payDebtSubId.value) return subscriberSubs.value[0] ?? null;
+  return subscriberSubs.value.find(s => s.id === payDebtSubId.value) ?? null;
+});
+const selectedPayDebtTotal = computed(() => {
+  const s = selectedPaySub.value;
+  if (!s) return 0;
+  return Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0));
+});
+const payDebtAfter = computed(() => {
+  const amt = Number(payDebtForm.value.amount) || 0;
+  return Math.max(0, selectedPayDebtTotal.value - amt);
+});
+const payDebtIsFullPay = computed(() => {
+  const amt = Number(payDebtForm.value.amount) || 0;
+  return amt > 0 && amt >= selectedPayDebtTotal.value;
+});
 
 async function openPayDebt() {
   closeContextMenu();
