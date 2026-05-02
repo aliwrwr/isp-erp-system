@@ -324,10 +324,10 @@
                       <td class="px-4 py-3 text-xs font-semibold text-emerald-700">{{ sub.price != null ? Number(sub.price).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</td>
                       <td class="px-4 py-3 text-xs font-semibold text-blue-600">{{ sub.paidAmount != null ? Number(sub.paidAmount).toLocaleString('ar-IQ') + ' د.ع' : '—' }}</td>
                       <td class="px-4 py-3">
-                        <span v-if="Math.max(Number(sub.debtAmount||0), Math.max(0,Number(sub.price||0)-Number(sub.paidAmount||0))) > 0"
+                        <span v-if="Math.max(0, Number(sub.price||0) - Number(sub.paidAmount||0) + Number(sub.debtAmount||0)) > 0"
                           class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-[10px] font-bold">
                           <i class="fas fa-exclamation-circle text-[8px]"></i>
-                          {{ Math.max(Number(sub.debtAmount||0), Math.max(0,Number(sub.price||0)-Number(sub.paidAmount||0))).toLocaleString('ar-IQ') }} د.ع
+                          {{ Math.max(0, Number(sub.price||0) - Number(sub.paidAmount||0) + Number(sub.debtAmount||0)).toLocaleString('ar-IQ') }} د.ع
                         </span>
                         <span v-else class="text-[10px] text-emerald-500 font-semibold">مسدد</span>
                       </td>
@@ -409,10 +409,8 @@ const totalDebt = computed(() => {
   const subs = props.subscriber?.subscriptions
   if (!subs?.length) return 0
   return subs.reduce((sum: number, s: any) => {
-    // استخدم debtAmount إن وُجد، وإلا احسبه من price - paidAmount
-    const debt = Number(s.debtAmount || 0) > 0
-      ? Number(s.debtAmount)
-      : Math.max(0, Number(s.price || 0) - Number(s.paidAmount || 0))
+    // remaining = price - paidAmount + debtAmount (extra added debt only)
+    const debt = Math.max(0, Number(s.price || 0) - Number(s.paidAmount || 0) + Number(s.debtAmount || 0))
     return sum + debt
   }, 0)
 })
@@ -423,9 +421,7 @@ const subsWithDebt = computed(() => {
   return [...subs]
     .map((s: any) => ({
       ...s,
-      _calcDebt: Number(s.debtAmount || 0) > 0
-        ? Number(s.debtAmount)
-        : Math.max(0, Number(s.price || 0) - Number(s.paidAmount || 0))
+      _calcDebt: Math.max(0, Number(s.price || 0) - Number(s.paidAmount || 0) + Number(s.debtAmount || 0))
     }))
     .filter((s: any) => s._calcDebt > 0)
     .sort((a: any, b: any) => new Date(b.startDate ?? 0).getTime() - new Date(a.startDate ?? 0).getTime())

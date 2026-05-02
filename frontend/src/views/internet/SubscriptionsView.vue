@@ -562,7 +562,7 @@
                   </span>
                   <span class="font-mono font-semibold text-gray-800 text-sm">{{ Number(selectedSub.price || 0).toLocaleString('ar-IQ') }} <span class="text-[10px] text-gray-400">د.ع</span></span>
                 </div>
-                <!-- Debt row (if any) -->
+                <!-- Extra debt row (only if additional debt was added separately) -->
                 <div v-if="Number(selectedSub.debtAmount || 0) > 0" class="flex items-center justify-between">
                   <span class="text-xs text-orange-500 flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block"></span>
@@ -570,7 +570,7 @@
                   </span>
                   <span class="font-mono font-semibold text-orange-500 text-sm">+ {{ Number(selectedSub.debtAmount).toLocaleString('ar-IQ') }} <span class="text-[10px]">د.ع</span></span>
                 </div>
-                <!-- Divider + total when debt exists -->
+                <!-- Divider + total when extra debt exists -->
                 <div v-if="Number(selectedSub.debtAmount || 0) > 0" class="border-t border-dashed border-gray-200 pt-2 flex items-center justify-between">
                   <span class="text-xs text-gray-600 font-semibold flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-gray-500 inline-block"></span>

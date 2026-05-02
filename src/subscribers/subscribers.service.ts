@@ -184,7 +184,8 @@ export class SubscribersService {
       if (endDate) {
         const paymentMethod = (updateSubscriberDto as any).paymentMethod || 'cash';
         const paidAmt = paymentMethod === 'partial' ? Number(partialAmount || 0) : (paymentMethod === 'cash' ? Number(pkg?.price || 0) : 0);
-        const debtAmt = Math.max(0, Number(pkg?.price || 0) - paidAmt);
+        // debtAmount = 0 on creation — debt is implicit from (price - paidAmount).
+        // debtAmount is only for extra debts added later via the addDebt endpoint.
         const subscription = this.subscriptionsRepository.create({
           subscriber: { id } as any,
           package: { id: packageId } as any,
@@ -193,7 +194,7 @@ export class SubscribersService {
           price: Number(pkg?.price || 0),
           paymentMethod,
           paidAmount: paidAmt,
-          debtAmount: debtAmt,
+          debtAmount: 0,
           status: 'active',
         });
         await this.subscriptionsRepository.save(subscription);
