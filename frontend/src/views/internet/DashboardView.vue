@@ -469,28 +469,18 @@ const almostExpiring = computed(() => {
 const adminCount = computed(() => managersData.value.length);
 
 // ── Today Stats (from 00:00 to 23:59 local time) ──────────────────
-// نستخدم مقارنة السلسلة النصية بدلاً من Date لتجنب مشاكل UTC
-const todayStr = computed(() => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-});
-
 const todayStats = computed(() => {
-  const today = todayStr.value;
+  const now = new Date();
+  // حدود اليوم بالتوقيت المحلي: من 00:00:00.000 إلى 23:59:59.999
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
   const todaySubs = subscriptionsData.value.filter((s: any) => {
     if (!s.startDate) return false;
-    // نستخدم new Date() ثم نستخرج التاريخ بالتوقيت المحلي
-    // هذا يحل مشكلة UTC offset: المستخدم يختار 2026-05-03 لكن
-    // SQLite يخزنها كـ 2026-05-02T21:00:00Z (UTC) - بدون getDate() المحلي ستظهر كأمس
     const d = new Date(s.startDate);
     if (isNaN(d.getTime())) return false;
-    const y = d.getFullYear();
-    const mo = String(d.getMonth() + 1).padStart(2, '0');
-    const dy = String(d.getDate()).padStart(2, '0');
-    return `${y}-${mo}-${dy}` === today;
+    // مقارنة بالطوابع الزمنية المحلية — يضمن يوم كامل 24 ساعة بغض النظر عن UTC offset
+    return d >= startOfDay && d <= endOfDay;
   });
 
   // إجمالي المحصل = paidAmount من النقدي والجزئي (محصّل فعلياً لحظة التفعيل)
