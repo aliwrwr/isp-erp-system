@@ -1074,14 +1074,16 @@ const baseRows = computed(() => {
     );
   }
   if (filterPackage.value) rows = rows.filter((s: any) => s.packageName === filterPackage.value);
+  // مقارنة التواريخ بالتوقيت المحلي (العراق) لتجنب مشكلة UTC+3 التي تُسبب اختفاء بيانات منتصف الليل
+  const toLocalD = (v: string | Date) => {
+    const d = new Date(v);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  };
   if (filterDateFrom.value) {
-    const from = new Date(filterDateFrom.value);
-    rows = rows.filter((s: any) => s.startDate && new Date(s.startDate) >= from);
+    rows = rows.filter((s: any) => s.startDate && toLocalD(s.startDate) >= filterDateFrom.value);
   }
   if (filterDateTo.value) {
-    const to = new Date(filterDateTo.value);
-    to.setHours(23, 59, 59, 999);
-    rows = rows.filter((s: any) => s.startDate && new Date(s.startDate) <= to);
+    rows = rows.filter((s: any) => s.startDate && toLocalD(s.startDate) <= filterDateTo.value);
   }
   return rows;
 });

@@ -433,6 +433,15 @@ const canSeeRouters = computed(() => authStore.hasPermission('internet.routers')
 
 
 
+// ── دالة مساعدة: تاريخ اليوم بالتوقيت المحلي (العراق) كـ "YYYY-MM-DD" ──────────
+function localDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// تحويل أي تاريخ (ISO أو غيره) إلى تاريخ محلي "YYYY-MM-DD"
+function toLocalDate(v: string | Date): string {
+  return localDateStr(new Date(v));
+}
+
 // ── Subscribers / Subscriptions ───────────────────────────────────
 const subscribersData = ref<any[]>([]);
 const subscriptionsData = ref<any[]>([]);
@@ -440,11 +449,11 @@ const managersData = ref<any[]>([]);
 
 const totalSub = computed(() => subscribersData.value.length);
 const activeSub = computed(() => {
-  const now = Date.now();
+  const todayLocal = localDateStr();
   return subscribersData.value.filter(s => {
     if (s.status === 'suspended' || s.isEnabled === false) return false;
     return s.subscriptions?.some((sub: any) =>
-      sub.status === 'active' && (!sub.endDate || new Date(sub.endDate).getTime() >= now)
+      sub.status === 'active' && (!sub.endDate || toLocalDate(sub.endDate) >= todayLocal)
     );
   }).length;
 });
@@ -455,14 +464,20 @@ const monthlyRevenue = computed(() => {
 });
 
 const expiringToday = computed(() => {
-  const today = new Date().toISOString().slice(0, 10);
-  return subscriptionsData.value.filter(s => s.status === 'active' && s.endDate?.slice(0, 10) === today).length;
+  const today = localDateStr(); // تاريخ اليوم بالتوقيت المحلي (العراق)
+  return subscriptionsData.value.filter(s =>
+    s.status === 'active' && s.endDate && toLocalDate(s.endDate) === today
+  ).length;
 });
 const almostExpiring = computed(() => {
-  const now = Date.now();
+  const todayLocal = localDateStr();
   return subscriptionsData.value.filter(s => {
     if (s.status !== 'active' || !s.endDate) return false;
-    const days = Math.ceil((new Date(s.endDate).getTime() - now) / 86400000);
+    const endLocal = toLocalDate(s.endDate);
+    // الفرق بالأيام: مقارنة نصية صحيحة لأن التنسيق YYYY-MM-DD قابل للمقارنة
+    const endMs = new Date(s.endDate).setHours(0, 0, 0, 0);
+    const todayMs = new Date(new Date().toLocaleDateString('en-CA')).getTime();
+    const days = Math.ceil((endMs - todayMs) / 86400000);
     return days > 0 && days <= 7;
   }).length;
 });

@@ -117,12 +117,18 @@ let SubscriptionsService = class SubscriptionsService {
         return this.findOne(id);
     }
     async getTodayStats() {
-        const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const now = new Date();
+        const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const fmtSql = (d) => d.toISOString().replace('T', ' ').replace('Z', '').substring(0, 23);
+        const fromSql = fmtSql(dayStart);
+        const toSql = fmtSql(dayEnd);
         await this.subscriptionsRepository.manager.query(`UPDATE subscriptions SET createdAt = startDate
-       WHERE substr(createdAt, 1, 10) = ? AND substr(startDate, 1, 10) != ?`, [todayStr, todayStr]);
+       WHERE createdAt >= ? AND createdAt <= ?
+         AND NOT (startDate >= ? AND startDate <= ?)`, [fromSql, toSql, fromSql, toSql]);
         const rows = await this.subscriptionsRepository.manager.query(`SELECT paymentMethod, price, paidAmount, debtAmount
-       FROM subscriptions WHERE substr(createdAt, 1, 10) = ?`, [todayStr]);
+       FROM subscriptions WHERE createdAt >= ? AND createdAt <= ?`, [fromSql, toSql]);
         let collected = 0, totalDebt = 0;
         const activations = rows.length;
         for (const s of rows) {
@@ -134,7 +140,7 @@ let SubscriptionsService = class SubscriptionsService {
             }
             totalDebt += Math.max(0, price + debt - paid);
         }
-        const payRows = await this.subscriptionsRepository.manager.query(`SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE substr(date, 1, 10) = ?`, [todayStr]);
+        const payRows = await this.subscriptionsRepository.manager.query(`SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE date >= ? AND date <= ?`, [fromSql, toSql]);
         const debtPayments = Number(payRows[0]?.total || 0);
         collected += debtPayments;
         return { collected, totalDebt, debtPayments, activations };

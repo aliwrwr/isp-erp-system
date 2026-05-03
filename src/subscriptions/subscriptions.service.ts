@@ -133,22 +133,30 @@ export class SubscriptionsService {
   }
 
   async getTodayStats(): Promise<{ collected: number; totalDebt: number; debtPayments: number; activations: number }> {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const now = new Date();
+    // استخدام التوقيت المحلي (العراق UTC+3) لحساب بداية ونهاية اليوم بشكل صحيح
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const dayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // تحويل إلى تنسيق SQLite (UTC، بدون T وZ)
+    const fmtSql = (d: Date) => d.toISOString().replace('T', ' ').replace('Z', '').substring(0, 23);
+    const fromSql = fmtSql(dayStart);
+    const toSql   = fmtSql(dayEnd);
 
     // Fix corrupted createdAt (idempotent: safe to run on every call)
     // TypeORM synchronize:true may have set createdAt=today for all old rows
     await this.subscriptionsRepository.manager.query(
       `UPDATE subscriptions SET createdAt = startDate
-       WHERE substr(createdAt, 1, 10) = ? AND substr(startDate, 1, 10) != ?`,
-      [todayStr, todayStr],
+       WHERE createdAt >= ? AND createdAt <= ?
+         AND NOT (startDate >= ? AND startDate <= ?)`,
+      [fromSql, toSql, fromSql, toSql],
     );
 
     // 1. إحصائيات الاشتراكات المفعّلة اليوم (التفعيلات + المحصّل لحظة التفعيل + الديون الجديدة)
     const rows: any[] = await this.subscriptionsRepository.manager.query(
       `SELECT paymentMethod, price, paidAmount, debtAmount
-       FROM subscriptions WHERE substr(createdAt, 1, 10) = ?`,
-      [todayStr],
+       FROM subscriptions WHERE createdAt >= ? AND createdAt <= ?`,
+      [fromSql, toSql],
     );
 
     let collected = 0, totalDebt = 0;
@@ -166,8 +174,8 @@ export class SubscriptionsService {
 
     // 2. تسديدات الديون المدفوعة اليوم (بتاريخ الدفع الفعلي بغض النظر عن تاريخ الاشتراك)
     const payRows: any[] = await this.subscriptionsRepository.manager.query(
-      `SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE substr(date, 1, 10) = ?`,
-      [todayStr],
+      `SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE date >= ? AND date <= ?`,
+      [fromSql, toSql],
     );
     const debtPayments = Number(payRows[0]?.total || 0);
 

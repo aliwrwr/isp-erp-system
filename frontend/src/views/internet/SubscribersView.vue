@@ -1846,12 +1846,18 @@ function getStatusTitle(sub: any): string {
   return 'موقوف';
 }
 
+// تاريخ اليوم بالتوقيت المحلي (العراق) — دالة مشتركة لجميع المقارنات
+function localDateStr(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function remainingDays(endDate: string | Date): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // تحويل التواريخ إلى منتصف الليل المحلي لتجنب مشكلة UTC+3
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
   end.setHours(0, 0, 0, 0);
-  return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.ceil((end.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function getDaysClass(days: number): string {
@@ -1975,7 +1981,7 @@ function openActivateModal() {
     paymentMethod: 'cash',
     partialAmount: '',
     notes: '',
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: localDateStr(), // التوقيت المحلي (العراق) لا UTC
     packageId: defaultPackageId,
   };
   activateResult.value = null;
