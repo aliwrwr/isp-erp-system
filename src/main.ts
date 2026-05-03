@@ -49,5 +49,27 @@ async function bootstrap() {
 
   await app.listen(port, '0.0.0.0');
   console.log(`Application is running on: http://0.0.0.0:${port}`);
+
+  // ── Fix corrupted createdAt values (one-time migration fix) ──────
+  // TypeORM synchronize:true set ALL existing rows to CURRENT_TIMESTAMP
+  // when it added the createdAt column. We fix: if createdAt date = today
+  // but startDate date != today → it's a migrated artifact → set createdAt = startDate
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Database = require('better-sqlite3');
+    const db = new Database('isp-erp.sqlite');
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const info = db.prepare(
+      `UPDATE subscriptions SET createdAt = startDate
+       WHERE substr(createdAt,1,10) = ? AND substr(startDate,1,10) != ?`
+    ).run(todayStr, todayStr);
+    if (info.changes > 0) {
+      console.log(`[startup] Fixed ${info.changes} corrupted createdAt records`);
+    }
+    db.close();
+  } catch (e) {
+    console.warn('[startup] createdAt fix skipped:', (e as Error).message);
+  }
 }
 bootstrap();
