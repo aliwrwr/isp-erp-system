@@ -17,12 +17,15 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const subscription_entity_1 = require("./entities/subscription.entity");
+const payment_entity_1 = require("../payments/entities/payment.entity");
 const whatsapp_service_1 = require("../whatsapp/whatsapp.service");
 let SubscriptionsService = class SubscriptionsService {
     subscriptionsRepository;
+    paymentsRepository;
     whatsappService;
-    constructor(subscriptionsRepository, whatsappService) {
+    constructor(subscriptionsRepository, paymentsRepository, whatsappService) {
         this.subscriptionsRepository = subscriptionsRepository;
+        this.paymentsRepository = paymentsRepository;
         this.whatsappService = whatsappService;
     }
     async create(createSubscriptionDto) {
@@ -86,6 +89,20 @@ let SubscriptionsService = class SubscriptionsService {
             paymentMethod: newPaymentMethod,
             notes: updatedNotes,
         });
+        try {
+            const subForPayment = await this.findOne(id);
+            await this.paymentsRepository.save({
+                subscription: { id },
+                subscriber: subForPayment?.subscriber?.id
+                    ? { id: subForPayment.subscriber.id }
+                    : undefined,
+                amount,
+                method: 'cash',
+                status: 'paid',
+                notes: notes || '',
+            });
+        }
+        catch { }
         return this.findOne(id);
     }
     async addDebt(id, amount, notes) {
@@ -106,7 +123,7 @@ let SubscriptionsService = class SubscriptionsService {
        WHERE substr(createdAt, 1, 10) = ? AND substr(startDate, 1, 10) != ?`, [todayStr, todayStr]);
         const rows = await this.subscriptionsRepository.manager.query(`SELECT paymentMethod, price, paidAmount, debtAmount
        FROM subscriptions WHERE substr(createdAt, 1, 10) = ?`, [todayStr]);
-        let collected = 0, totalDebt = 0, debtPayments = 0;
+        let collected = 0, totalDebt = 0;
         const activations = rows.length;
         for (const s of rows) {
             const price = Number(s.price || 0);
@@ -116,10 +133,9 @@ let SubscriptionsService = class SubscriptionsService {
                 collected += paid;
             }
             totalDebt += Math.max(0, price + debt - paid);
-            if (s.paymentMethod === 'credit' || s.paymentMethod === 'partial') {
-                debtPayments += paid;
-            }
         }
+        const payRows = await this.subscriptionsRepository.manager.query(`SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE substr(date, 1, 10) = ?`, [todayStr]);
+        const debtPayments = Number(payRows[0]?.total || 0);
         return { collected, totalDebt, debtPayments, activations };
     }
 };
@@ -127,8 +143,10 @@ exports.SubscriptionsService = SubscriptionsService;
 exports.SubscriptionsService = SubscriptionsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(subscription_entity_1.Subscription)),
-    __param(1, (0, common_1.Optional)()),
+    __param(1, (0, typeorm_1.InjectRepository)(payment_entity_1.Payment)),
+    __param(2, (0, common_1.Optional)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         whatsapp_service_1.WhatsappService])
 ], SubscriptionsService);
 //# sourceMappingURL=subscriptions.service.js.map

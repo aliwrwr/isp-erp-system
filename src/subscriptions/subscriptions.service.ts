@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { Subscription } from './entities/subscription.entity';
+import { Payment } from '../payments/entities/payment.entity';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
@@ -11,6 +12,8 @@ export class SubscriptionsService {
   constructor(
     @InjectRepository(Subscription)
     private subscriptionsRepository: Repository<Subscription>,
+    @InjectRepository(Payment)
+    private paymentsRepository: Repository<Payment>,
     @Optional() private readonly whatsappService: WhatsappService,
   ) {}
 
@@ -99,6 +102,22 @@ export class SubscriptionsService {
       paymentMethod: newPaymentMethod,
       notes: updatedNotes,
     } as any);
+
+    // سجّل عملية الدفع بتاريخها الفعلي (لحسابات اليوم الصحيحة)
+    try {
+      const subForPayment = await this.findOne(id);
+      await this.paymentsRepository.save({
+        subscription: { id },
+        subscriber: (subForPayment as any)?.subscriber?.id
+          ? { id: (subForPayment as any).subscriber.id }
+          : undefined,
+        amount,
+        method: 'cash',
+        status: 'paid',
+        notes: notes || '',
+      } as any);
+    } catch {}
+
     return this.findOne(id);
   }
 
@@ -125,14 +144,14 @@ export class SubscriptionsService {
       [todayStr, todayStr],
     );
 
-    // Fetch only today's subscriptions
+    // 1. إحصائيات الاشتراكات المفعّلة اليوم (التفعيلات + المحصّل لحظة التفعيل + الديون الجديدة)
     const rows: any[] = await this.subscriptionsRepository.manager.query(
       `SELECT paymentMethod, price, paidAmount, debtAmount
        FROM subscriptions WHERE substr(createdAt, 1, 10) = ?`,
       [todayStr],
     );
 
-    let collected = 0, totalDebt = 0, debtPayments = 0;
+    let collected = 0, totalDebt = 0;
     const activations = rows.length;
 
     for (const s of rows) {
@@ -143,10 +162,14 @@ export class SubscriptionsService {
         collected += paid;
       }
       totalDebt += Math.max(0, price + debt - paid);
-      if (s.paymentMethod === 'credit' || s.paymentMethod === 'partial') {
-        debtPayments += paid;
-      }
     }
+
+    // 2. تسديدات الديون المدفوعة اليوم (بتاريخ الدفع الفعلي بغض النظر عن تاريخ الاشتراك)
+    const payRows: any[] = await this.subscriptionsRepository.manager.query(
+      `SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE substr(date, 1, 10) = ?`,
+      [todayStr],
+    );
+    const debtPayments = Number(payRows[0]?.total || 0);
 
     return { collected, totalDebt, debtPayments, activations };
   }

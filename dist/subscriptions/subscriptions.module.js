@@ -13,12 +13,13 @@ const subscription_entity_1 = require("./entities/subscription.entity");
 const subscriptions_controller_1 = require("./subscriptions.controller");
 const subscriptions_service_1 = require("./subscriptions.service");
 const whatsapp_module_1 = require("../whatsapp/whatsapp.module");
+const payment_entity_1 = require("../payments/entities/payment.entity");
 let SubscriptionsModule = class SubscriptionsModule {
 };
 exports.SubscriptionsModule = SubscriptionsModule;
 exports.SubscriptionsModule = SubscriptionsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([subscription_entity_1.Subscription]), whatsapp_module_1.WhatsappModule],
+        imports: [typeorm_1.TypeOrmModule.forFeature([subscription_entity_1.Subscription, payment_entity_1.Payment]), whatsapp_module_1.WhatsappModule],
         controllers: [subscriptions_controller_1.SubscriptionsController],
         providers: [subscriptions_service_1.SubscriptionsService],
     })

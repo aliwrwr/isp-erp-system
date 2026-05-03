@@ -2,11 +2,13 @@ import { Repository } from 'typeorm';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { Subscription } from './entities/subscription.entity';
+import { Payment } from '../payments/entities/payment.entity';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 export declare class SubscriptionsService {
     private subscriptionsRepository;
+    private paymentsRepository;
     private readonly whatsappService;
-    constructor(subscriptionsRepository: Repository<Subscription>, whatsappService: WhatsappService);
+    constructor(subscriptionsRepository: Repository<Subscription>, paymentsRepository: Repository<Payment>, whatsappService: WhatsappService);
     create(createSubscriptionDto: CreateSubscriptionDto): Promise<Subscription>;
     findAll(): Promise<Subscription[]>;
     findOne(id: number): Promise<Subscription | null>;
