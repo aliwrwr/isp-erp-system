@@ -33,6 +33,9 @@ let SubscriptionsController = class SubscriptionsController {
     findAll() {
         return this.subscriptionsService.findAll();
     }
+    getTodayStats() {
+        return this.subscriptionsService.getTodayStats();
+    }
     findOne(id) {
         return this.subscriptionsService.findOne(+id);
     }
@@ -67,6 +70,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], SubscriptionsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)('today-stats'),
+    (0, roles_decorator_1.Roles)('Super Admin', 'Accountant', 'Network Admin'),
+    (0, permissions_decorator_1.Permissions)('internet.subscriptions'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], SubscriptionsController.prototype, "getTodayStats", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, roles_decorator_1.Roles)('Super Admin', 'Accountant', 'Network Admin'),

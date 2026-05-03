@@ -6,6 +6,12 @@ export declare class SubscriptionsController {
     constructor(subscriptionsService: SubscriptionsService);
     create(createSubscriptionDto: CreateSubscriptionDto): Promise<import("./entities/subscription.entity").Subscription>;
     findAll(): Promise<import("./entities/subscription.entity").Subscription[]>;
+    getTodayStats(): Promise<{
+        collected: number;
+        totalDebt: number;
+        debtPayments: number;
+        activations: number;
+    }>;
     findOne(id: string): Promise<import("./entities/subscription.entity").Subscription | null>;
     update(id: string, updateSubscriptionDto: UpdateSubscriptionDto): Promise<import("./entities/subscription.entity").Subscription | null>;
     pay(id: string, body: {

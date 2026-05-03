@@ -14,4 +14,10 @@ export declare class SubscriptionsService {
     remove(id: number): Promise<void>;
     pay(id: number, amount: number, notes?: string): Promise<Subscription | null>;
     addDebt(id: number, amount: number, notes?: string): Promise<Subscription | null>;
+    getTodayStats(): Promise<{
+        collected: number;
+        totalDebt: number;
+        debtPayments: number;
+        activations: number;
+    }>;
 }

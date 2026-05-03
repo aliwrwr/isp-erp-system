@@ -468,41 +468,8 @@ const almostExpiring = computed(() => {
 });
 const adminCount = computed(() => managersData.value.length);
 
-// ── Today Stats (from 00:00 to 23:59 local time) ──────────────────
-const todayStats = computed(() => {
-  const now = new Date();
-  // حدود اليوم بالتوقيت المحلي
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
-  const todaySubs = subscriptionsData.value.filter((s: any) => {
-    // نستخدم createdAt = وقت إدخال السجل الفعلي في النظام
-    // لا startDate لأن المستخدم قد يختار تاريخ بداية من الماضي أو المستقبل
-    if (!s.createdAt) return false;
-    const d = new Date(s.createdAt);
-    if (isNaN(d.getTime())) return false;
-    return d >= startOfDay && d <= endOfDay;
-  });
-
-  // إجمالي المحصل = paidAmount من النقدي والجزئي (محصّل فعلياً لحظة التفعيل)
-  const collected = todaySubs
-    .filter((s: any) => s.paymentMethod === 'cash' || s.paymentMethod === 'partial')
-    .reduce((sum: number, s: any) => sum + Number(s.paidAmount || 0), 0);
-
-  // إجمالي الديون = مجموع المبالغ المتبقية غير المسددة لاشتراكات اليوم
-  const totalDebt = todaySubs.reduce((sum: number, s: any) =>
-    sum + Math.max(0, Number(s.price || 0) + Number(s.debtAmount || 0) - Number(s.paidAmount || 0)), 0);
-
-  // إجمالي التسديدات = paidAmount من الآجل والجزئي معاً
-  const debtPayments = todaySubs
-    .filter((s: any) => s.paymentMethod === 'credit' || s.paymentMethod === 'partial')
-    .reduce((sum: number, s: any) => sum + Number(s.paidAmount || 0), 0);
-
-  // إجمالي التفعيلات = عدد الاشتراكات المفعلة اليوم بكل الطرق
-  const activations = todaySubs.length;
-
-  return { collected, totalDebt, debtPayments, activations };
-});
+// ── Today Stats — loaded from backend (server-side SQL filter) ───
+const todayStats = ref({ collected: 0, totalDebt: 0, debtPayments: 0, activations: 0 });
 
 // ── Server Resources ──────────────────────────────────────────────
 const serverStats = ref({ cpu: 0, ram: 0, disk: 0, uptime: 0 });
@@ -606,6 +573,12 @@ onMounted(async () => {
     subscriptionsData.value = subscRes.data;
     managersData.value = managersRes?.data || [];
     if (routersRes) routers.value = routersRes.data;
+
+    // Load today stats from dedicated backend endpoint (filters by SQL server-side)
+    try {
+      const tsRes = await api.get('/subscriptions/today-stats');
+      todayStats.value = tsRes.data;
+    } catch {}
   } catch {}
 
   // Load personalized dashboard for current manager

@@ -29,6 +29,13 @@ export class SubscriptionsController {
     return this.subscriptionsService.findAll();
   }
 
+  @Get('today-stats')
+  @Roles('Super Admin', 'Accountant', 'Network Admin')
+  @Permissions('internet.subscriptions')
+  getTodayStats() {
+    return this.subscriptionsService.getTodayStats();
+  }
+
   @Get(':id')
   @Roles('Super Admin', 'Accountant', 'Network Admin')
   @Permissions('internet.subscriptions')

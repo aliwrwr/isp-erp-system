@@ -99,6 +99,29 @@ let SubscriptionsService = class SubscriptionsService {
         await this.subscriptionsRepository.update(id, { debtAmount: newDebt, notes: updatedNotes });
         return this.findOne(id);
     }
+    async getTodayStats() {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        await this.subscriptionsRepository.manager.query(`UPDATE subscriptions SET createdAt = startDate
+       WHERE substr(createdAt, 1, 10) = ? AND substr(startDate, 1, 10) != ?`, [todayStr, todayStr]);
+        const rows = await this.subscriptionsRepository.manager.query(`SELECT paymentMethod, price, paidAmount, debtAmount
+       FROM subscriptions WHERE substr(createdAt, 1, 10) = ?`, [todayStr]);
+        let collected = 0, totalDebt = 0, debtPayments = 0;
+        const activations = rows.length;
+        for (const s of rows) {
+            const price = Number(s.price || 0);
+            const paid = Number(s.paidAmount || 0);
+            const debt = Number(s.debtAmount || 0);
+            if (s.paymentMethod === 'cash' || s.paymentMethod === 'partial') {
+                collected += paid;
+            }
+            totalDebt += Math.max(0, price + debt - paid);
+            if (s.paymentMethod === 'credit' || s.paymentMethod === 'partial') {
+                debtPayments += paid;
+            }
+        }
+        return { collected, totalDebt, debtPayments, activations };
+    }
 };
 exports.SubscriptionsService = SubscriptionsService;
 exports.SubscriptionsService = SubscriptionsService = __decorate([
