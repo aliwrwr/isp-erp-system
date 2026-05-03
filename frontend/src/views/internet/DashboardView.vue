@@ -471,15 +471,16 @@ const adminCount = computed(() => managersData.value.length);
 // ── Today Stats (from 00:00 to 23:59 local time) ──────────────────
 const todayStats = computed(() => {
   const now = new Date();
-  // حدود اليوم بالتوقيت المحلي: من 00:00:00.000 إلى 23:59:59.999
+  // حدود اليوم بالتوقيت المحلي
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
   const todaySubs = subscriptionsData.value.filter((s: any) => {
-    if (!s.startDate) return false;
-    const d = new Date(s.startDate);
+    // نستخدم createdAt = وقت إدخال السجل الفعلي في النظام
+    // لا startDate لأن المستخدم قد يختار تاريخ بداية من الماضي أو المستقبل
+    if (!s.createdAt) return false;
+    const d = new Date(s.createdAt);
     if (isNaN(d.getTime())) return false;
-    // مقارنة بالطوابع الزمنية المحلية — يضمن يوم كامل 24 ساعة بغض النظر عن UTC offset
     return d >= startOfDay && d <= endOfDay;
   });
 
