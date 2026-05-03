@@ -62,6 +62,7 @@ let SubscriptionsService = class SubscriptionsService {
         return updated;
     }
     async remove(id) {
+        await this.paymentsRepository.delete({ subscription: { id } });
         await this.subscriptionsRepository.delete(id);
     }
     async pay(id, amount, notes) {

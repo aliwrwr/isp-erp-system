@@ -71,6 +71,8 @@ export class SubscriptionsService {
   }
 
   async remove(id: number): Promise<void> {
+    // حذف سجلات الدفع المرتبطة أولاً لتجنب قيد المفتاح الخارجي
+    await this.paymentsRepository.delete({ subscription: { id } } as any);
     await this.subscriptionsRepository.delete(id);
   }
 
