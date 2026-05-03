@@ -439,6 +439,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale,
 // ─── State ───────────────────────────────────────────────
 const loading = ref(false);
 const allSubs = ref<any[]>([]);
+const allPayments = ref<any[]>([]);
 const filterYear = ref<number | ''>(new Date().getFullYear());
 const filterMonth = ref<number | ''>('');
 const quickFilter = ref<'today' | 'yesterday' | 'week' | ''>('');
@@ -513,6 +514,30 @@ const filteredSubs = computed(() => {
 });
 
 const managerLogs = ref<any[]>([]);
+// ─── Filtered Payments (by actual payment date) ──────────
+// كل مبلغ يُقبض يُحتسب في الشهر/اليوم الذي قُبض فيه، بغض النظر عن تاريخ الاشتراك
+const filteredPayments = computed(() => {
+  return allPayments.value.filter(p => {
+    if (!p.date) return false;
+    const d = new Date(p.date);
+    if (quickDateFrom.value && quickDateTo.value) {
+      return d >= quickDateFrom.value && d <= quickDateTo.value;
+    }
+    if (filterYear.value && d.getFullYear() !== filterYear.value) return false;
+    if (filterMonth.value && d.getMonth() + 1 !== filterMonth.value) return false;
+    return true;
+  });
+});
+
+// معرّفات الاشتراكات التي تمّ دفعها عبر جدول payments (أي ديون سُدّدت بعد الإنشاء)
+const subsWithPaymentRecords = computed(() => {
+  const ids = new Set<number>();
+  allPayments.value.forEach(p => {
+    if (p.subscription?.id) ids.add(p.subscription.id);
+  });
+  return ids;
+});
+
 const filteredManagerLogs = computed(() => {
   return managerLogs.value.filter(l => {
     if (l.module !== 'manager') return false;
@@ -556,7 +581,18 @@ const totalManagerPointsWithdrawn = computed(() =>
 
 // ─── Summary Metrics ──────────────────────────────────────
 const totalRevenue = computed(() => filteredSubs.value.reduce((s, x) => s + Number(x.price || 0), 0));
-const totalCollected = computed(() => filteredSubs.value.reduce((s, x) => s + Number(x.paidAmount || 0), 0));
+const totalCollected = computed(() => {
+  // اشتراكات الفترة التي لا يوجد لها سجلات في جدول payments
+  // (تعني أن الدفع تمّ عند الإنشاء ولم يُسجَّل كدين لاحقاً)
+  const fromSubs = filteredSubs.value
+    .filter(s => !subsWithPaymentRecords.value.has(s.id))
+    .reduce((sum, s) => sum + Number(s.paidAmount || 0), 0);
+
+  // تسديدات ديون تمّت في هذه الفترة (مُصفّاة بتاريخ الدفع الفعلي)
+  const fromPayments = filteredPayments.value.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+  return fromSubs + fromPayments;
+});
 const totalDebt = computed(() =>
   filteredSubs.value.reduce((s, x) => {
     return s + Math.max(0, Number(x.price || 0) + Number(x.debtAmount || 0) - Number(x.paidAmount || 0));
@@ -794,12 +830,14 @@ function printReport() { window.print(); }
 async function loadData() {
   loading.value = true;
   try {
-    const [subsRes, logsRes] = await Promise.allSettled([
+    const [subsRes, logsRes, paymentsRes] = await Promise.allSettled([
       api.get('/subscriptions'),
       api.get('/activity-log'),
+      api.get('/payments'),
     ]);
     allSubs.value = subsRes.status === 'fulfilled' ? subsRes.value.data : [];
     managerLogs.value = logsRes.status === 'fulfilled' ? logsRes.value.data : [];
+    allPayments.value = paymentsRes.status === 'fulfilled' ? paymentsRes.value.data : [];
   } catch (err) {
     console.error('Failed to load report data:', err);
     allSubs.value = [];
