@@ -171,6 +171,9 @@ export class SubscriptionsService {
     );
     const debtPayments = Number(payRows[0]?.total || 0);
 
+    // إجمالي المحصّل = (نقدي/جزئي من اشتراكات اليوم) + (تسديدات ديون اليوم)
+    collected += debtPayments;
+
     return { collected, totalDebt, debtPayments, activations };
   }
 }

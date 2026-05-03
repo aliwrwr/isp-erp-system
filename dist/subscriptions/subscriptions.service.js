@@ -136,6 +136,7 @@ let SubscriptionsService = class SubscriptionsService {
         }
         const payRows = await this.subscriptionsRepository.manager.query(`SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE substr(date, 1, 10) = ?`, [todayStr]);
         const debtPayments = Number(payRows[0]?.total || 0);
+        collected += debtPayments;
         return { collected, totalDebt, debtPayments, activations };
     }
 };
