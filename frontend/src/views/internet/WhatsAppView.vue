@@ -323,7 +323,7 @@
         </h2>
         <div class="flex items-center gap-2">
           <label class="text-sm text-gray-600">عرض خلال:</label>
-          <select v-model.number="expiryDays" @change="loadExpiring"
+          <select v-model.number="expiryDays" @change="() => { expiringPage = 1; loadExpiring(); }"
             class="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300">
             <option :value="3">3 أيام</option>
             <option :value="7">7 أيام</option>
@@ -356,9 +356,9 @@
                 لا يوجد مشتركون مقبلون على الانتهاء خلال هذه الفترة
               </td>
             </tr>
-            <tr v-for="(item, i) in expiring" :key="item.id"
+            <tr v-for="(item, i) in expiringPagedList" :key="item.id"
               class="hover:bg-gray-50 transition-colors">
-              <td class="px-4 py-3 text-gray-500">{{ i + 1 }}</td>
+              <td class="px-4 py-3 text-gray-500">{{ (expiringPage - 1) * expiringPageSize + i + 1 }}</td>
               <td class="px-4 py-3 font-medium text-gray-800">{{ item.subscriberName }}</td>
               <td class="px-4 py-3 text-gray-600 font-mono" dir="ltr">{{ item.subscriberPhone }}</td>
               <td class="px-4 py-3">
@@ -386,6 +386,34 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination expiring -->
+      <div v-if="expiring.length > 0" class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+        <!-- Page sizes -->
+        <div class="flex items-center gap-1">
+          <button v-for="size in expiringPageSizes" :key="size" @click="changeExpiringPageSize(size)"
+            class="px-2.5 py-1 rounded-lg text-xs font-medium border transition"
+            :class="size === expiringPageSize ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            {{ size }}
+          </button>
+        </div>
+        <!-- Pages -->
+        <div class="flex items-center gap-1">
+          <button @click="expiringPage = 1" :disabled="expiringPage === 1"
+            class="px-2 py-1 rounded-lg text-xs border border-gray-200 hover:bg-gray-100 disabled:opacity-40 transition">«</button>
+          <button @click="expiringPage--" :disabled="expiringPage === 1"
+            class="px-2 py-1 rounded-lg text-xs border border-gray-200 hover:bg-gray-100 disabled:opacity-40 transition">‹</button>
+          <button v-for="p in expiringVisiblePages" :key="p" @click="expiringPage = p"
+            class="px-2.5 py-1 rounded-lg text-xs border font-medium transition"
+            :class="p === expiringPage ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-200 hover:bg-gray-100 text-gray-600'">
+            {{ p }}
+          </button>
+          <button @click="expiringPage++" :disabled="expiringPage === expiringTotalPages"
+            class="px-2 py-1 rounded-lg text-xs border border-gray-200 hover:bg-gray-100 disabled:opacity-40 transition">›</button>
+          <button @click="expiringPage = expiringTotalPages" :disabled="expiringPage === expiringTotalPages"
+            class="px-2 py-1 rounded-lg text-xs border border-gray-200 hover:bg-gray-100 disabled:opacity-40 transition">»</button>
+        </div>
       </div>
     </div>
 
@@ -599,6 +627,27 @@ const settings = reactive({
 });
 
 const expiring = ref<any[]>([]);
+const expiringPage = ref(1);
+const expiringPageSize = ref(10);
+const expiringPageSizes = [5, 10, 50, 100, 500];
+const expiringTotalPages = computed(() => Math.max(1, Math.ceil(expiring.value.length / expiringPageSize.value)));
+const expiringPagedList = computed(() => {
+  const start = (expiringPage.value - 1) * expiringPageSize.value;
+  return expiring.value.slice(start, start + expiringPageSize.value);
+});
+const expiringVisiblePages = computed(() => {
+  const total = expiringTotalPages.value;
+  const cur = expiringPage.value;
+  const pages: number[] = [];
+  const start = Math.max(1, cur - 2);
+  const end = Math.min(total, cur + 2);
+  for (let i = start; i <= end; i++) pages.push(i);
+  return pages;
+});
+function changeExpiringPageSize(size: number) {
+  expiringPageSize.value = size;
+  expiringPage.value = 1;
+}
 
 const toast = reactive({ show: false, message: '', type: 'success' as 'success' | 'error' });
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
