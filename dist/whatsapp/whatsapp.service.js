@@ -67,6 +67,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     isConnected = false;
     phoneNumber = null;
     isInitializing = false;
+    manualDisconnect = false;
     constructor(settingsRepository, logRepository, installmentsSettingsRepository, supportSettingsRepository) {
         this.settingsRepository = settingsRepository;
         this.logRepository = logRepository;
@@ -78,10 +79,27 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         if (count === 0) {
             await this.settingsRepository.save(this.settingsRepository.create({}));
         }
+        const sessionExists = await this.hasExistingSession();
         const settings = await this.settingsRepository.findOne({ where: { id: 1 } });
-        if (settings?.autoConnect) {
-            this.logger.log('Auto-connect enabled — initializing WhatsApp client...');
+        if (sessionExists || settings?.autoConnect) {
+            this.logger.log(sessionExists
+                ? 'Existing WhatsApp session found — reconnecting automatically...'
+                : 'Auto-connect enabled — initializing WhatsApp client...');
             setTimeout(() => this.initializeClient(), 3000);
+        }
+    }
+    async hasExistingSession() {
+        try {
+            const fs = await import('fs');
+            const path = await import('path');
+            const authDir = path.join(process.cwd(), '.wwebjs_auth');
+            if (!fs.existsSync(authDir))
+                return false;
+            const entries = fs.readdirSync(authDir);
+            return entries.some(e => e.startsWith('session'));
+        }
+        catch {
+            return false;
         }
     }
     async onModuleDestroy() {
@@ -155,6 +173,13 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
                 this.isInitializing = false;
                 this.phoneNumber = null;
                 this.qrDataUrl = null;
+                if (!this.manualDisconnect && reason !== 'LOGOUT') {
+                    this.logger.log(`Auto-reconnecting after disconnection (reason: ${reason})...`);
+                    setTimeout(() => this.initializeClient(), 5000);
+                }
+                else {
+                    this.manualDisconnect = false;
+                }
             });
             this.client.initialize().catch((err) => {
                 this.logger.error('WhatsApp client initialization failed', err);
@@ -169,6 +194,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         }
     }
     async disconnect() {
+        this.manualDisconnect = true;
         if (this.client) {
             try {
                 await this.client.destroy();

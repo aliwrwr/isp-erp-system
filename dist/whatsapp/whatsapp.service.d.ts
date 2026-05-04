@@ -18,8 +18,10 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private isConnected;
     private phoneNumber;
     private isInitializing;
+    private manualDisconnect;
     constructor(settingsRepository: Repository<WhatsappSettings>, logRepository: Repository<WhatsappLog>, installmentsSettingsRepository: Repository<WhatsappInstallmentsSettings>, supportSettingsRepository: Repository<WhatsappSupportSettings>);
     onModuleInit(): Promise<void>;
+    private hasExistingSession;
     onModuleDestroy(): Promise<void>;
     initializeClient(): Promise<void>;
     disconnect(): Promise<void>;

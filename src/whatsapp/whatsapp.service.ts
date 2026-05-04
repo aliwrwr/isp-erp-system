@@ -24,6 +24,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private isConnected = false;
   private phoneNumber: string | null = null;
   private isInitializing = false;
+  private manualDisconnect = false; // للتمييز بين قطع المستخدم وانقطاع الشبكة
 
   constructor(
     @InjectRepository(WhatsappSettings)
@@ -42,12 +43,36 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     if (count === 0) {
       await this.settingsRepository.save(this.settingsRepository.create({}));
     }
-    // Auto-connect if the user enabled this option
+
+    // Auto-connect logic:
+    // 1. إذا كانت هناك جلسة محفوظة في .wwebjs_auth → اتصل تلقائياً (بدون QR)
+    // 2. إذا كان autoConnect = true → اتصل حتى لو لم توجد جلسة
+    const sessionExists = await this.hasExistingSession();
     const settings = await this.settingsRepository.findOne({ where: { id: 1 } });
-    if (settings?.autoConnect) {
-      this.logger.log('Auto-connect enabled — initializing WhatsApp client...');
+    if (sessionExists || settings?.autoConnect) {
+      this.logger.log(
+        sessionExists
+          ? 'Existing WhatsApp session found — reconnecting automatically...'
+          : 'Auto-connect enabled — initializing WhatsApp client...',
+      );
       // Delay slightly so the DB/ORM is fully ready
       setTimeout(() => this.initializeClient(), 3000);
+    }
+  }
+
+  /** التحقق من وجود ملفات جلسة واتساب محفوظة (تعني سبق الاتصال) */
+  private async hasExistingSession(): Promise<boolean> {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      // LocalAuth يحفظ الجلسة في .wwebjs_auth/session-<clientId>/Default
+      const authDir = path.join(process.cwd(), '.wwebjs_auth');
+      if (!fs.existsSync(authDir)) return false;
+      const entries = fs.readdirSync(authDir);
+      // يوجد مجلد session إذا كانت هناك جلسة محفوظة
+      return entries.some(e => e.startsWith('session'));
+    } catch {
+      return false;
     }
   }
 
@@ -133,6 +158,15 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         this.isInitializing = false;
         this.phoneNumber = null;
         this.qrDataUrl = null;
+
+        // إعادة الاتصال تلقائياً إذا لم يكن القطع من قِبل المستخدم
+        // وإذا كانت هناك جلسة محفوظة (بدون QR)
+        if (!this.manualDisconnect && reason !== 'LOGOUT') {
+          this.logger.log(`Auto-reconnecting after disconnection (reason: ${reason})...`);
+          setTimeout(() => this.initializeClient(), 5000);
+        } else {
+          this.manualDisconnect = false;
+        }
       });
 
       // initialize() runs in background — do NOT await it
@@ -150,6 +184,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   }
 
   async disconnect(): Promise<void> {
+    this.manualDisconnect = true; // منع إعادة الاتصال التلقائية
     if (this.client) {
       try {
         // destroy() stops the browser without revoking the session,
