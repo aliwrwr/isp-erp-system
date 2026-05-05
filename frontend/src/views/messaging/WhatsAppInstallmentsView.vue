@@ -41,7 +41,13 @@
           <div class="w-11 h-11 rounded-xl bg-yellow-100 flex items-center justify-center">
             <i class="fas fa-circle-notch text-yellow-500 text-2xl animate-spin"></i>
           </div>
-          <span class="font-semibold text-yellow-600">جاري التهيئة...</span>
+          <div>
+            <span class="font-semibold text-yellow-600">جاري التهيئة...</span>
+            <p class="text-xs text-yellow-700 mt-1">
+              تعلّق الاتصال؟
+              <router-link to="/messaging/whatsapp-internet" class="underline hover:text-yellow-900">اذهب لصفحة واتساب الاشتراكات لإعادة المحاولة</router-link>
+            </p>
+          </div>
         </div>
         <div v-else class="flex items-center gap-3">
           <div class="w-11 h-11 rounded-xl bg-red-100 flex items-center justify-center">

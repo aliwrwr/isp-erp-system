@@ -54,6 +54,10 @@
               <span class="font-semibold text-yellow-600">جاري التهيئة...</span>
             </div>
             <p class="text-sm text-gray-500 mt-0.5">يرجى الانتظار</p>
+            <button @click="forceConnect" :disabled="actionLoading"
+              class="mt-2 text-xs text-yellow-700 underline hover:text-yellow-900 disabled:opacity-50">
+              تعلّق الاتصال؟ اضغط هنا لإعادة المحاولة
+            </button>
           </div>
         </div>
 
@@ -732,6 +736,19 @@ async function connect() {
     setTimeout(loadStatus, 2000);
   } catch (_) {
     showToast('حدث خطأ أثناء الاتصال', 'error');
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
+async function forceConnect() {
+  actionLoading.value = true;
+  try {
+    await api.post('/whatsapp/force-connect');
+    showToast('جاري إعادة تشغيل الاتصال...', 'success');
+    setTimeout(loadStatus, 3000);
+  } catch (_) {
+    showToast('حدث خطأ', 'error');
   } finally {
     actionLoading.value = false;
   }

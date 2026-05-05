@@ -36,6 +36,10 @@ let WhatsappController = class WhatsappController {
         await this.whatsappService.initializeClient();
         return { message: 'تم بدء تهيئة الاتصال' };
     }
+    async forceConnect() {
+        await this.whatsappService.initializeClient(true);
+        return { message: 'تم إعادة تشغيل الاتصال' };
+    }
     async disconnect() {
         await this.whatsappService.disconnect();
         return { message: 'تم قطع الاتصال' };
@@ -109,6 +113,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], WhatsappController.prototype, "connect", null);
+__decorate([
+    (0, common_1.Post)('force-connect'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], WhatsappController.prototype, "forceConnect", null);
 __decorate([
     (0, common_1.Post)('disconnect'),
     __metadata("design:type", Function),

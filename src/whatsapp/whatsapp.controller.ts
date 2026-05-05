@@ -39,6 +39,13 @@ export class WhatsappController {
     return { message: 'تم بدء تهيئة الاتصال' };
   }
 
+  /** Force reconnect — kills any stuck initialization and starts fresh */
+  @Post('force-connect')
+  async forceConnect() {
+    await this.whatsappService.initializeClient(true);
+    return { message: 'تم إعادة تشغيل الاتصال' };
+  }
+
   /** Logout and disconnect */
   @Post('disconnect')
   async disconnect() {

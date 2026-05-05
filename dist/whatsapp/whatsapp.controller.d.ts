@@ -18,6 +18,9 @@ export declare class WhatsappController {
     connect(): Promise<{
         message: string;
     }>;
+    forceConnect(): Promise<{
+        message: string;
+    }>;
     disconnect(): Promise<{
         message: string;
     }>;

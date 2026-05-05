@@ -68,6 +68,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     phoneNumber = null;
     isInitializing = false;
     manualDisconnect = false;
+    initTimeout = null;
     constructor(settingsRepository, logRepository, installmentsSettingsRepository, supportSettingsRepository) {
         this.settingsRepository = settingsRepository;
         this.logRepository = logRepository;
@@ -111,13 +112,42 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             }
         }
     }
-    async initializeClient() {
-        if (this.isInitializing)
+    clearInitTimeout() {
+        if (this.initTimeout) {
+            clearTimeout(this.initTimeout);
+            this.initTimeout = null;
+        }
+    }
+    async initializeClient(force = false) {
+        if (this.isInitializing && !force)
             return;
+        if (force && this.isInitializing) {
+            this.clearInitTimeout();
+            if (this.client) {
+                await this.client.destroy().catch(() => { });
+                this.client = null;
+            }
+            await this.forceKillChromeProcesses();
+        }
         this.isInitializing = true;
         this.qrDataUrl = null;
         this.isConnected = false;
         this.phoneNumber = null;
+        this.clearInitTimeout();
+        this.initTimeout = setTimeout(async () => {
+            if (!this.isInitializing)
+                return;
+            this.logger.warn('WhatsApp init timed out after 90s — restarting...');
+            this.isInitializing = false;
+            if (this.client) {
+                await this.client.destroy().catch(() => { });
+                this.client = null;
+            }
+            await this.forceKillChromeProcesses();
+            if (!this.manualDisconnect) {
+                setTimeout(() => this.initializeClient(), 3000);
+            }
+        }, 90_000);
         try {
             if (this.client) {
                 await this.client.destroy().catch(() => { });
@@ -141,6 +171,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             });
             this.client.on('qr', async (qr) => {
                 this.logger.log('WhatsApp QR code received — scan to connect');
+                this.clearInitTimeout();
                 this.isConnected = false;
                 this.isInitializing = false;
                 try {
@@ -151,6 +182,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
                 }
             });
             this.client.on('ready', () => {
+                this.clearInitTimeout();
                 this.isConnected = true;
                 this.isInitializing = false;
                 this.qrDataUrl = null;
@@ -160,10 +192,12 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             });
             this.client.on('authenticated', () => {
                 this.logger.log('WhatsApp authenticated');
+                this.clearInitTimeout();
                 this.isInitializing = false;
             });
             this.client.on('auth_failure', (msg) => {
                 this.logger.error(`WhatsApp auth failure: ${msg}`);
+                this.clearInitTimeout();
                 this.isConnected = false;
                 this.isInitializing = false;
             });
@@ -195,6 +229,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     }
     async disconnect() {
         this.manualDisconnect = true;
+        this.clearInitTimeout();
         if (this.client) {
             try {
                 await this.client.destroy();

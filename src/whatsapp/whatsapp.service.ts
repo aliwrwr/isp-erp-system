@@ -25,6 +25,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private phoneNumber: string | null = null;
   private isInitializing = false;
   private manualDisconnect = false; // للتمييز بين قطع المستخدم وانقطاع الشبكة
+  private initTimeout: ReturnType<typeof setTimeout> | null = null; // مهلة التهيئة
 
   constructor(
     @InjectRepository(WhatsappSettings)
@@ -88,12 +89,47 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
   // ─── Client Lifecycle ────────────────────────────────────────────────────────
 
-  async initializeClient(): Promise<void> {
-    if (this.isInitializing) return;
+  /** يمسح مهلة التهيئة إن وجدت */
+  private clearInitTimeout(): void {
+    if (this.initTimeout) {
+      clearTimeout(this.initTimeout);
+      this.initTimeout = null;
+    }
+  }
+
+  async initializeClient(force = false): Promise<void> {
+    // إذا كان قيد التهيئة ولم يُجبَر، تجاهل الطلب
+    if (this.isInitializing && !force) return;
+    // إذا كان مجبراً وهناك تهيئة معلّقة، أوقفها أولاً
+    if (force && this.isInitializing) {
+      this.clearInitTimeout();
+      if (this.client) {
+        await this.client.destroy().catch(() => {});
+        this.client = null;
+      }
+      await this.forceKillChromeProcesses();
+    }
     this.isInitializing = true;
     this.qrDataUrl = null;
     this.isConnected = false;
     this.phoneNumber = null;
+
+    // مهلة 90 ثانية: إذا لم يُستجَب يُعاد التشغيل تلقائياً
+    this.clearInitTimeout();
+    this.initTimeout = setTimeout(async () => {
+      if (!this.isInitializing) return; // تمّت التهيئة بنجاح
+      this.logger.warn('WhatsApp init timed out after 90s — restarting...');
+      this.isInitializing = false;
+      if (this.client) {
+        await this.client.destroy().catch(() => {});
+        this.client = null;
+      }
+      await this.forceKillChromeProcesses();
+      // إعادة المحاولة إلا إذا فصل المستخدم يدوياً
+      if (!this.manualDisconnect) {
+        setTimeout(() => this.initializeClient(), 3000);
+      }
+    }, 90_000);
 
     try {
       if (this.client) {
@@ -121,6 +157,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('qr', async (qr: string) => {
         this.logger.log('WhatsApp QR code received — scan to connect');
+        this.clearInitTimeout(); // تم الاستجابة — ألغِ المهلة
         this.isConnected = false;
         this.isInitializing = false; // QR visible — no longer "initializing"
         try {
@@ -131,6 +168,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.client.on('ready', () => {
+        this.clearInitTimeout(); // تم الاستجابة — ألغِ المهلة
         this.isConnected = true;
         this.isInitializing = false;
         this.qrDataUrl = null;
@@ -143,11 +181,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('authenticated', () => {
         this.logger.log('WhatsApp authenticated');
+        this.clearInitTimeout(); // تم الاستجابة — ألغِ المهلة
         this.isInitializing = false;
       });
 
       this.client.on('auth_failure', (msg: any) => {
         this.logger.error(`WhatsApp auth failure: ${msg}`);
+        this.clearInitTimeout();
         this.isConnected = false;
         this.isInitializing = false;
       });
@@ -185,6 +225,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
   async disconnect(): Promise<void> {
     this.manualDisconnect = true; // منع إعادة الاتصال التلقائية
+    this.clearInitTimeout();
     if (this.client) {
       try {
         // destroy() stops the browser without revoking the session,
