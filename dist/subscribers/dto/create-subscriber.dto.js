@@ -30,6 +30,7 @@ class CreateSubscriberDto {
     subEndDate;
     paymentMethod;
     partialAmount;
+    discount;
     isEnabled;
 }
 exports.CreateSubscriberDto = CreateSubscriberDto;
@@ -123,6 +124,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateSubscriberDto.prototype, "partialAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateSubscriberDto.prototype, "discount", void 0);
 __decorate([
     (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),

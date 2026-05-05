@@ -73,6 +73,10 @@ export class CreateSubscriberDto {
   @IsOptional()
   partialAmount?: number;
 
+  @IsNumber()
+  @IsOptional()
+  discount?: number;
+
   @IsBoolean()
   @IsOptional()
   isEnabled?: boolean;
