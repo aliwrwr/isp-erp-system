@@ -132,7 +132,7 @@ export class SubscribersService {
   }
 
   async update(id: number, updateSubscriberDto: UpdateSubscriberDto): Promise<Subscriber | null> {
-    const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod, partialAmount, ...rest } = updateSubscriberDto as any;
+    const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod, partialAmount, discount, ...rest } = updateSubscriberDto as any;
 
     // Load current subscriber before update (for PPPoE comparison)
     const before = await this.subscribersRepository.findOne({ where: { id }, relations: ['router', 'package'] });
@@ -183,7 +183,10 @@ export class SubscribersService {
       }
       if (endDate) {
         const paymentMethod = (updateSubscriberDto as any).paymentMethod || 'cash';
-        const paidAmt = paymentMethod === 'partial' ? Number(partialAmount || 0) : (paymentMethod === 'cash' ? Number(pkg?.price || 0) : 0);
+        const basePrice  = Number(pkg?.price || 0);
+        const discountAmt = Math.max(0, Number(discount || 0));
+        const finalPrice = Math.max(0, basePrice - discountAmt);
+        const paidAmt = paymentMethod === 'partial' ? Number(partialAmount || 0) : (paymentMethod === 'cash' ? finalPrice : 0);
         // debtAmount = 0 on creation — debt is implicit from (price - paidAmount).
         // debtAmount is only for extra debts added later via the addDebt endpoint.
         const subscription = this.subscriptionsRepository.create({
@@ -191,7 +194,7 @@ export class SubscribersService {
           package: { id: packageId } as any,
           startDate: startDt,
           endDate,
-          price: Number(pkg?.price || 0),
+          price: finalPrice,
           paymentMethod,
           paidAmount: paidAmt,
           debtAmount: 0,

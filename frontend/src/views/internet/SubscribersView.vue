@@ -784,10 +784,35 @@
                 </select>
               </div>
 
-              <!-- Package price highlight -->
-              <div v-if="activatePackage" class="mt-3 flex items-center justify-between bg-emerald-50 px-3 py-2.5 rounded-xl border border-emerald-100">
-                <span class="text-xs text-gray-500">سعر الباقة</span>
-                <span class="text-base font-bold text-emerald-600">{{ Number(activatePackage.price).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-500">د.ع</span></span>
+              <!-- Package price highlight + discount -->
+              <div v-if="activatePackage" class="mt-3 space-y-2">
+                <!-- Original price -->
+                <div class="flex items-center justify-between bg-emerald-50 px-3 py-2.5 rounded-xl border border-emerald-100">
+                  <span class="text-xs text-gray-500">سعر الباقة</span>
+                  <span class="text-base font-bold text-emerald-600">{{ Number(activatePackage.price).toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-500">د.ع</span></span>
+                </div>
+                <!-- Discount input -->
+                <div class="flex items-center gap-2 bg-amber-50 px-3 py-2.5 rounded-xl border border-amber-100">
+                  <i class="fas fa-tag text-amber-500 text-xs flex-shrink-0"></i>
+                  <span class="text-xs text-gray-600 flex-1">خصم</span>
+                  <div class="relative w-32">
+                    <input
+                      type="number"
+                      v-model.number="activateForm.discount"
+                      min="0"
+                      :max="Number(activatePackage.price)"
+                      placeholder="0"
+                      inputmode="numeric"
+                      class="w-full pl-10 pr-3 py-1.5 bg-white border border-amber-200 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400 text-center"
+                    />
+                    <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">د.ع</span>
+                  </div>
+                </div>
+                <!-- Final price after discount -->
+                <div v-if="Number(activateForm.discount) > 0" class="flex items-center justify-between bg-violet-50 px-3 py-2.5 rounded-xl border border-violet-200">
+                  <span class="text-xs font-bold text-violet-700">السعر النهائي بعد الخصم</span>
+                  <span class="text-base font-bold text-violet-700">{{ activateFinalPrice.toLocaleString('ar-IQ') }} <span class="text-xs font-normal text-gray-500">د.ع</span></span>
+                </div>
               </div>
             </div>
 
@@ -844,7 +869,7 @@
               <i class="fas fa-check-circle text-emerald-500 text-lg flex-shrink-0"></i>
               <div>
                 <p class="text-sm font-semibold text-emerald-700">الدفع الكامل نقداً</p>
-                <p class="text-xs text-emerald-600 mt-0.5">المبلغ المستحق: <strong>{{ Number(activatePackage?.price || 0).toLocaleString('ar-IQ') }} د.ع</strong></p>
+                <p class="text-xs text-emerald-600 mt-0.5">المبلغ المستحق: <strong>{{ activateFinalPrice.toLocaleString('ar-IQ') }} د.ع</strong></p>
               </div>
             </div>
 
@@ -853,7 +878,7 @@
               <i class="fas fa-info-circle text-blue-500 text-lg flex-shrink-0"></i>
               <div>
                 <p class="text-sm font-semibold text-blue-700">الدفع بالآجل</p>
-                <p class="text-xs text-blue-600 mt-0.5">يُسجّل كامل المبلغ <strong>{{ Number(activatePackage?.price || 0).toLocaleString('ar-IQ') }} د.ع</strong> كدين على المشترك</p>
+                <p class="text-xs text-blue-600 mt-0.5">يُسجّل كامل المبلغ <strong>{{ activateFinalPrice.toLocaleString('ar-IQ') }} د.ع</strong> كدين على المشترك</p>
               </div>
             </div>
 
@@ -861,8 +886,8 @@
             <div v-if="activateForm.paymentMethod === 'partial'" class="space-y-3">
               <div class="bg-orange-50 border border-orange-100 rounded-xl p-3.5">
                 <div class="flex items-center justify-between mb-3">
-                  <span class="text-xs font-semibold text-orange-600">سعر الباقة الكاملة</span>
-                  <span class="text-sm font-bold text-orange-700">{{ Number(activatePackage?.price || 0).toLocaleString('ar-IQ') }} د.ع</span>
+                  <span class="text-xs font-semibold text-orange-600">المبلغ بعد الخصم</span>
+                  <span class="text-sm font-bold text-orange-700">{{ activateFinalPrice.toLocaleString('ar-IQ') }} د.ع</span>
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-gray-600 mb-1.5">المبلغ المدفوع جزئياً</label>
@@ -870,7 +895,7 @@
                     <input
                       type="number"
                       v-model="activateForm.partialAmount"
-                      :max="Number(activatePackage?.price || 0)"
+                      :max="activateFinalPrice"
                       min="0"
                       placeholder="0"
                       inputmode="numeric"
@@ -1918,6 +1943,7 @@ const showActivateModal = ref(false);
 const activateForm = ref({
   paymentMethod: 'cash' as 'cash' | 'credit' | 'partial',
   partialAmount: '' as string | number,
+  discount: 0 as number,
   notes: '',
   startDate: '',
   packageId: null as number | null,
@@ -1928,6 +1954,13 @@ const activatePackage = computed(() => {
   const pkgId = activateForm.value.packageId;
   if (pkgId) return packages.value.find((p: any) => p.id === pkgId) || null;
   return null;
+});
+
+// السعر النهائي بعد الخصم
+const activateFinalPrice = computed(() => {
+  const price = Number(activatePackage.value?.price || 0);
+  const disc  = Number(activateForm.value.discount || 0);
+  return Math.max(0, price - disc);
 });
 
 const activateEndDatePreview = computed(() => {
@@ -1945,8 +1978,7 @@ const activateRemainingPreview = computed(() => {
 });
 
 const activatePartialRemaining = computed(() => {
-  const pkg = activatePackage.value;
-  const price = Number(pkg?.price || 0);
+  const price = activateFinalPrice.value;
   const partial = Number(activateForm.value.partialAmount || 0);
   return Math.max(0, price - partial);
 });
@@ -1980,6 +2012,7 @@ function openActivateModal() {
   activateForm.value = {
     paymentMethod: 'cash',
     partialAmount: '',
+    discount: 0,
     notes: '',
     startDate: localDateStr(), // التوقيت المحلي (العراق) لا UTC
     packageId: defaultPackageId,
@@ -2005,6 +2038,9 @@ async function saveActivate() {
     };
     if (activateForm.value.packageId) payload.packageId = activateForm.value.packageId;
     if (activateForm.value.notes.trim()) payload.notes = activateForm.value.notes.trim();
+    if (activateForm.value.discount && Number(activateForm.value.discount) > 0) {
+      payload.discount = Number(activateForm.value.discount);
+    }
     if (activateForm.value.paymentMethod === 'partial' && activateForm.value.partialAmount) {
       payload.partialAmount = Number(activateForm.value.partialAmount);
     }

@@ -131,7 +131,7 @@ let SubscribersService = class SubscribersService {
         return this.subscribersRepository.findOne({ where: { id }, relations: ['manager', 'package', 'subscriptions', 'subscriptions.package', 'router'] });
     }
     async update(id, updateSubscriberDto) {
-        const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod, partialAmount, ...rest } = updateSubscriberDto;
+        const { packageId, managerId, routerId, subStartDate, subEndDate, paymentMethod, partialAmount, discount, ...rest } = updateSubscriberDto;
         const before = await this.subscribersRepository.findOne({ where: { id }, relations: ['router', 'package'] });
         await this.subscribersRepository.update(id, {
             ...rest,
@@ -172,13 +172,16 @@ let SubscribersService = class SubscribersService {
             }
             if (endDate) {
                 const paymentMethod = updateSubscriberDto.paymentMethod || 'cash';
-                const paidAmt = paymentMethod === 'partial' ? Number(partialAmount || 0) : (paymentMethod === 'cash' ? Number(pkg?.price || 0) : 0);
+                const basePrice = Number(pkg?.price || 0);
+                const discountAmt = Math.max(0, Number(discount || 0));
+                const finalPrice = Math.max(0, basePrice - discountAmt);
+                const paidAmt = paymentMethod === 'partial' ? Number(partialAmount || 0) : (paymentMethod === 'cash' ? finalPrice : 0);
                 const subscription = this.subscriptionsRepository.create({
                     subscriber: { id },
                     package: { id: packageId },
                     startDate: startDt,
                     endDate,
-                    price: Number(pkg?.price || 0),
+                    price: finalPrice,
                     paymentMethod,
                     paidAmount: paidAmt,
                     debtAmount: 0,
