@@ -1,1 +1,0 @@
-import{r as e}from"./index-BN3LD-V3.js";async function t(t){try{await e.post(`/activity-log`,t)}catch(e){console.error(`Failed to log activity to server:`,e)}}export{t};
