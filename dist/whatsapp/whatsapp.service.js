@@ -158,8 +158,13 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         }
     }
     getPuppeteerExecutablePath() {
+        const fs = require('fs');
+        const envPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        if (envPath && !fs.existsSync(envPath)) {
+            this.logger.warn(`Ignoring invalid PUPPETEER_EXECUTABLE_PATH env var (file not found): ${envPath}`);
+            delete process.env.PUPPETEER_EXECUTABLE_PATH;
+        }
         if (process.platform === 'win32') {
-            const fs = require('fs');
             const standardWinPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
             const x86WinPath = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
             if (fs.existsSync(standardWinPath))
@@ -169,7 +174,6 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             return undefined;
         }
         if (process.platform === 'linux') {
-            const fs = require('fs');
             const paths = [
                 '/usr/bin/google-chrome',
                 '/usr/bin/chromium',
@@ -178,6 +182,15 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             for (const p of paths) {
                 if (fs.existsSync(p))
                     return p;
+            }
+            try {
+                const { execSync } = require('child_process');
+                const found = execSync('command -v chromium || command -v chromium-browser || command -v google-chrome || true', { encoding: 'utf-8' }).trim();
+                if (found && fs.existsSync(found))
+                    return found;
+            }
+            catch (err) {
+                this.logger.debug(`chromium PATH lookup failed: ${err?.message ?? err}`);
             }
             return undefined;
         }

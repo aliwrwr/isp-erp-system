@@ -153,9 +153,19 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
    * Get target Puppeteer Executable Path based on operating system and environment
    */
   private getPuppeteerExecutablePath(): string | undefined {
+    const fs = require('fs');
+
+    // بيئة السحابة (ريلواي) قد تحتوي على متغير PUPPETEER_EXECUTABLE_PATH قديم/خاطئ
+    // (مثلاً مسار ويندوز منسوخ من بيئة محلية) — Puppeteer يقرأه تلقائياً كأولوية أولى
+    // إذا كان لا يشير لملف موجود فعلياً على هذا الخادم، نتجاهله فوراً لمنعه من كسر التشغيل
+    const envPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    if (envPath && !fs.existsSync(envPath)) {
+      this.logger.warn(`Ignoring invalid PUPPETEER_EXECUTABLE_PATH env var (file not found): ${envPath}`);
+      delete process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
     // If we're on Windows local machine, try to use the configured Chrome path
     if (process.platform === 'win32') {
-      const fs = require('fs');
       const standardWinPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
       const x86WinPath = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
       
@@ -166,7 +176,6 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     
     // If we're on Linux (like Railway / VPS), check standard locations
     if (process.platform === 'linux') {
-      const fs = require('fs');
       // Nixpacks/Railway paths or standard paths
       const paths = [
         '/usr/bin/google-chrome',
@@ -177,8 +186,16 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       for (const p of paths) {
         if (fs.existsSync(p)) return p;
       }
+
+      // Nixpacks يثبّت الحزم داخل /nix/store وليس /usr/bin — نبحث عنه عبر PATH فعلياً
+      try {
+        const { execSync } = require('child_process');
+        const found = execSync('command -v chromium || command -v chromium-browser || command -v google-chrome || true', { encoding: 'utf-8' }).trim();
+        if (found && fs.existsSync(found)) return found;
+      } catch (err) {
+        this.logger.debug(`chromium PATH lookup failed: ${(err as any)?.message ?? err}`);
+      }
       
-      // Let's check PATH
       return undefined; 
     }
     
