@@ -120,19 +120,17 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         '/usr/bin/google-chrome',
         '/usr/bin/chromium',
         '/usr/bin/chromium-browser',
-        '/nix/store', // Nixpacks usually has custom directories but puts symlinks in PATH
       ];
       
       for (const p of paths) {
-        if (p === '/nix/store') {
-          // Nixpacks chromium is usually directly inside PATH if installed via nixpkgs.
-          // In Nix/Railway environments, if chrome/chromium is in PATH, we can reference simply 'chromium' or 'google-chrome-stable'
-          return 'chromium';
-        }
         if (fs.existsSync(p)) return p;
       }
       
-      return 'chromium'; // Fallback to PATH resolution
+      // Let's check if the standard nix chromium is in PATH
+      // Running wwebjs under linux often works best without specifying executablePath if it finds puppeteer's own chromium
+      // but in Nixpacks, Nix installs chromium at /usr/bin/chromium or /nix/store/.../bin/chromium.
+      // Simply returning 'chromium' ensures it resolves from PATH
+      return 'chromium';
     }
     
     return undefined;
