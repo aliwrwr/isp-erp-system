@@ -69,6 +69,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     isInitializing = false;
     manualDisconnect = false;
     initTimeout = null;
+    lastError = null;
     constructor(settingsRepository, logRepository, installmentsSettingsRepository, supportSettingsRepository) {
         this.settingsRepository = settingsRepository;
         this.logRepository = logRepository;
@@ -135,16 +136,12 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
                 '/usr/bin/google-chrome',
                 '/usr/bin/chromium',
                 '/usr/bin/chromium-browser',
-                '/nix/store',
             ];
             for (const p of paths) {
-                if (p === '/nix/store') {
-                    return 'chromium';
-                }
                 if (fs.existsSync(p))
                     return p;
             }
-            return 'chromium';
+            return undefined;
         }
         return undefined;
     }
@@ -163,11 +160,13 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         this.qrDataUrl = null;
         this.isConnected = false;
         this.phoneNumber = null;
+        this.lastError = null;
         this.clearInitTimeout();
         this.initTimeout = setTimeout(async () => {
             if (!this.isInitializing)
                 return;
             this.logger.warn('WhatsApp init timed out after 90s — restarting...');
+            this.lastError = 'انتهت المهلة (90 ثانية) دون استجابة من المتصفح الصامت — تحقق من موارد الذاكرة على الخادم';
             this.isInitializing = false;
             if (this.client) {
                 await this.client.destroy().catch(() => { });
@@ -187,6 +186,10 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.logger.log(`Initializing WhatsApp client with executablePath: ${exePath ?? 'Default Puppeteer'}`);
             this.client = new whatsapp_web_js_1.Client({
                 authStrategy: new whatsapp_web_js_1.LocalAuth({ dataPath: '.wwebjs_auth' }),
+                webVersionCache: {
+                    type: 'remote',
+                    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
+                },
                 puppeteer: {
                     headless: true,
                     ...(exePath ? { executablePath: exePath } : {}),
@@ -197,8 +200,14 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
                         '--disable-gpu',
                         '--no-first-run',
                         '--disable-blink-features=AutomationControlled',
+                        '--disable-web-security',
+                        '--disable-features=IsolateOrigins,site-per-process',
+                        '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                     ],
                     timeout: 60000,
+                    handleSIGINT: false,
+                    handleSIGTERM: false,
+                    handleSIGHUP: false
                 },
             });
             this.client.on('qr', async (qr) => {
@@ -230,6 +239,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.client.on('auth_failure', (msg) => {
                 this.logger.error(`WhatsApp auth failure: ${msg}`);
                 this.clearInitTimeout();
+                this.lastError = `فشل المصادقة: ${String(msg)}`;
                 this.isConnected = false;
                 this.isInitializing = false;
             });
@@ -249,12 +259,14 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             });
             this.client.initialize().catch((err) => {
                 this.logger.error('WhatsApp client initialization failed', err);
+                this.lastError = `فشل تشغيل المتصفح: ${String(err?.message ?? err)}`;
                 this.isConnected = false;
                 this.isInitializing = false;
             });
         }
         catch (err) {
             this.logger.error('WhatsApp client setup failed', err);
+            this.lastError = `فشل الإعداد: ${String(err?.message ?? err)}`;
             this.isConnected = false;
             this.isInitializing = false;
         }
@@ -278,8 +290,13 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     async forceKillChromeProcesses() {
         const { exec } = await import('child_process');
         return new Promise((resolve) => {
-            const cmd = `powershell.exe -NonInteractive -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'chrome.exe'\\" | Where-Object CommandLine -match \\"wwebjs\\" | Invoke-CimMethod -MethodName Terminate"`;
-            exec(cmd, () => {
+            const cmd = process.platform === 'win32'
+                ? `powershell.exe -NonInteractive -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'chrome.exe'\\" | Where-Object CommandLine -match \\"wwebjs\\" | Invoke-CimMethod -MethodName Terminate"`
+                : `pkill -9 -f wwebjs_auth || true`;
+            exec(cmd, (error) => {
+                if (error) {
+                    this.logger.debug(`forceKillChromeProcesses: ${error.message}`);
+                }
                 resolve();
             });
         });
@@ -453,6 +470,8 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             phone: this.phoneNumber,
             hasQR: !!this.qrDataUrl,
             qr: this.qrDataUrl,
+            lastError: this.lastError,
+            platform: process.platform,
         };
     }
     async getInstallmentsSettings() {

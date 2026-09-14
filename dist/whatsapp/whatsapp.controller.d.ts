@@ -14,6 +14,8 @@ export declare class WhatsappController {
         phone: string | null;
         hasQR: boolean;
         qr: string | null;
+        lastError: string | null;
+        platform: NodeJS.Platform;
     };
     connect(): Promise<{
         message: string;

@@ -20,6 +20,7 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private isInitializing;
     private manualDisconnect;
     private initTimeout;
+    private lastError;
     constructor(settingsRepository: Repository<WhatsappSettings>, logRepository: Repository<WhatsappLog>, installmentsSettingsRepository: Repository<WhatsappInstallmentsSettings>, supportSettingsRepository: Repository<WhatsappSupportSettings>);
     onModuleInit(): Promise<void>;
     private hasExistingSession;
@@ -54,6 +55,8 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
         phone: string | null;
         hasQR: boolean;
         qr: string | null;
+        lastError: string | null;
+        platform: NodeJS.Platform;
     };
     getInstallmentsSettings(): Promise<WhatsappInstallmentsSettings>;
     updateInstallmentsSettings(dto: UpdateInstallmentsSettingsDto): Promise<WhatsappInstallmentsSettings>;

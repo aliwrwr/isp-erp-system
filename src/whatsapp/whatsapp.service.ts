@@ -26,6 +26,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private isInitializing = false;
   private manualDisconnect = false; // للتمييز بين قطع المستخدم وانقطاع الشبكة
   private initTimeout: ReturnType<typeof setTimeout> | null = null; // مهلة التهيئة
+  private lastError: string | null = null; // آخر خطأ حقيقي لعرضه في الواجهة للتشخيص
 
   constructor(
     @InjectRepository(WhatsappSettings)
@@ -149,12 +150,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     this.qrDataUrl = null;
     this.isConnected = false;
     this.phoneNumber = null;
+    this.lastError = null;
 
     // مهلة 90 ثانية: إذا لم يُستجَب يُعاد التشغيل تلقائياً
     this.clearInitTimeout();
     this.initTimeout = setTimeout(async () => {
       if (!this.isInitializing) return; // تمّت التهيئة بنجاح
       this.logger.warn('WhatsApp init timed out after 90s — restarting...');
+      this.lastError = 'انتهت المهلة (90 ثانية) دون استجابة من المتصفح الصامت — تحقق من موارد الذاكرة على الخادم';
       this.isInitializing = false;
       if (this.client) {
         await this.client.destroy().catch(() => {});
@@ -238,6 +241,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.client.on('auth_failure', (msg: any) => {
         this.logger.error(`WhatsApp auth failure: ${msg}`);
         this.clearInitTimeout();
+        this.lastError = `فشل المصادقة: ${String(msg)}`;
         this.isConnected = false;
         this.isInitializing = false;
       });
@@ -263,11 +267,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       // isInitializing stays true until qr/ready/auth_failure fires
       this.client.initialize().catch((err) => {
         this.logger.error('WhatsApp client initialization failed', err);
+        this.lastError = `فشل تشغيل المتصفح: ${String(err?.message ?? err)}`;
         this.isConnected = false;
         this.isInitializing = false;
       });
     } catch (err) {
       this.logger.error('WhatsApp client setup failed', err);
+      this.lastError = `فشل الإعداد: ${String((err as any)?.message ?? err)}`;
       this.isConnected = false;
       this.isInitializing = false;
     }
@@ -293,14 +299,20 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Run a deep cleanup of any lingering Chrome processes locking the session
+   * Run a deep cleanup of any lingering Chrome/Chromium processes locking the session
+   * يعمل على Windows (محلياً) وعلى Linux (Railway) على حد سواء
    */
   private async forceKillChromeProcesses(): Promise<void> {
     const { exec } = await import('child_process');
     return new Promise((resolve) => {
-      // Kills any chrome.exe process that has "wwebjs" in its command line
-      const cmd = `powershell.exe -NonInteractive -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'chrome.exe'\\" | Where-Object CommandLine -match \\"wwebjs\\" | Invoke-CimMethod -MethodName Terminate"`;
-      exec(cmd, () => {
+      const cmd =
+        process.platform === 'win32'
+          ? `powershell.exe -NonInteractive -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name = 'chrome.exe'\\" | Where-Object CommandLine -match \\"wwebjs\\" | Invoke-CimMethod -MethodName Terminate"`
+          : `pkill -9 -f wwebjs_auth || true`;
+      exec(cmd, (error) => {
+        if (error) {
+          this.logger.debug(`forceKillChromeProcesses: ${error.message}`);
+        }
         resolve();
       });
     });
@@ -533,6 +545,8 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       phone: this.phoneNumber,
       hasQR: !!this.qrDataUrl,
       qr: this.qrDataUrl,
+      lastError: this.lastError,
+      platform: process.platform,
     };
   }
 

@@ -75,6 +75,15 @@
           </div>
         </div>
 
+        <!-- Diagnostic Error -->
+        <div v-if="status.lastError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 break-words">
+          <div class="flex items-center gap-1 font-semibold mb-1">
+            <i class="fas fa-triangle-exclamation"></i>
+            سبب الفشل الحقيقي (من الخادم):
+          </div>
+          {{ status.lastError }}
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex gap-2 flex-wrap">
           <button v-if="!status.connected" @click="connect" :disabled="actionLoading"
@@ -617,6 +626,7 @@ const status = reactive({
   phone: null as string | null,
   hasQR: false,
   qr: null as string | null,
+  lastError: null as string | null,
 });
 
 const settings = reactive({
