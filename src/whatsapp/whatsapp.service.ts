@@ -176,6 +176,8 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       const exePath = this.getPuppeteerExecutablePath();
       this.logger.log(`Initializing WhatsApp client with executablePath: ${exePath ?? 'Default Puppeteer'}`);
 
+      // في بيئة لينكس السحابية مثل ريلواي، نحتاج لمعاملات إضافية صارمة لمحيط الحماية (sandbox) 
+      // لتخطي مشاكل الذاكرة المشتركة وإقلاع واجهة الويب داخل المتصفح الصامت بنجاح
       this.client = new Client({
         authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
         webVersionCache: {
@@ -192,6 +194,9 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
             '--disable-gpu',
             '--no-first-run',
             '--disable-blink-features=AutomationControlled',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
           ],
           timeout: 60000,
           handleSIGINT: false,
