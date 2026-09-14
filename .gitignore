@@ -16,6 +16,7 @@ frontend/.env.production
 # WhatsApp session data
 .wwebjs_auth/
 .wwebjs_cache/
+.whatsapp-init.marker.json
 
 # Logs
 logs

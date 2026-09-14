@@ -27,6 +27,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   private manualDisconnect = false; // للتمييز بين قطع المستخدم وانقطاع الشبكة
   private initTimeout: ReturnType<typeof setTimeout> | null = null; // مهلة التهيئة
   private lastError: string | null = null; // آخر خطأ حقيقي لعرضه في الواجهة للتشخيص
+  private consecutiveFailures = 0; // لإيقاف حلقة إعادة المحاولة اللانهائية وإظهار الخطأ للمستخدم
 
   constructor(
     @InjectRepository(WhatsappSettings)
@@ -40,6 +41,10 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
+    // كاشف الانهيار: إذا وجد ملف علامة من تشغيل سابق لم يُنظّف،
+    // فهذا يعني أن العملية توقفت فجأة (على الأغلب OOM) أثناء تشغيل المتصفح
+    await this.checkCrashMarker();
+
     // Initialize settings row if it doesn't exist
     const count = await this.settingsRepository.count();
     if (count === 0) {
@@ -58,7 +63,8 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
           : 'Auto-connect enabled — initializing WhatsApp client...',
       );
       // Delay slightly so the DB/ORM is fully ready
-      setTimeout(() => this.initializeClient(), 3000);
+      // isAutoRetry=true حتى لا يُمسح خطأ كاشف الانهيار (إن وُجد) قبل أن يراه المستخدم
+      setTimeout(() => this.initializeClient(false, true), 3000);
     }
   }
 
@@ -75,6 +81,51 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       return entries.some(e => e.startsWith('session'));
     } catch {
       return false;
+    }
+  }
+
+  /** مسار ملف علامة التهيئة الجارية — يبقى على القرص بين إعادات تشغيل العملية (عكس الذاكرة) */
+  private get crashMarkerPath(): string {
+    return require('path').join(process.cwd(), '.whatsapp-init.marker.json');
+  }
+
+  /** يكتب علامة على القرص تفيد أن عملية تهيئة متصفح قيد التنفيذ الآن — تبقى موجودة إذا انهار الخادم قبل الانتهاء */
+  private writeCrashMarker(): void {
+    try {
+      require('fs').writeFileSync(
+        this.crashMarkerPath,
+        JSON.stringify({ status: 'initializing', pid: process.pid, startedAt: new Date().toISOString() }),
+      );
+    } catch (err) {
+      this.logger.debug(`writeCrashMarker failed: ${(err as any)?.message ?? err}`);
+    }
+  }
+
+  /** يمسح علامة التعطل بعد انتهاء التهيئة (بنجاح أو فشل) */
+  private clearCrashMarker(): void {
+    try {
+      const fs = require('fs');
+      if (fs.existsSync(this.crashMarkerPath)) fs.unlinkSync(this.crashMarkerPath);
+    } catch (err) {
+      this.logger.debug(`clearCrashMarker failed: ${(err as any)?.message ?? err}`);
+    }
+  }
+
+  /**
+   * عند إقلاع الخدمة: إذا وجد ملف علامة من تشغيل سابق لم يُنظّف،
+   * فهذا دليل قاطع على أن العملية انهارت (على الأغلب OOM) أثناء تشغيل Chromium
+   */
+  private async checkCrashMarker(): Promise<void> {
+    try {
+      const fs = require('fs');
+      if (!fs.existsSync(this.crashMarkerPath)) return;
+      const raw = fs.readFileSync(this.crashMarkerPath, 'utf-8');
+      const marker = JSON.parse(raw);
+      this.lastError = `تم إعادة تشغيل الخادم فجأةً أثناء تهيئة واتساب (بدأت في ${marker.startedAt} ولم تكتمل) — هذا يدل على انهيار العملية كلها (على الأغلب نفاد ذاكرة OOM) أثناء تشغيل المتصفح الصامت Chromium — وليس خطأً عادياً يمكن التقاطه`;
+      this.logger.error(`WhatsApp: detected unclean process restart during init (marker from ${marker.startedAt}) — likely OOM kill`);
+      this.clearCrashMarker();
+    } catch (err) {
+      this.logger.debug(`checkCrashMarker failed: ${(err as any)?.message ?? err}`);
     }
   }
 
@@ -134,7 +185,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     return undefined;
   }
 
-  async initializeClient(force = false): Promise<void> {
+  async initializeClient(force = false, isAutoRetry = false): Promise<void> {
     // إذا كان قيد التهيئة ولم يُجبَر، تجاهل الطلب
     if (this.isInitializing && !force) return;
     // إذا كان مجبراً وهناك تهيئة معلّقة، أوقفها أولاً
@@ -146,27 +197,35 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       }
       await this.forceKillChromeProcesses();
     }
+    // طلب يدوي صريح (زر اتصال/تغيير جهاز) يعيد ضبط عداد المحاولات الفاشلة ويمسح الخطأ القديم
+    if (!isAutoRetry) {
+      this.consecutiveFailures = 0;
+      this.lastError = null;
+    }
     this.isInitializing = true;
     this.qrDataUrl = null;
     this.isConnected = false;
     this.phoneNumber = null;
-    this.lastError = null;
 
-    // مهلة 90 ثانية: إذا لم يُستجَب يُعاد التشغيل تلقائياً
+    // مهلة 90 ثانية: إذا لم يُستجَب يُعاد التشغيل تلقائياً (مرتين فقط ثم يتوقف ويظهر الخطأ للمستخدم)
     this.clearInitTimeout();
     this.initTimeout = setTimeout(async () => {
       if (!this.isInitializing) return; // تمّت التهيئة بنجاح
-      this.logger.warn('WhatsApp init timed out after 90s — restarting...');
-      this.lastError = 'انتهت المهلة (90 ثانية) دون استجابة من المتصفح الصامت — تحقق من موارد الذاكرة على الخادم';
+      this.clearCrashMarker(); // العملية لا تزال حية (لم تنهر) — هذا مجرد تأخر عادي
+      this.consecutiveFailures++;
+      this.logger.warn(`WhatsApp init timed out after 90s (failure #${this.consecutiveFailures})`);
+      this.lastError = `انتهت المهلة (90 ثانية) دون استجابة من المتصفح الصامت (المحاولة ${this.consecutiveFailures}) — على الأغلب Chromium لا يعمل على الخادم أو نفدت الذاكرة`;
       this.isInitializing = false;
       if (this.client) {
         await this.client.destroy().catch(() => {});
         this.client = null;
       }
       await this.forceKillChromeProcesses();
-      // إعادة المحاولة إلا إذا فصل المستخدم يدوياً
-      if (!this.manualDisconnect) {
-        setTimeout(() => this.initializeClient(), 3000);
+      // إعادة المحاولة مرتين فقط تلقائياً، ثم تتوقف وتظهر الرسالة للمستخدم بدل التكرار اللانهائي
+      if (!this.manualDisconnect && this.consecutiveFailures < 2) {
+        setTimeout(() => this.initializeClient(false, true), 3000);
+      } else {
+        this.logger.error('WhatsApp: stopping auto-retry after repeated failures — manual reconnect required');
       }
     }, 90_000);
 
@@ -178,6 +237,9 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       const exePath = this.getPuppeteerExecutablePath();
       this.logger.log(`Initializing WhatsApp client with executablePath: ${exePath ?? 'Default Puppeteer'}`);
+      // نكتب علامة على القرص قبل تشغيل Chromium — إذا انهارت العملية (OOM) قبل اكتمال التهيئة
+      // ستبقى هذه العلامة وتُكتشف عند إعادة تشغيل الخادم في checkCrashMarker()
+      this.writeCrashMarker();
 
       // في بيئة لينكس السحابية مثل ريلواي، نحتاج لمعاملات إضافية صارمة لمحيط الحماية (sandbox) 
       // لتخطي مشاكل الذاكرة المشتركة وإقلاع واجهة الويب داخل المتصفح الصامت بنجاح
@@ -211,6 +273,9 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.client.on('qr', async (qr: string) => {
         this.logger.log('WhatsApp QR code received — scan to connect');
         this.clearInitTimeout(); // تم الاستجابة — ألغِ المهلة
+        this.clearCrashMarker();
+        this.consecutiveFailures = 0;
+        this.lastError = null;
         this.isConnected = false;
         this.isInitializing = false; // QR visible — no longer "initializing"
         try {
@@ -222,6 +287,9 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('ready', () => {
         this.clearInitTimeout(); // تم الاستجابة — ألغِ المهلة
+        this.clearCrashMarker();
+        this.consecutiveFailures = 0;
+        this.lastError = null;
         this.isConnected = true;
         this.isInitializing = false;
         this.qrDataUrl = null;
@@ -241,6 +309,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       this.client.on('auth_failure', (msg: any) => {
         this.logger.error(`WhatsApp auth failure: ${msg}`);
         this.clearInitTimeout();
+        this.clearCrashMarker();
         this.lastError = `فشل المصادقة: ${String(msg)}`;
         this.isConnected = false;
         this.isInitializing = false;
@@ -257,7 +326,7 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         // وإذا كانت هناك جلسة محفوظة (بدون QR)
         if (!this.manualDisconnect && reason !== 'LOGOUT') {
           this.logger.log(`Auto-reconnecting after disconnection (reason: ${reason})...`);
-          setTimeout(() => this.initializeClient(), 5000);
+          setTimeout(() => this.initializeClient(false, true), 5000);
         } else {
           this.manualDisconnect = false;
         }
@@ -267,12 +336,15 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
       // isInitializing stays true until qr/ready/auth_failure fires
       this.client.initialize().catch((err) => {
         this.logger.error('WhatsApp client initialization failed', err);
-        this.lastError = `فشل تشغيل المتصفح: ${String(err?.message ?? err)}`;
+        this.clearCrashMarker();
+        this.consecutiveFailures++;
+        this.lastError = `فشل تشغيل المتصفح (المحاولة ${this.consecutiveFailures}): ${String(err?.message ?? err)}`;
         this.isConnected = false;
         this.isInitializing = false;
       });
     } catch (err) {
       this.logger.error('WhatsApp client setup failed', err);
+      this.clearCrashMarker();
       this.lastError = `فشل الإعداد: ${String((err as any)?.message ?? err)}`;
       this.isConnected = false;
       this.isInitializing = false;

@@ -70,6 +70,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
     manualDisconnect = false;
     initTimeout = null;
     lastError = null;
+    consecutiveFailures = 0;
     constructor(settingsRepository, logRepository, installmentsSettingsRepository, supportSettingsRepository) {
         this.settingsRepository = settingsRepository;
         this.logRepository = logRepository;
@@ -77,6 +78,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         this.supportSettingsRepository = supportSettingsRepository;
     }
     async onModuleInit() {
+        await this.checkCrashMarker();
         const count = await this.settingsRepository.count();
         if (count === 0) {
             await this.settingsRepository.save(this.settingsRepository.create({}));
@@ -87,7 +89,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.logger.log(sessionExists
                 ? 'Existing WhatsApp session found — reconnecting automatically...'
                 : 'Auto-connect enabled — initializing WhatsApp client...');
-            setTimeout(() => this.initializeClient(), 3000);
+            setTimeout(() => this.initializeClient(false, true), 3000);
         }
     }
     async hasExistingSession() {
@@ -102,6 +104,42 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         }
         catch {
             return false;
+        }
+    }
+    get crashMarkerPath() {
+        return require('path').join(process.cwd(), '.whatsapp-init.marker.json');
+    }
+    writeCrashMarker() {
+        try {
+            require('fs').writeFileSync(this.crashMarkerPath, JSON.stringify({ status: 'initializing', pid: process.pid, startedAt: new Date().toISOString() }));
+        }
+        catch (err) {
+            this.logger.debug(`writeCrashMarker failed: ${err?.message ?? err}`);
+        }
+    }
+    clearCrashMarker() {
+        try {
+            const fs = require('fs');
+            if (fs.existsSync(this.crashMarkerPath))
+                fs.unlinkSync(this.crashMarkerPath);
+        }
+        catch (err) {
+            this.logger.debug(`clearCrashMarker failed: ${err?.message ?? err}`);
+        }
+    }
+    async checkCrashMarker() {
+        try {
+            const fs = require('fs');
+            if (!fs.existsSync(this.crashMarkerPath))
+                return;
+            const raw = fs.readFileSync(this.crashMarkerPath, 'utf-8');
+            const marker = JSON.parse(raw);
+            this.lastError = `تم إعادة تشغيل الخادم فجأةً أثناء تهيئة واتساب (بدأت في ${marker.startedAt} ولم تكتمل) — هذا يدل على انهيار العملية كلها (على الأغلب نفاد ذاكرة OOM) أثناء تشغيل المتصفح الصامت Chromium — وليس خطأً عادياً يمكن التقاطه`;
+            this.logger.error(`WhatsApp: detected unclean process restart during init (marker from ${marker.startedAt}) — likely OOM kill`);
+            this.clearCrashMarker();
+        }
+        catch (err) {
+            this.logger.debug(`checkCrashMarker failed: ${err?.message ?? err}`);
         }
     }
     async onModuleDestroy() {
@@ -145,7 +183,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
         }
         return undefined;
     }
-    async initializeClient(force = false) {
+    async initializeClient(force = false, isAutoRetry = false) {
         if (this.isInitializing && !force)
             return;
         if (force && this.isInitializing) {
@@ -156,25 +194,33 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             }
             await this.forceKillChromeProcesses();
         }
+        if (!isAutoRetry) {
+            this.consecutiveFailures = 0;
+            this.lastError = null;
+        }
         this.isInitializing = true;
         this.qrDataUrl = null;
         this.isConnected = false;
         this.phoneNumber = null;
-        this.lastError = null;
         this.clearInitTimeout();
         this.initTimeout = setTimeout(async () => {
             if (!this.isInitializing)
                 return;
-            this.logger.warn('WhatsApp init timed out after 90s — restarting...');
-            this.lastError = 'انتهت المهلة (90 ثانية) دون استجابة من المتصفح الصامت — تحقق من موارد الذاكرة على الخادم';
+            this.clearCrashMarker();
+            this.consecutiveFailures++;
+            this.logger.warn(`WhatsApp init timed out after 90s (failure #${this.consecutiveFailures})`);
+            this.lastError = `انتهت المهلة (90 ثانية) دون استجابة من المتصفح الصامت (المحاولة ${this.consecutiveFailures}) — على الأغلب Chromium لا يعمل على الخادم أو نفدت الذاكرة`;
             this.isInitializing = false;
             if (this.client) {
                 await this.client.destroy().catch(() => { });
                 this.client = null;
             }
             await this.forceKillChromeProcesses();
-            if (!this.manualDisconnect) {
-                setTimeout(() => this.initializeClient(), 3000);
+            if (!this.manualDisconnect && this.consecutiveFailures < 2) {
+                setTimeout(() => this.initializeClient(false, true), 3000);
+            }
+            else {
+                this.logger.error('WhatsApp: stopping auto-retry after repeated failures — manual reconnect required');
             }
         }, 90_000);
         try {
@@ -184,6 +230,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             }
             const exePath = this.getPuppeteerExecutablePath();
             this.logger.log(`Initializing WhatsApp client with executablePath: ${exePath ?? 'Default Puppeteer'}`);
+            this.writeCrashMarker();
             this.client = new whatsapp_web_js_1.Client({
                 authStrategy: new whatsapp_web_js_1.LocalAuth({ dataPath: '.wwebjs_auth' }),
                 webVersionCache: {
@@ -213,6 +260,9 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.client.on('qr', async (qr) => {
                 this.logger.log('WhatsApp QR code received — scan to connect');
                 this.clearInitTimeout();
+                this.clearCrashMarker();
+                this.consecutiveFailures = 0;
+                this.lastError = null;
                 this.isConnected = false;
                 this.isInitializing = false;
                 try {
@@ -224,6 +274,9 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             });
             this.client.on('ready', () => {
                 this.clearInitTimeout();
+                this.clearCrashMarker();
+                this.consecutiveFailures = 0;
+                this.lastError = null;
                 this.isConnected = true;
                 this.isInitializing = false;
                 this.qrDataUrl = null;
@@ -239,6 +292,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.client.on('auth_failure', (msg) => {
                 this.logger.error(`WhatsApp auth failure: ${msg}`);
                 this.clearInitTimeout();
+                this.clearCrashMarker();
                 this.lastError = `فشل المصادقة: ${String(msg)}`;
                 this.isConnected = false;
                 this.isInitializing = false;
@@ -251,7 +305,7 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
                 this.qrDataUrl = null;
                 if (!this.manualDisconnect && reason !== 'LOGOUT') {
                     this.logger.log(`Auto-reconnecting after disconnection (reason: ${reason})...`);
-                    setTimeout(() => this.initializeClient(), 5000);
+                    setTimeout(() => this.initializeClient(false, true), 5000);
                 }
                 else {
                     this.manualDisconnect = false;
@@ -259,13 +313,16 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             });
             this.client.initialize().catch((err) => {
                 this.logger.error('WhatsApp client initialization failed', err);
-                this.lastError = `فشل تشغيل المتصفح: ${String(err?.message ?? err)}`;
+                this.clearCrashMarker();
+                this.consecutiveFailures++;
+                this.lastError = `فشل تشغيل المتصفح (المحاولة ${this.consecutiveFailures}): ${String(err?.message ?? err)}`;
                 this.isConnected = false;
                 this.isInitializing = false;
             });
         }
         catch (err) {
             this.logger.error('WhatsApp client setup failed', err);
+            this.clearCrashMarker();
             this.lastError = `فشل الإعداد: ${String(err?.message ?? err)}`;
             this.isConnected = false;
             this.isInitializing = false;
