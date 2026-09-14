@@ -118,6 +118,36 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
             this.initTimeout = null;
         }
     }
+    getPuppeteerExecutablePath() {
+        if (process.platform === 'win32') {
+            const fs = require('fs');
+            const standardWinPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+            const x86WinPath = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
+            if (fs.existsSync(standardWinPath))
+                return standardWinPath;
+            if (fs.existsSync(x86WinPath))
+                return x86WinPath;
+            return undefined;
+        }
+        if (process.platform === 'linux') {
+            const fs = require('fs');
+            const paths = [
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium',
+                '/usr/bin/chromium-browser',
+                '/nix/store',
+            ];
+            for (const p of paths) {
+                if (p === '/nix/store') {
+                    return 'chromium';
+                }
+                if (fs.existsSync(p))
+                    return p;
+            }
+            return 'chromium';
+        }
+        return undefined;
+    }
     async initializeClient(force = false) {
         if (this.isInitializing && !force)
             return;
@@ -153,11 +183,13 @@ let WhatsappService = WhatsappService_1 = class WhatsappService {
                 await this.client.destroy().catch(() => { });
                 this.client = null;
             }
+            const exePath = this.getPuppeteerExecutablePath();
+            this.logger.log(`Initializing WhatsApp client with executablePath: ${exePath ?? 'Default Puppeteer'}`);
             this.client = new whatsapp_web_js_1.Client({
                 authStrategy: new whatsapp_web_js_1.LocalAuth({ dataPath: '.wwebjs_auth' }),
                 puppeteer: {
                     headless: true,
-                    executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+                    ...(exePath ? { executablePath: exePath } : {}),
                     args: [
                         '--no-sandbox',
                         '--disable-setuid-sandbox',

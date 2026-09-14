@@ -1,13 +1,14 @@
 import axios from 'axios';
 
-// file:// protocol (Electron) has empty hostname — fallback to localhost
 const hostname = window.location.hostname || 'localhost';
-// When served over HTTPS (port 8080 with serve.cjs proxy), use /api prefix
-// to avoid Mixed Content browser block. Otherwise call backend directly.
-const isHttps = window.location.protocol === 'https:';
+const currentOrigin = window.location.origin;
+const envApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
 
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL as string) || (isHttps ? '/api' : `http://${hostname}:3000`),
+  baseURL:
+    envApiUrl ||
+    (isLocalhost ? `http://${hostname}:3000` : currentOrigin),
   headers: { 'Content-Type': 'application/json' },
 });
 

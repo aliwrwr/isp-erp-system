@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
@@ -8,19 +9,30 @@ const config_1 = require("@nestjs/config");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     const configService = app.get(config_1.ConfigService);
-    const port = configService.get('port') || 3000;
+    const port = Number(configService.get('port') || process.env.PORT || 3000);
     app.use(require('express').json({ limit: '10mb' }));
     app.use(require('express').urlencoded({ limit: '10mb', extended: true }));
+    const frontendOrigin = process.env.FRONTEND_URL;
+    const localhostRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+    const lanRegex = /^http:\/\/(192\.168\.|192\.200\.|10\.|172\.(1[6-9]|2\d|3[01])\.)([\d.]+(:\d+)?)$/i;
+    const vercelRegex = /^https:\/\/.*\.vercel\.app$/i;
     app.enableCors({
         origin: (origin, callback) => {
-            if (!origin ||
-                /^http:\/\/localhost(:\d+)?$/.test(origin) ||
-                /^http:\/\/(192\.168\.|192\.200\.|10\.|172\.(1[6-9]|2\d|3[01])\.)([\d.]+(:\d+)?)$/.test(origin)) {
+            if (!origin) {
                 callback(null, true);
+                return;
             }
-            else {
-                callback(new Error('Not allowed by CORS'));
+            if (frontendOrigin && origin === frontendOrigin) {
+                callback(null, true);
+                return;
             }
+            if (localhostRegex.test(origin) ||
+                lanRegex.test(origin) ||
+                vercelRegex.test(origin)) {
+                callback(null, true);
+                return;
+            }
+            callback(new Error('Not allowed by CORS'));
         },
         credentials: true,
     });

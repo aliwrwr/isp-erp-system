@@ -38,6 +38,8 @@ import { GlobalReportsModule } from './global-reports/global-reports.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import config from './config/config';
 
+const isPostgres = !!process.env.DATABASE_URL;
+
 @Module({
   imports: [
     GlobalReportsModule,
@@ -46,13 +48,24 @@ import config from './config/config';
       load: [config],
     }),
     ScheduleModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: 'isp-erp.sqlite',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      autoLoadEntities: true,
-      synchronize: true,
-    }),
+    TypeOrmModule.forRoot(
+      isPostgres
+        ? {
+            type: 'postgres',
+            url: process.env.DATABASE_URL,
+            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            autoLoadEntities: true,
+            synchronize: true,
+            ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+          }
+        : {
+            type: 'better-sqlite3',
+            database: process.env.SQLITE_PATH || 'isp-erp.sqlite',
+            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            autoLoadEntities: true,
+            synchronize: true,
+          },
+    ),
     AuthModule,
     UsersModule,
     SubscribersModule,

@@ -97,6 +97,47 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * Get target Puppeteer Executable Path based on operating system and environment
+   */
+  private getPuppeteerExecutablePath(): string | undefined {
+    // If we're on Windows local machine, try to use the configured Chrome path
+    if (process.platform === 'win32') {
+      const fs = require('fs');
+      const standardWinPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+      const x86WinPath = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
+      
+      if (fs.existsSync(standardWinPath)) return standardWinPath;
+      if (fs.existsSync(x86WinPath)) return x86WinPath;
+      return undefined; // fall back to puppeteer default
+    }
+    
+    // If we're on Linux (like Railway / VPS), check standard locations
+    if (process.platform === 'linux') {
+      const fs = require('fs');
+      // Nixpacks/Railway paths or standard paths
+      const paths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/nix/store', // Nixpacks usually has custom directories but puts symlinks in PATH
+      ];
+      
+      for (const p of paths) {
+        if (p === '/nix/store') {
+          // Nixpacks chromium is usually directly inside PATH if installed via nixpkgs.
+          // In Nix/Railway environments, if chrome/chromium is in PATH, we can reference simply 'chromium' or 'google-chrome-stable'
+          return 'chromium';
+        }
+        if (fs.existsSync(p)) return p;
+      }
+      
+      return 'chromium'; // Fallback to PATH resolution
+    }
+    
+    return undefined;
+  }
+
   async initializeClient(force = false): Promise<void> {
     // إذا كان قيد التهيئة ولم يُجبَر، تجاهل الطلب
     if (this.isInitializing && !force) return;
@@ -137,12 +178,14 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         this.client = null;
       }
 
+      const exePath = this.getPuppeteerExecutablePath();
+      this.logger.log(`Initializing WhatsApp client with executablePath: ${exePath ?? 'Default Puppeteer'}`);
+
       this.client = new Client({
         authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
         puppeteer: {
           headless: true,
-          executablePath:
-            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          ...(exePath ? { executablePath: exePath } : {}),
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',

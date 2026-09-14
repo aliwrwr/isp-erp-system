@@ -1,0 +1,9 @@
+# Nixpacks configuration to build the NestJS server on Railway with Chromium dependencies installed
+providers = ["node"]
+
+[variables]
+    NPM_CONFIG_FORCE = "true"
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+
+[phases.setup]
+    nixPkgs = ["...", "chromium", "glib", "nss", "nspr", "atk", "at-spi2-atk", "cups", "libdrm", "dbus", "gconf", "gsettings-desktop-schemas", "alsa-lib", "pango", "cairo", "libX11", "libXcomposite", "libXdamage", "libXext", "libXfixes", "libXrandr", "libXcursor", "libXrender", "libXscrnsaver", "libXtst", "libxcb", "libxshmfence", "libxkbcommon", "mesa"]

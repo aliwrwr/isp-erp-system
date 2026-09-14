@@ -1,1 +1,0 @@
-import{t as e}from"./api-BSIPyGig.js";async function t(t){try{await e.post(`/activity-log`,t)}catch(e){console.error(`Failed to log activity to server:`,e)}}export{t};

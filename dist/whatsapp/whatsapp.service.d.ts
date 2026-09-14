@@ -25,6 +25,7 @@ export declare class WhatsappService implements OnModuleInit, OnModuleDestroy {
     private hasExistingSession;
     onModuleDestroy(): Promise<void>;
     private clearInitTimeout;
+    private getPuppeteerExecutablePath;
     initializeClient(force?: boolean): Promise<void>;
     disconnect(): Promise<void>;
     private forceKillChromeProcesses;

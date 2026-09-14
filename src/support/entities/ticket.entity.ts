@@ -64,7 +64,7 @@ export class Ticket {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @Column({ nullable: true, type: 'datetime' })
+  @Column({ nullable: true, type: process.env.DATABASE_URL ? 'timestamp' : 'datetime' })
   resolvedAt: Date;
 
   @Column('text', { nullable: true })

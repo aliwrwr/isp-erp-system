@@ -48,6 +48,7 @@ const groups_module_1 = require("./groups/groups.module");
 const global_reports_module_1 = require("./global-reports/global-reports.module");
 const activity_log_module_1 = require("./activity-log/activity-log.module");
 const config_2 = __importDefault(require("./config/config"));
+const isPostgres = !!process.env.DATABASE_URL;
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -60,13 +61,22 @@ exports.AppModule = AppModule = __decorate([
                 load: [config_2.default],
             }),
             schedule_1.ScheduleModule.forRoot(),
-            typeorm_1.TypeOrmModule.forRoot({
-                type: 'better-sqlite3',
-                database: 'isp-erp.sqlite',
-                entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                autoLoadEntities: true,
-                synchronize: true,
-            }),
+            typeorm_1.TypeOrmModule.forRoot(isPostgres
+                ? {
+                    type: 'postgres',
+                    url: process.env.DATABASE_URL,
+                    entities: [__dirname + '/**/*.entity{.ts,.js}'],
+                    autoLoadEntities: true,
+                    synchronize: true,
+                    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+                }
+                : {
+                    type: 'better-sqlite3',
+                    database: process.env.SQLITE_PATH || 'isp-erp.sqlite',
+                    entities: [__dirname + '/**/*.entity{.ts,.js}'],
+                    autoLoadEntities: true,
+                    synchronize: true,
+                }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             subscribers_module_1.SubscribersModule,

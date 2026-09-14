@@ -103,7 +103,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Ticket.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true, type: 'datetime' }),
+    (0, typeorm_1.Column)({ nullable: true, type: process.env.DATABASE_URL ? 'timestamp' : 'datetime' }),
     __metadata("design:type", Date)
 ], Ticket.prototype, "resolvedAt", void 0);
 __decorate([
